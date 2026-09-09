@@ -1,0 +1,395 @@
+[
+  {
+    "id": "sc-001",
+    "category": "scenario",
+    "task": "scenario_generation",
+    "result": {
+      "genre": "business_email",
+      "medium": "email",
+      "audience": "client",
+      "purpose": "apologize",
+      "register": "business",
+      "tone": "apologetic",
+      "relationship": "customer_vendor",
+      "jlpt_level": "N3",
+      "difficulty": 6,
+      "difficulty_metadata": {
+        "language": 6,
+        "context": 5,
+        "audience": 6,
+        "purpose": 5,
+        "constraint": 4,
+        "register": 6
+      }
+    },
+    "expected_properties": {
+      "genre": "business_email",
+      "medium": "email",
+      "audience": "client"
+    }
+  },
+  {
+    "id": "sc-002",
+    "category": "scenario",
+    "task": "scenario_generation",
+    "result": {
+      "genre": "casual_message",
+      "medium": "chat",
+      "audience": "friend",
+      "purpose": "invite",
+      "register": "casual",
+      "tone": "friendly",
+      "relationship": "close",
+      "jlpt_level": "N5",
+      "difficulty": 2,
+      "difficulty_metadata": {
+        "language": 2,
+        "context": 3,
+        "audience": 2,
+        "purpose": 2,
+        "constraint": 1,
+        "register": 2
+      }
+    },
+    "expected_properties": {
+      "genre": "casual_message",
+      "register": "casual"
+    }
+  },
+  {
+    "id": "sc-003",
+    "category": "scenario",
+    "task": "scenario_generation",
+    "result": {
+      "genre": "status_report",
+      "medium": "report",
+      "audience": "manager",
+      "purpose": "report",
+      "register": "business",
+      "tone": "professional",
+      "relationship": "internal_company",
+      "jlpt_level": "N2",
+      "difficulty": 8,
+      "difficulty_metadata": {
+        "language": 8,
+        "context": 7,
+        "audience": 8,
+        "purpose": 7,
+        "constraint": 6,
+        "register": 8
+      }
+    },
+    "expected_properties": {
+      "genre": "status_report",
+      "audience": "manager"
+    }
+  },
+  {
+    "id": "sc-004",
+    "category": "scenario",
+    "task": "scenario_generation",
+    "result": {
+      "genre": "business_email",
+      "medium": "email",
+      "audience": "client",
+      "purpose": "propose",
+      "register": "business",
+      "tone": "persuasive",
+      "relationship": "customer_vendor",
+      "jlpt_level": "N1",
+      "difficulty": 10,
+      "difficulty_metadata": {
+        "language": 10,
+        "context": 10,
+        "audience": 10,
+        "purpose": 10,
+        "constraint": 10,
+        "register": 10
+      }
+    },
+    "expected_properties": {
+      "genre": "business_email",
+      "difficulty": 10
+    }
+  },
+  {
+    "id": "sc-005",
+    "category": "scenario",
+    "task": "scenario_generation",
+    "result": {
+      "genre": "sns_post",
+      "medium": "sns",
+      "audience": "social_media_followers",
+      "purpose": "inform",
+      "register": "casual",
+      "tone": "friendly",
+      "relationship": "casual",
+      "jlpt_level": "N4",
+      "difficulty": 4,
+      "difficulty_metadata": {
+        "language": 4,
+        "context": 4,
+        "audience": 4,
+        "purpose": 4,
+        "constraint": 4,
+        "register": 4
+      }
+    },
+    "expected_properties": {
+      "genre": "sns_post",
+      "medium": "sns"
+    }
+  },
+  {
+    "id": "sc-006",
+    "category": "scenario",
+    "task": "scenario_generation",
+    "result": {
+      "genre": "vulcan_poetry",
+      "medium": "email",
+      "audience": "client",
+      "purpose": "apologize",
+      "register": "business",
+      "tone": "apologetic",
+      "relationship": "customer_vendor",
+      "jlpt_level": "N3",
+      "difficulty": 6,
+      "difficulty_metadata": {
+        "language": 6,
+        "context": 5,
+        "audience": 6,
+        "purpose": 5,
+        "constraint": 4,
+        "register": 6
+      }
+    },
+    "expected_properties": {
+      "genre": "vulcan_poetry"
+    }
+  },
+  {
+    "id": "sce-001",
+    "category": "scenario",
+    "task": "scenario_evaluation",
+    "result": {
+      "scenario_semantic_fit": 88,
+      "audience_fit": 84,
+      "purpose_fit": 90,
+      "tone_fit": 80,
+      "constraint_compliance": 92,
+      "required_points": [
+        {
+          "status": "satisfied"
+        },
+        {
+          "status": "partially_satisfied"
+        }
+      ],
+      "format_sections": [
+        {
+          "status": "present"
+        },
+        {
+          "status": "partial"
+        }
+      ]
+    },
+    "expected_properties": {
+      "scenario_semantic_fit": 88,
+      "audience_fit": 84
+    }
+  },
+  {
+    "id": "sce-002",
+    "category": "scenario",
+    "task": "scenario_evaluation",
+    "result": {
+      "scenario_semantic_fit": 95,
+      "audience_fit": 90,
+      "purpose_fit": 95,
+      "tone_fit": 92,
+      "constraint_compliance": 96,
+      "required_points": [
+        {
+          "status": "satisfied"
+        }
+      ],
+      "format_sections": [
+        {
+          "status": "present"
+        }
+      ]
+    },
+    "expected_properties": {
+      "purpose_fit": 95
+    }
+  },
+  {
+    "id": "sce-003",
+    "category": "scenario",
+    "task": "scenario_evaluation",
+    "result": {
+      "scenario_semantic_fit": 70,
+      "audience_fit": 65,
+      "purpose_fit": 68,
+      "tone_fit": 60,
+      "constraint_compliance": 75,
+      "required_points": [
+        {
+          "status": "missing"
+        },
+        {
+          "status": "satisfied"
+        }
+      ],
+      "format_sections": [
+        {
+          "status": "missing"
+        },
+        {
+          "status": "present"
+        }
+      ]
+    },
+    "expected_properties": {
+      "constraint_compliance": 75
+    }
+  },
+  {
+    "id": "sce-004",
+    "category": "scenario",
+    "task": "scenario_evaluation",
+    "result": {
+      "scenario_semantic_fit": 101,
+      "audience_fit": 84,
+      "purpose_fit": 90,
+      "tone_fit": 80,
+      "constraint_compliance": 92,
+      "required_points": [
+        {
+          "status": "satisfied"
+        }
+      ],
+      "format_sections": [
+        {
+          "status": "present"
+        }
+      ]
+    },
+    "expected_properties": {
+      "scenario_semantic_fit": 101
+    }
+  },
+  {
+    "id": "sce-005",
+    "category": "scenario",
+    "task": "scenario_evaluation",
+    "result": {
+      "scenario_semantic_fit": 75,
+      "audience_fit": 70,
+      "purpose_fit": 72,
+      "tone_fit": 68,
+      "constraint_compliance": 78,
+      "required_points": [
+        {
+          "status": "missing"
+        }
+      ],
+      "format_sections": [
+        {
+          "status": "partial"
+        },
+        {
+          "status": "missing"
+        }
+      ]
+    },
+    "expected_properties": {
+      "tone_fit": 68
+    }
+  },
+  {
+    "id": "sce-006",
+    "category": "scenario",
+    "task": "scenario_evaluation",
+    "result": {
+      "scenario_semantic_fit": 82,
+      "audience_fit": 78,
+      "purpose_fit": 85,
+      "tone_fit": 74,
+      "constraint_compliance": 88,
+      "required_points": [
+        {
+          "status": "satisfied"
+        },
+        {
+          "status": "missing"
+        }
+      ],
+      "format_sections": [
+        {
+          "status": "present"
+        },
+        {
+          "status": "partial"
+        },
+        {
+          "status": "missing"
+        }
+      ]
+    },
+    "expected_properties": {
+      "scenario_semantic_fit": 82
+    }
+  },
+  {
+    "id": "sce-007",
+    "category": "scenario",
+    "task": "scenario_evaluation",
+    "result": {
+      "scenario_semantic_fit": 55,
+      "audience_fit": 52,
+      "purpose_fit": 58,
+      "tone_fit": 50,
+      "constraint_compliance": 60,
+      "required_points": [
+        {
+          "status": "partially_satisfied"
+        }
+      ],
+      "format_sections": [
+        {
+          "status": "partial"
+        }
+      ]
+    },
+    "expected_properties": {
+      "scenario_semantic_fit": 55
+    }
+  },
+  {
+    "id": "sce-008",
+    "category": "scenario",
+    "task": "scenario_evaluation",
+    "result": {
+      "scenario_semantic_fit": 90,
+      "audience_fit": 88,
+      "purpose_fit": 86,
+      "tone_fit": 90,
+      "constraint_compliance": 40,
+      "required_points": [
+        {
+          "status": "satisfied"
+        }
+      ],
+      "format_sections": [
+        {
+          "status": "present"
+        }
+      ]
+    },
+    "expected_properties": {
+      "constraint_compliance": 40
+    }
+  }
+]

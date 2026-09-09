@@ -1,0 +1,225 @@
+/* ============================================================
+   Base styles — reset, focus, reduced motion
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--text-body-lh);
+  background-color: var(--color-background);
+  background-image:
+    radial-gradient(at 0% 0%, rgba(79, 110, 247, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.06) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(225, 77, 63, 0.04) 0px, transparent 50%);
+  background-attachment: fixed;
+  color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* Japanese: prevent orphaned characters at line breaks */
+  overflow-wrap: break-word;
+}
+
+/* Japanese text blocks: correct punctuation rendering + line breaking */
+:lang(ja),
+.jw-jp-text,
+[lang='ja'] {
+  font-family: var(--font-jp);
+  line-height: var(--jp-body-lh);
+  letter-spacing: var(--jp-body-ls);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  /* Hanging punctuation for Japanese kuten/brackets */
+  hanging-punctuation: first last;
+}
+
+/* ============================================================
+   Furigana & Ruby Text Styling (Small, centered directly ABOVE Kanji)
+   ============================================================ */
+:root {
+  --furigana-color: var(--nihon-kikyo, #a78bfa);
+}
+
+ruby,
+.jw-ruby {
+  ruby-position: over;
+  ruby-align: center;
+  display: inline-ruby;
+  vertical-align: baseline;
+  line-height: normal;
+}
+
+rt,
+.jw-rt {
+  display: ruby-text;
+  font-family: var(--font-jp);
+  font-size: 0.55em;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  color: var(--furigana-color);
+  user-select: none;
+  pointer-events: none;
+  ruby-align: center;
+  letter-spacing: 0;
+}
+
+rp {
+  display: none;
+}
+
+/* Furigana Global System Modes */
+html[data-furigana='off'] rt,
+html[data-furigana='off'] .jw-rt,
+body[data-furigana='off'] rt,
+body[data-furigana='off'] .jw-rt {
+  display: none !important;
+}
+
+html[data-furigana='hover'] rt,
+html[data-furigana='hover'] .jw-rt,
+body[data-furigana='hover'] rt,
+body[data-furigana='hover'] .jw-rt {
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html[data-furigana='hover'] ruby:hover rt,
+html[data-furigana='hover'] .jw-ruby:hover .jw-rt,
+html[data-furigana='hover'] .jw-furigana-container:hover rt,
+html[data-furigana='hover'] .jw-auto-furigana:hover rt,
+html[data-furigana='hover'] .jw-vocab-entry:hover rt,
+html[data-furigana='hover'] .jw-tilt-card:hover rt,
+html[data-furigana='hover'] .jw-sim-msg:hover rt,
+html[data-furigana='hover'] .jw-mascot-speech:hover rt,
+html[data-furigana='hover'] .jw-card:hover rt,
+html[data-furigana='hover'] p:hover rt,
+html[data-furigana='hover'] li:hover rt,
+html[data-furigana='hover'] span:hover rt,
+html[data-furigana='hover'] div:hover > rt,
+body[data-furigana='hover'] ruby:hover rt,
+body[data-furigana='hover'] .jw-ruby:hover .jw-rt,
+body[data-furigana='hover'] .jw-furigana-container:hover rt,
+body[data-furigana='hover'] .jw-auto-furigana:hover rt,
+body[data-furigana='hover'] p:hover rt,
+body[data-furigana='hover'] li:hover rt {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+html[data-furigana='always'] rt,
+html[data-furigana='always'] .jw-rt,
+body[data-furigana='always'] rt,
+body[data-furigana='always'] .jw-rt,
+html:not([data-furigana]) rt,
+html:not([data-furigana]) .jw-rt {
+  opacity: 1;
+  display: ruby-text;
+}
+
+@keyframes jw-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+img,
+svg {
+  display: block;
+}
+
+a {
+  color: var(--color-accent);
+}
+
+::selection {
+  background: var(--color-accent-muted);
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Thin, quiet scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* Reduced motion: remove all non-essential animation */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

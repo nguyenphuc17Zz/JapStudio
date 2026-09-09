@@ -1,0 +1,255 @@
+[
+  {
+    "id": "sim-001",
+    "category": "simulation",
+    "task": "simulation_turn_evaluation",
+    "result": {
+      "goal_progress": 75,
+      "communication_effectiveness": 80,
+      "issues": [
+        {
+          "category": "grammar",
+          "severity": "minor"
+        }
+      ]
+    },
+    "expected_properties": {
+      "goal_progress": 75,
+      "communication_effectiveness": 80
+    }
+  },
+  {
+    "id": "sim-002",
+    "category": "simulation",
+    "task": "simulation_turn_evaluation",
+    "result": {
+      "goal_progress": 90,
+      "communication_effectiveness": 85,
+      "issues": []
+    },
+    "expected_properties": {
+      "goal_progress": 90
+    }
+  },
+  {
+    "id": "sim-003",
+    "category": "simulation",
+    "task": "simulation_turn_evaluation",
+    "result": {
+      "goal_progress": 30,
+      "communication_effectiveness": 25,
+      "issues": [
+        {
+          "category": "naturalness",
+          "severity": "major"
+        },
+        {
+          "category": "register",
+          "severity": "critical"
+        }
+      ]
+    },
+    "expected_properties": {
+      "goal_progress": 30
+    }
+  },
+  {
+    "id": "sim-004",
+    "category": "simulation",
+    "task": "simulation_turn_evaluation",
+    "result": {
+      "goal_progress": 110,
+      "communication_effectiveness": 80,
+      "issues": []
+    },
+    "expected_properties": {
+      "goal_progress": 110
+    }
+  },
+  {
+    "id": "sim-005",
+    "category": "simulation",
+    "task": "simulation_state_update",
+    "result": {
+      "facts": ["納期は金曜日", "担当者は田中さん", "予算は10万円"],
+      "decisions": ["午前中に確認する"],
+      "unresolved_items": ["見積もりの最終確認"],
+      "completed_items": ["納期の確認"],
+      "participant_positions": {
+        "ai": {"stance": "調整中", "detail": ""},
+        "learner": {"stance": "確認したい", "detail": ""}
+      },
+      "emotional_context": "neutral",
+      "next_goal": "見積もりを確定する"
+    },
+    "context": {
+      "previous_state": {
+        "facts": ["納期は金曜日", "担当者は田中さん", "予算は10万円"],
+        "decisions": [],
+        "unresolved_items": ["納期の確認", "見積もりの最終確認"],
+        "completed_items": []
+      }
+    },
+    "expected_properties": {
+      "unresolved_items": ["見積もりの最終確認"]
+    }
+  },
+  {
+    "id": "sim-006",
+    "category": "simulation",
+    "task": "simulation_state_update",
+    "result": {
+      "facts": ["納期は金曜日"],
+      "decisions": ["午前中に確認する"],
+      "unresolved_items": ["見積もりの最終確認"],
+      "completed_items": ["納期の確認"],
+      "participant_positions": {
+        "ai": {"stance": "調整中", "detail": ""},
+        "learner": {"stance": "確認したい", "detail": ""}
+      },
+      "emotional_context": "neutral",
+      "next_goal": "見積もりを確定する"
+    },
+    "context": {
+      "previous_state": {
+        "facts": ["納期は金曜日", "担当者は田中さん", "予算は10万円"],
+        "decisions": [],
+        "unresolved_items": ["納期の確認", "見積もりの最終確認"],
+        "completed_items": []
+      }
+    },
+    "expected_properties": {
+      "facts": ["納期は金曜日"]
+    }
+  },
+  {
+    "id": "sim-007",
+    "category": "simulation",
+    "task": "simulation_state_update",
+    "result": {
+      "unresolved_items": ["見積もりの最終確認"],
+      "completed_items": ["納期の確認", "見積もりの最終確認"]
+    },
+    "context": {
+      "previous_state": {
+        "facts": ["納期は金曜日"],
+        "decisions": [],
+        "unresolved_items": ["納期の確認", "見積もりの最終確認"],
+        "completed_items": []
+      }
+    },
+    "expected_properties": {
+      "unresolved_items": ["見積もりの最終確認"]
+    }
+  },
+  {
+    "id": "sim-008",
+    "category": "simulation",
+    "task": "simulation_state_update",
+    "result": {
+      "completed_items": ["納期の確認"],
+      "not_a_state_key": ["不明なキー"]
+    },
+    "context": {
+      "previous_state": {
+        "facts": ["納期は金曜日"],
+        "decisions": [],
+        "unresolved_items": ["納期の確認"],
+        "completed_items": []
+      }
+    },
+    "expected_properties": {
+      "completed_items": ["納期の確認"]
+    }
+  },
+  {
+    "id": "sim-009",
+    "category": "simulation",
+    "task": "simulation_plan",
+    "result": {
+      "objective_vi": "顧客と納期の交渉を成立させる",
+      "stages": [
+        {
+          "name": "opening",
+          "goal": "挨拶して要件を伝える"
+        },
+        {
+          "name": "negotiate",
+          "goal": "納期と価格を交渉する"
+        },
+        {
+          "name": "confirm",
+          "goal": "合意事項を確認する"
+        }
+      ],
+      "persona": {
+        "name": "佐藤",
+        "role": "購買担当者"
+      },
+      "difficulty": {
+        "language_complexity": 6,
+        "context_complexity": 6,
+        "social_complexity": 7,
+        "negotiation_complexity": 7,
+        "ambiguity": 5,
+        "time_pressure": 4
+      }
+    },
+    "expected_properties": {
+      "objective_vi": "顧客と納期の交渉を成立させる"
+    }
+  },
+  {
+    "id": "sim-010",
+    "category": "simulation",
+    "task": "simulation_plan",
+    "result": {
+      "objective_vi": "",
+      "stages": [],
+      "persona": {
+        "name": "",
+        "role": ""
+      },
+      "difficulty": {
+        "language_complexity": 11,
+        "context_complexity": 6,
+        "social_complexity": 7,
+        "negotiation_complexity": 7,
+        "ambiguity": 5,
+        "time_pressure": 4
+      }
+    },
+    "expected_properties": {
+      "objective_vi": ""
+    }
+  },
+  {
+    "id": "sim-011",
+    "category": "simulation",
+    "task": "simulation_plan",
+    "result": {
+      "objective_vi": "レストランでアレルギー対応を依頼する",
+      "stages": [
+        {
+          "name": "opening",
+          "goal": "注文を始める"
+        }
+      ],
+      "persona": {
+        "name": "鈴木",
+        "role": "店員"
+      },
+      "difficulty": {
+        "language_complexity": 3,
+        "context_complexity": 3,
+        "social_complexity": 2,
+        "negotiation_complexity": 2,
+        "ambiguity": 2,
+        "time_pressure": 1
+      }
+    },
+    "expected_properties": {
+      "objective_vi": "レストランでアレルギー対応を依頼する"
+    }
+  }
+]

@@ -1,0 +1,157 @@
+[
+  {
+    "id": "ex-001",
+    "category": "exercise",
+    "task": "exercise_generation",
+    "result": {
+      "grammar_complexity": 6,
+      "vocabulary_complexity": 5,
+      "context_complexity": 6,
+      "naturalness_target": 5
+    },
+    "context": {
+      "plan": {
+        "difficulty": 6
+      }
+    },
+    "expected_properties": {
+      "grammar_complexity": 6,
+      "vocabulary_complexity": 5
+    }
+  },
+  {
+    "id": "ex-002",
+    "category": "exercise",
+    "task": "exercise_generation",
+    "result": {
+      "grammar_complexity": 3,
+      "vocabulary_complexity": 4,
+      "context_complexity": 3,
+      "naturalness_target": 4
+    },
+    "context": {
+      "plan": {
+        "difficulty": 4
+      }
+    },
+    "expected_properties": {
+      "grammar_complexity": 3,
+      "naturalness_target": 4
+    }
+  },
+  {
+    "id": "ex-003",
+    "category": "exercise",
+    "task": "exercise_generation",
+    "result": {
+      "grammar_complexity": 8,
+      "vocabulary_complexity": 9,
+      "context_complexity": 8,
+      "naturalness_target": 7
+    },
+    "context": {
+      "plan": {
+        "difficulty": 8
+      }
+    },
+    "expected_properties": {
+      "vocabulary_complexity": 9
+    }
+  },
+  {
+    "id": "ex-004",
+    "category": "exercise",
+    "task": "exercise_generation",
+    "result": {
+      "grammar_complexity": 10,
+      "vocabulary_complexity": 10,
+      "context_complexity": 9,
+      "naturalness_target": 10
+    },
+    "context": {
+      "plan": {
+        "difficulty": 10
+      }
+    },
+    "expected_properties": {
+      "grammar_complexity": 10,
+      "context_complexity": 9
+    }
+  },
+  {
+    "id": "ex-005",
+    "category": "exercise",
+    "task": "exercise_generation",
+    "result": {
+      "grammar_complexity": 1,
+      "vocabulary_complexity": 1,
+      "context_complexity": 1,
+      "naturalness_target": 1
+    },
+    "context": {
+      "plan": {
+        "difficulty": 2
+      }
+    },
+    "expected_properties": {
+      "grammar_complexity": 1
+    }
+  },
+  {
+    "id": "ex-006",
+    "category": "exercise",
+    "task": "exercise_generation",
+    "result": {
+      "grammar_complexity": 7,
+      "vocabulary_complexity": 6,
+      "context_complexity": 5,
+      "naturalness_target": 6
+    },
+    "context": {
+      "plan": {
+        "difficulty": 5
+      }
+    },
+    "expected_properties": {
+      "grammar_complexity": 7
+    }
+  },
+  {
+    "id": "ex-007",
+    "category": "exercise",
+    "task": "exercise_generation",
+    "result": {
+      "grammar_complexity": 12,
+      "vocabulary_complexity": 6,
+      "context_complexity": 6,
+      "naturalness_target": 6
+    },
+    "context": {
+      "plan": {
+        "difficulty": 6
+      }
+    },
+    "expected_properties": {
+      "grammar_complexity": 12
+    }
+  },
+  {
+    "id": "ex-008",
+    "category": "exercise",
+    "task": "exercise_generation",
+    "result": {
+      "grammar_complexity": 2,
+      "vocabulary_complexity": 2,
+      "context_complexity": 2,
+      "naturalness_target": 2
+    },
+    "context": {
+      "plan": {
+        "difficulty": 7
+      }
+    },
+    "expected_properties": {
+      "grammar_complexity": 2
+    }
+  }
+]

@@ -1,0 +1,40 @@
+"""Adds AI-enriched grammar-detail columns to user_grammar for existing databases.
+
+`Base.metadata.create_all` (see `app.db.sync_schema.init_db`) only creates
+missing *tables*, never missing *columns*, so databases created before this
+feature need explicit ALTER TABLE statements. Safe to run repeatedly:
+each column is added only when absent from the table.
+"""
+
+from sqlalchemy import text
+from app.db.session import engine
+from app.core.logging import get_logger
+
+logger = get_logger("db.migrate_grammar_ai_detail")
+
+_COLUMNS: list[tuple[str, str]] = [
+    ("formation", "TEXT"),
+    ("usage_context", "TEXT"),
+    ("examples_json", "JSON"),
+]
+
+
+async def ensure_grammar_ai_detail_columns() -> None:
+    """Adds missing AI-detail columns to user_grammar (idempotent)."""
+    async with engine.begin() as conn:
+        existing = {
+            row[1]
+            for row in (
+                await conn.execute(text("PRAGMA table_info(user_grammar)"))
+            ).all()
+        }
+        for name, ddl in _COLUMNS:
+            if name in existing:
+                continue
+            try:
+                await conn.execute(
+                    text(f"ALTER TABLE user_grammar ADD COLUMN {name} {ddl}")
+                )
+                logger.info(f"Added column user_grammar.{name}")
+            except Exception as e:
+                logger.warning(f"Could not add column user_grammar.{name}: {e}")

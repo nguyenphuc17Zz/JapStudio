@@ -1,0 +1,68 @@
+[
+  {
+    "id": "gam-001",
+    "category": "gamification",
+    "task": "encouragement",
+    "result": {
+      "message_vi": "今日も練習お疲れさま！少しずつ上達しています。",
+      "tone": "friendly"
+    },
+    "expected_properties": {
+      "tone": "friendly"
+    }
+  },
+  {
+    "id": "gam-002",
+    "category": "gamification",
+    "task": "daily_mission",
+    "result": {
+      "mission_vi": "今日は5つの文を書いてみよう",
+      "exercise_type": "sentence_translation",
+      "target_count": 5,
+      "difficulty": 4
+    },
+    "expected_properties": {
+      "exercise_type": "sentence_translation",
+      "target_count": 5
+    }
+  },
+  {
+    "id": "gam-003",
+    "category": "gamification",
+    "task": "challenge_generation",
+    "result": {
+      "challenge_vi": "3日連続で80点以上を取ろう！",
+      "difficulty": 7,
+      "duration_days": 3
+    },
+    "expected_properties": {
+      "difficulty": 7,
+      "duration_days": 3
+    }
+  },
+  {
+    "id": "gam-004",
+    "category": "gamification",
+    "task": "progress_summary",
+    "result": {
+      "summary_vi": "今週は文法のミスが前週より20%減りました。",
+      "strengths": ["文法", "語彙"],
+      "focus_areas": ["敬語"]
+    },
+    "expected_properties": {
+      "strengths": ["文法", "語彙"]
+    }
+  },
+  {
+    "id": "gam-005",
+    "category": "gamification",
+    "task": "encouragement",
+    "result": {
+      "message_vi": "",
+      "tone": ""
+    },
+    "expected_properties": {
+      "message_vi": ""
+    }
+  }
+]

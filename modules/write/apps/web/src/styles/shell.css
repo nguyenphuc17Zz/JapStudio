@@ -1,0 +1,464 @@
+/* ============================================================
+   App shell — sidebar, top bar, page container, bottom nav.
+   Breakpoints (JS mirror: src/lib/breakpoints.ts):
+     mobile  < 768px   → no sidebar, top bar + bottom nav + drawers
+     tablet  768–1023  → sidebar forced collapsed
+     desktop ≥ 1024px  → sidebar honors user preference
+   ============================================================ */
+
+/* ---------- Shell frame ---------- */
+
+.jw-app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width-expanded) minmax(0, 1fr);
+  min-height: 100vh;
+  background: var(--color-background);
+}
+
+.jw-app-shell--collapsed {
+  grid-template-columns: var(--sidebar-width-collapsed) minmax(0, 1fr);
+}
+
+.jw-app-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: var(--sidebar-width-expanded);
+  transition: width var(--duration-normal) var(--ease-standard);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  z-index: var(--z-sticky);
+}
+
+.jw-app-sidebar .jw-sidebar {
+  width: 100%;
+}
+
+.jw-app-shell--collapsed .jw-app-sidebar {
+  width: var(--sidebar-width-collapsed);
+}
+
+/* Sidebar collapsed: icons only, labels/section titles hidden */
+.jw-app-shell--collapsed .jw-sidebar {
+  padding-inline: var(--space-sm);
+}
+
+.jw-app-shell--collapsed .jw-sidebar-item {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.jw-app-shell--collapsed .jw-sidebar-item > span:not(.jw-sidebar-item-icon),
+.jw-app-shell--collapsed .jw-sidebar-section-title,
+.jw-app-shell--collapsed .jw-brand-text,
+.jw-app-shell--collapsed .jw-sidebar-tagline,
+.jw-app-shell--collapsed .jw-sidebar-stats-label,
+.jw-app-shell--collapsed .jw-sidebar-stats-bar {
+  display: none;
+}
+
+.jw-app-shell--collapsed .jw-sidebar-brand {
+  justify-content: center;
+}
+
+/* ---------- Brand ---------- */
+
+.jw-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.jw-brand-mark {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  background: var(--grad-indigo);
+  color: #fff;
+  box-shadow: 0 0 14px rgba(79, 110, 247, 0.45);
+}
+
+.jw-brand-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-sidebar-active);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.jw-app-shell--collapsed .jw-sidebar-section {
+  gap: var(--space-xs);
+}
+
+/* Active item: subtle accent surface + left accent indicator + strong text */
+.jw-sidebar-item {
+  position: relative;
+  transition: all var(--duration-fast) var(--ease-standard);
+}
+
+.jw-sidebar-item--active {
+  background: var(--color-accent-muted);
+  color: var(--color-sidebar-active);
+  font-weight: 600;
+}
+
+.jw-sidebar-item--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 3px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--color-accent);
+}
+
+.jw-sidebar-item--active:hover {
+  background: var(--color-accent-muted);
+}
+
+/* ---------- Main column ---------- */
+
+.jw-app-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+  height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+/* ---------- Top bar ---------- */
+
+.jw-topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-height: var(--topbar-height);
+  padding: 0 var(--space-xl);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.jw-topbar-title {
+  font-size: var(--text-subtitle);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jw-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+
+.jw-topbar-menu {
+  display: none;
+}
+
+/* ---------- Page container ---------- */
+
+.jw-page-container {
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-md) var(--space-lg) var(--space-xl);
+  box-sizing: border-box;
+}
+
+.jw-page-container--studio {
+  height: calc(100vh - var(--topbar-height));
+  padding: var(--space-sm) var(--space-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.jw-page-container--compact {
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+.jw-page-container--default {
+  max-width: 1080px;
+  margin-inline: auto;
+}
+
+.jw-page-container--wide {
+  max-width: 1380px;
+  margin-inline: auto;
+}
+
+.jw-page-container--full {
+  max-width: none;
+}
+
+/* Subtle route transition (reduced-motion disabled in base.css) */
+.jw-page-enter {
+  animation: jw-page-enter var(--duration-normal) var(--ease-enter);
+}
+
+@keyframes jw-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Breadcrumbs ---------- */
+
+.jw-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.jw-breadcrumbs ol {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jw-breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-caption);
+  color: var(--color-foreground-muted);
+}
+
+.jw-breadcrumb-item a {
+  color: var(--color-foreground-muted);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+}
+
+.jw-breadcrumb-item a:hover {
+  color: var(--color-foreground);
+}
+
+.jw-breadcrumb-item[aria-current='page'] {
+  color: var(--color-foreground);
+  font-weight: 500;
+}
+
+/* ---------- Page header extras ---------- */
+
+.jw-page-header-eyebrow {
+  font-size: var(--text-micro);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-bottom: var(--space-xs);
+}
+
+.jw-page-header-breadcrumb {
+  margin-bottom: var(--space-sm);
+}
+
+/* ---------- Navigation drawer ---------- */
+
+.jw-nav-drawer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.jw-nav-drawer-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  color: var(--color-foreground);
+  font-size: var(--text-body);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.jw-nav-drawer-item:hover {
+  background: var(--color-accent-muted);
+}
+
+.jw-nav-drawer-item--active {
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+/* ---------- Sidebar footer stats ---------- */
+
+.jw-sidebar-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.jw-sidebar-stats-label {
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--color-sidebar-text-muted);
+}
+
+.jw-sidebar-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  font-size: var(--text-caption);
+}
+
+.jw-sidebar-stats-bar {
+  height: 6px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-sidebar-text) 18%, transparent);
+  overflow: hidden;
+}
+
+.jw-sidebar-stats-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+}
+
+.jw-sidebar-stats-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-sidebar-text);
+  font-weight: 600;
+}
+
+.jw-sidebar-footer-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.jw-sidebar-footer-row .jw-sidebar-item {
+  flex: 1;
+}
+
+.jw-app-shell--collapsed .jw-sidebar-footer-row {
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Tooltips inside a collapsed sidebar must stretch full width */
+.jw-sidebar .jw-tooltip {
+  display: block;
+  width: 100%;
+}
+
+/* ---------- Focus mode (Writing Studio) ---------- */
+
+body.jw-focus-mode .jw-app-shell,
+body.jw-focus-mode .jw-app-shell--collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body.jw-focus-mode .jw-app-sidebar,
+body.jw-focus-mode .jw-topbar {
+  display: none;
+}
+
+body.jw-focus-mode .jw-app-main {
+  height: 100vh;
+}
+
+/* ---------- Connection banner ---------- */
+
+.jw-connection-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-xl);
+  font-size: var(--text-caption);
+  color: var(--color-foreground);
+  background: var(--color-warning-muted);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
+}
+
+/* ---------- Mobile: bottom nav + top bar ---------- */
+
+.jw-mobile-nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .jw-app-shell,
+  .jw-app-shell--collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .jw-app-sidebar {
+    display: none;
+  }
+
+  .jw-app-main {
+    height: auto;
+    min-height: 100vh;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  .jw-topbar {
+    padding: 0 var(--space-md);
+  }
+
+  .jw-topbar-menu {
+    display: inline-flex;
+  }
+
+  .jw-topbar-breadcrumb {
+    display: none;
+  }
+
+  .jw-mobile-nav {
+    display: flex;
+  }
+
+  .jw-page-container {
+    padding: var(--space-lg) var(--space-md) var(--space-2xl);
+  }
+}
+
+@media (max-width: 480px) {
+  .jw-page-container {
+    padding: var(--space-md) var(--space-sm) var(--space-2xl);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jw-page-enter {
+    animation: none;
+  }
+
+  .jw-app-sidebar {
+    transition: none;
+  }
+}

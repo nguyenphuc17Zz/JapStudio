@@ -1,0 +1,69 @@
+[
+  {
+    "id": "mem-v-001",
+    "category": "memory",
+    "task": "memory_validation",
+    "result": {
+      "action": "accept",
+      "matched_memory_id": null,
+      "reason": "Ghi nhớ mới có bằng chứng rõ ràng.",
+      "adjusted_confidence": null,
+      "adjusted_importance": null
+    },
+    "context": {"candidate": {"category": "mistake_pattern"}},
+    "expected_properties": {"action": "accept"}
+  },
+  {
+    "id": "mem-v-002",
+    "category": "memory",
+    "task": "memory_validation",
+    "result": {
+      "action": "merge",
+      "matched_memory_id": "memory-1",
+      "reason": "Trùng nội dung với ghi nhớ cũ.",
+      "adjusted_confidence": "medium",
+      "adjusted_importance": 7
+    },
+    "context": {"candidate": {"category": "learning_pattern"}},
+    "expected_properties": {
+      "action": "merge",
+      "matched_memory_id": "memory-1",
+      "adjusted_importance": 7
+    }
+  },
+  {
+    "id": "mem-v-003",
+    "category": "memory",
+    "task": "memory_validation",
+    "result": {
+      "action": "merge",
+      "matched_memory_id": null,
+      "reason": "Thiếu id ghi nhớ cần gộp."
+    },
+    "context": {"candidate": {"category": "mistake_pattern"}},
+    "expected_violations": ["requires matched_memory_id"]
+  },
+  {
+    "id": "mem-v-004",
+    "category": "memory",
+    "task": "memory_validation",
+    "result": {
+      "action": "nonsense",
+      "reason": "Hành động không hợp lệ."
+    },
+    "context": {"candidate": {"category": "mistake_pattern"}},
+    "expected_violations": ["action must be one of"]
+  },
+  {
+    "id": "mem-v-005",
+    "category": "memory",
+    "task": "memory_validation",
+    "result": {
+      "action": "update",
+      "adjusted_confidence": "absolute",
+      "adjusted_importance": 99
+    },
+    "context": {"candidate": {"category": "mistake_pattern"}},
+    "expected_violations": ["adjusted_confidence", "adjusted_importance"]
+  }
+]

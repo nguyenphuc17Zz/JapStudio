@@ -1,0 +1,464 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --------------------------------------------------------------------------- */
+/* Color Tokens & Themes                                                       */
+/* --------------------------------------------------------------------------- */
+:root,
+html.dark,
+[data-theme="dark"],
+.dark {
+  --foreground-rgb: 245, 245, 250;
+  --background-start-rgb: 8, 8, 13;
+  --background-end-rgb: 15, 15, 23;
+
+  /* Sumi Dark Palette (Authentic Sumi Ink) */
+  --sumi-950: 8 8 13;      /* #08080d - Deepest Canvas */
+  --sumi-900: 15 15 23;    /* #0f0f17 - Card / Sidebar surface */
+  --sumi-850: 20 20 32;    /* #141420 - Surface elevated */
+  --sumi-800: 26 26 43;    /* #1a1a2b - Border default */
+  --sumi-750: 31 31 51;    /* #1f1f33 - Border highlight */
+  --sumi-700: 36 36 59;    /* #24243b - Border interactive */
+  --sumi-600: 54 54 84;    /* #363654 */
+  --sumi-500: 85 85 119;   /* #555577 - Muted text */
+  --sumi-400: 136 136 168; /* #8888a8 - Subtext */
+  --sumi-300: 187 187 208; /* #bbbbd0 - Secondary text */
+  --sumi-200: 224 224 236; /* #e0e0ec - Primary text */
+  --sumi-100: 245 245 250; /* #f5f5fa - Headings & pure contrast */
+
+  /* Glassmorphism Dark */
+  --glass-bg: rgba(18, 18, 28, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-hover-bg: rgba(24, 24, 38, 0.85);
+  --glass-input-bg: rgba(14, 14, 22, 0.6);
+  --glass-input-border: rgba(255, 255, 255, 0.1);
+  --glass-input-text: #f5f5fa;
+  --glass-input-focus-bg: rgba(20, 20, 32, 0.9);
+
+  /* Scrollbar Dark */
+  --scrollbar-track: #0d0d14;
+  --scrollbar-thumb: #24243b;
+  --scrollbar-thumb-hover: #363654;
+
+  /* Furigana Dark */
+  --furigana-color: #94a3b8;
+}
+
+html.light,
+[data-theme="light"],
+.light {
+  --foreground-rgb: 15, 23, 42;
+  --background-start-rgb: 248, 250, 252;
+  --background-end-rgb: 255, 255, 255;
+
+  /* Sumi Light Palette (Clean Modern Slate / Pure Snow) */
+  --sumi-950: 248 250 252; /* #f8fafc - Slate 50: Clean canvas */
+  --sumi-900: 255 255 255; /* #ffffff - Pure White: Cards, Panels, Reader container */
+  --sumi-850: 241 245 249; /* #f1f5f9 - Slate 100: Secondary surfaces, sub-panels */
+  --sumi-800: 226 232 240; /* #e2e8f0 - Slate 200: Clean subtle border */
+  --sumi-750: 216 222 232; /* #d8dee8 - Slate 250: Subtle divider */
+  --sumi-700: 203 213 225; /* #cbd5e1 - Slate 300: Border interactive/focus */
+  --sumi-600: 148 163 184; /* #94a3b8 - Slate 400: Icons & borders */
+  --sumi-500: 100 116 139; /* #64748b - Slate 500: Muted caption, meta */
+  --sumi-400: 71 85 105;   /* #475569 - Slate 600: Subtext */
+  --sumi-300: 51 65 85;    /* #334155 - Slate 700: Secondary content */
+  --sumi-200: 30 41 59;    /* #1e293b - Slate 800: Body reading text */
+  --sumi-100: 15 23 42;    /* #0f172a - Slate 900: Headings & highest contrast */
+
+  /* Glassmorphism Light */
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(226, 232, 240, 0.9);
+  --glass-hover-bg: #ffffff;
+  --glass-input-bg: #ffffff;
+  --glass-input-border: #cbd5e1;
+  --glass-input-text: #0f172a;
+  --glass-input-focus-bg: #ffffff;
+
+  /* Scrollbar Light */
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+
+  /* Furigana Light */
+  --furigana-color: #64748b;
+}
+
+body {
+  color: rgb(var(--sumi-200));
+  background-color: rgb(var(--sumi-950));
+  min-height: 100vh;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+  overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.dark body,
+html.dark body {
+  background: radial-gradient(circle at 50% -20%, rgba(230, 57, 70, 0.12) 0%, rgba(8, 8, 13, 1) 70%);
+  background-color: #08080d;
+}
+
+.light body,
+html.light body {
+  background: radial-gradient(circle at 50% -20%, rgba(230, 57, 70, 0.04) 0%, rgba(248, 250, 252, 1) 70%);
+  background-color: #f8fafc;
+}
+
+/* Custom Japanese glassmorphism effects */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-panel-hover {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel-hover:hover {
+  background: var(--glass-hover-bg);
+  border-color: rgba(230, 57, 70, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.08), 0 0 20px 0 rgba(230, 57, 70, 0.1);
+}
+
+.glass-input {
+  background: var(--glass-input-bg);
+  border: 1px solid var(--glass-input-border);
+  color: var(--glass-input-text);
+  transition: all 0.2s ease;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: #e63946;
+  background: var(--glass-input-focus-bg);
+  box-shadow: 0 0 0 2px rgba(230, 57, 70, 0.2);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Japanese Smart Reader Typography & Furigana */
+.japanese-reader-content {
+  font-family: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", "Source Han Serif", serif;
+  letter-spacing: 0.05em;
+  word-break: break-word;
+}
+
+ruby {
+  display: inline-ruby;
+  ruby-position: over;
+  -webkit-ruby-position: over;
+  ruby-align: center;
+}
+
+rt {
+  display: ruby-text;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Meiryo", "Yu Gothic", "Noto Sans JP", sans-serif;
+  user-select: none;
+  font-size: 0.55em;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--furigana-color);
+  text-align: center;
+}
+
+/* Furigana Display Modes (NHK Standard) */
+.furigana-mode-always rt {
+  display: ruby-text;
+  visibility: visible;
+  opacity: 1;
+}
+
+.furigana-mode-hover rt {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease-in-out, visibility 0.15s ease-in-out;
+}
+
+.furigana-mode-hover ruby:hover rt,
+.furigana-mode-hover .sentence-active rt {
+  opacity: 1;
+  visibility: visible;
+}
+
+.furigana-mode-off rt {
+  display: none !important;
+}
+
+/* Interactive Sentences */
+.reader-sentence {
+  position: relative;
+  display: inline;
+  padding: 2px 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reader-sentence:hover {
+  background-color: rgba(230, 57, 70, 0.08);
+}
+
+.reader-sentence.sentence-active {
+  background-color: rgba(230, 57, 70, 0.15);
+  box-shadow: 0 0 0 2px rgba(230, 57, 70, 0.35);
+}
+
+/* Vocabulary & Grammar tokens */
+.clickable-token {
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 0 2px;
+  transition: all 0.15s ease;
+}
+
+.vocab-highlight {
+  text-decoration: underline 2px dotted #38bdf8;
+  text-underline-offset: 4px;
+}
+
+.vocab-highlight:hover {
+  background-color: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+}
+
+.grammar-highlight {
+  text-decoration: underline 2px solid #ec4899;
+  text-underline-offset: 4px;
+}
+
+.grammar-highlight:hover {
+  background-color: rgba(236, 72, 153, 0.2);
+  color: #f472b6;
+}
+
+/* Smart contrast for bare text-white and text-sumi in light mode */
+html.light .text-white:not([class*="bg-torii"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-blue"]):not([class*="bg-sky"]):not([class*="bg-pink"]):not([class*="bg-amber"]):not([class*="bg-kintsugi"]):not([class*="bg-bamboo"]):not([class*="badge"]),
+html.light h1.text-white,
+html.light h2.text-white,
+html.light h3.text-white,
+html.light h4.text-white,
+html.light h5.text-white,
+html.light p.text-white,
+html.light span.text-white:not([class*="bg-torii"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-blue"]):not([class*="bg-sky"]):not([class*="bg-pink"]):not([class*="bg-amber"]):not([class*="bg-kintsugi"]):not([class*="bg-bamboo"]):not([class*="badge"]),
+html.light div.text-white:not([class*="bg-torii"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-blue"]):not([class*="bg-sky"]):not([class*="bg-pink"]):not([class*="bg-amber"]):not([class*="bg-kintsugi"]):not([class*="bg-bamboo"]) {
+  color: #0f172a !important;
+}
+
+/* Universal high-contrast mapping for text-sumi in light mode (prevents white/faint text) */
+html.light .text-sumi-950,
+html.light .text-sumi-900,
+html.light .text-sumi-100 {
+  color: #0f172a !important; /* Slate 900 - Pure deep black */
+}
+
+html.light .text-sumi-850,
+html.light .text-sumi-800,
+html.light .text-sumi-200 {
+  color: #1e293b !important; /* Slate 800 - Deep charcoal body */
+}
+
+html.light .text-sumi-750,
+html.light .text-sumi-700,
+html.light .text-sumi-300 {
+  color: #334155 !important; /* Slate 700 - Clear secondary */
+}
+
+html.light .text-sumi-600,
+html.light .text-sumi-500,
+html.light .text-sumi-400 {
+  color: #475569 !important; /* Slate 600 - Readable subtext */
+}
+
+/* Inputs, textareas & selects in light mode */
+html.light input:not([type="checkbox"]):not([type="radio"]):not([class*="text-"]):not([class*="bg-torii"]),
+html.light textarea:not([class*="text-"]),
+html.light select:not([class*="text-"]) {
+  color: #0f172a !important;
+}
+
+/* Reader Japanese text in light mode */
+html.light .japanese-reader-content {
+  color: #0f172a !important;
+}
+
+/* Subtle shadows adjustment in light mode */
+html.light .shadow-glass {
+  box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.06);
+}
+
+html.light .shadow-glass-card {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* =========================================================================== */
+/* Light Mode WCAG AAA Contrast & Pastel Container Engine                      */
+/* =========================================================================== */
+
+/* 1. High-contrast colors for text on light backgrounds (Fixes washed-out / low contrast) */
+html.light .text-kintsugi-300,
+html.light .text-kintsugi-400,
+html.light .text-amber-200,
+html.light .text-amber-300 {
+  color: #92400e !important; /* Amber 800: Rich warm golden brown */
+}
+
+html.light .text-amber-400:not([class*="bg-amber"]):not([class*="bg-sumi"]):not(svg) {
+  color: #b45309 !important; /* Amber 700 */
+}
+
+html.light .text-sky-200,
+html.light .text-sky-300 {
+  color: #0369a1 !important; /* Sky 700 */
+}
+
+html.light .text-pink-200,
+html.light .text-pink-300 {
+  color: #be185d !important; /* Pink 700 */
+}
+
+html.light .text-emerald-200,
+html.light .text-emerald-300 {
+  color: #047857 !important; /* Emerald 700 */
+}
+
+html.light .text-rose-200,
+html.light .text-rose-300,
+html.light .text-torii-300,
+html.light .text-torii-400:not([class*="bg-torii"]):not(svg) {
+  color: #be123c !important; /* Rose 700 */
+}
+
+/* 2. Transform dark 950-tinted containers into elegant bright Pastel cards */
+html.light [class*="bg-kintsugi-950"],
+html.light [class*="bg-amber-950"] {
+  background-color: #fffbeb !important; /* Amber 50 */
+  border-color: #fde68a !important;     /* Amber 200 */
+}
+
+html.light [class*="bg-sky-950"] {
+  background-color: #f0f9ff !important; /* Sky 50 */
+  border-color: #bae6fd !important;     /* Sky 200 */
+}
+
+html.light [class*="bg-pink-950"] {
+  background-color: #fdf2f8 !important; /* Pink 50 */
+  border-color: #fbcfe8 !important;     /* Pink 200 */
+}
+
+html.light [class*="bg-emerald-950"] {
+  background-color: #ecfdf5 !important; /* Emerald 50 */
+  border-color: #a7f3d0 !important;     /* Emerald 200 */
+}
+
+html.light [class*="bg-rose-950"],
+html.light [class*="bg-torii-950"] {
+  background-color: #fff1f2 !important; /* Rose 50 */
+  border-color: #fecdd3 !important;     /* Rose 200 */
+}
+
+/* 3. High-contrast Badges & Pills (Pastel 100 bg + Text 800) */
+html.light .bg-amber-500\/20,
+html.light .bg-amber-500\/15,
+html.light .bg-amber-500\/10 {
+  background-color: #fef3c7 !important; /* Amber 100 */
+  border-color: #fcd34d !important;     /* Amber 300 */
+  color: #92400e !important;             /* Amber 800 */
+}
+
+html.light .bg-sky-500\/20,
+html.light .bg-sky-500\/15,
+html.light .bg-sky-500\/10 {
+  background-color: #e0f2fe !important; /* Sky 100 */
+  border-color: #7dd3fc !important;     /* Sky 300 */
+  color: #0369a1 !important;             /* Sky 700 */
+}
+
+html.light .bg-pink-500\/20,
+html.light .bg-pink-500\/15,
+html.light .bg-pink-500\/10 {
+  background-color: #fce7f3 !important; /* Pink 100 */
+  border-color: #f472b6 !important;     /* Pink 300 */
+  color: #be185d !important;             /* Pink 700 */
+}
+
+html.light .bg-emerald-500\/20,
+html.light .bg-emerald-500\/15,
+html.light .bg-emerald-500\/10 {
+  background-color: #d1fae5 !important; /* Emerald 100 */
+  border-color: #6ee7b7 !important;     /* Emerald 300 */
+  color: #047857 !important;             /* Emerald 700 */
+}
+
+html.light .bg-torii-500\/20,
+html.light .bg-torii-500\/15,
+html.light .bg-torii-500\/10 {
+  background-color: #ffe4e6 !important; /* Rose 100 */
+  border-color: #fda4af !important;     /* Rose 300 */
+  color: #be123c !important;             /* Rose 700 */
+}
+
+/* Animations for Toasts and Modals */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes zoomIn95 {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-in {
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: forwards;
+}
+
+.fade-in {
+  animation-name: fadeIn;
+}
+
+.slide-in-from-top-4 {
+  animation-name: slideInFromTop;
+}
+
+.zoom-in-95 {
+  animation-name: zoomIn95;
+}

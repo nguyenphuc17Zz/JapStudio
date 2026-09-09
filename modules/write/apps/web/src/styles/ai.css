@@ -1,0 +1,584 @@
+/* ============================================================
+   AI semantic layer — shared language for every AI component.
+   Subtle: muted background, AI border, sparkle icon, restrained
+   glow on interaction. No robot icons, no chatbot chrome.
+   ============================================================ */
+
+.jw-ai-surface {
+  background: var(--color-ai-muted);
+  border: 1px solid var(--color-ai-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg) var(--space-xl);
+  color: var(--color-foreground);
+}
+
+.jw-ai-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.jw-ai-icon {
+  color: var(--color-ai);
+  flex-shrink: 0;
+}
+
+.jw-ai-title {
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--color-foreground-secondary);
+  letter-spacing: 0.02em;
+}
+
+.jw-ai-text {
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+  color: var(--color-foreground);
+}
+
+.jw-ai-evidence {
+  margin: var(--space-sm) 0 0;
+  padding-left: var(--space-lg);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption-lh);
+  color: var(--color-foreground-muted);
+}
+
+.jw-ai-evidence li {
+  margin-bottom: 2px;
+}
+
+.jw-ai-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.jw-ai-dismiss {
+  margin-left: auto;
+}
+
+.jw-ai-focus-glow:focus-within {
+  box-shadow: 0 0 0 2px var(--color-focus-ring);
+}
+
+/* ---------- AI hint progress dots ---------- */
+
+.jw-ai-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: var(--space-md);
+}
+
+.jw-ai-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+}
+
+.jw-ai-dot--active {
+  background: var(--color-ai);
+}
+
+/* ---------- AI status ---------- */
+
+.jw-ai-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 5px 12px;
+  border: 1px solid var(--color-ai-border);
+  border-radius: var(--radius-md);
+  background: var(--color-ai-muted);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  color: var(--color-foreground-secondary);
+}
+
+.jw-ai-status-icon {
+  color: var(--color-ai);
+}
+
+.jw-ai-status--thinking .jw-ai-status-icon {
+  animation: jw-ai-pulse 1.4s var(--ease-standard) infinite;
+}
+
+@keyframes jw-ai-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ---------- AI thinking (loading) ---------- */
+
+.jw-ai-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--text-body-sm);
+  color: var(--color-foreground-muted);
+}
+
+.jw-ai-thinking-text {
+  background: linear-gradient(
+    90deg,
+    var(--color-foreground-muted),
+    var(--color-foreground-secondary),
+    var(--color-foreground-muted)
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: jw-shimmer-text 2.4s linear infinite;
+}
+
+.jw-ai-thinking-icon {
+  color: var(--color-ai);
+  animation: jw-ai-pulse 1.4s var(--ease-standard) infinite;
+}
+
+/* ---------- AI suggestion ---------- */
+
+.jw-ai-suggestion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-ai-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-ai);
+  font-size: var(--text-caption);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+.jw-ai-suggestion:hover:not(:disabled) {
+  background: var(--color-ai-muted);
+  border-color: var(--color-ai);
+}
+
+.jw-ai-suggestion:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- AI coach message ---------- */
+
+.jw-ai-coach {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.jw-ai-bubble {
+  max-width: 88%;
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.jw-ai-bubble--ai {
+  align-self: flex-start;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-ai-border);
+}
+
+.jw-ai-bubble--user {
+  align-self: flex-end;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.jw-ai-bubble-meta {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--text-micro);
+  color: var(--color-foreground-muted);
+}
+
+.jw-ai-bubble--user .jw-ai-bubble-meta {
+  color: color-mix(in srgb, var(--color-on-accent) 70%, transparent);
+}
+
+.jw-ai-coach-loading {
+  align-self: flex-start;
+  padding: var(--space-md) var(--space-lg);
+  border: 1px dashed var(--color-ai-border);
+  border-radius: var(--radius-lg);
+}
+
+.jw-ai-coach-error {
+  align-self: stretch;
+}
+
+.jw-ai-suggested {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-xs);
+}
+
+/* ---------- AI explanation ---------- */
+
+.jw-ai-explanation {
+  border-left: 3px solid var(--color-ai-border);
+  padding: 2px 0 2px var(--space-md);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+  color: var(--color-foreground-secondary);
+}
+
+.jw-ai-explanation-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: 4px;
+  color: var(--color-ai);
+}
+
+.jw-ai-explanation-head .jw-ai-title {
+  color: var(--color-ai);
+}
+
+/* ---------- AI reason ---------- */
+
+.jw-ai-reason {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  font-size: var(--text-caption);
+  line-height: var(--text-caption-lh);
+  color: var(--color-foreground-muted);
+}
+
+.jw-ai-reason-icon {
+  color: var(--color-ai);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ---------- AI Provider & Model Picker ---------- */
+
+/* ============================================================
+   AI Model Picker Component Styles
+   Synchronized with Wabi-Sabi Modern Design System
+   ============================================================ */
+
+.jw-ai-picker-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .jw-ai-picker-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.jw-ai-picker-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-title);
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.jw-ai-picker-inline-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: 100%;
+}
+
+.jw-ai-picker-inline-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-foreground-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ---------- Compact Variant (TopBar Button & Floating Popover) ---------- */
+
+.jw-ai-compact-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  color: var(--color-foreground);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.jw-ai-compact-trigger-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--color-border-hover);
+}
+
+.jw-ai-compact-trigger-btn:focus-visible {
+  outline: none;
+  border-color: var(--color-ai);
+  box-shadow: 0 0 0 2px var(--color-focus-ring);
+}
+
+.jw-ai-compact-trigger-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.jw-ai-compact-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.jw-ai-compact-provider-text {
+  font-weight: 600;
+  color: var(--color-foreground);
+}
+
+.jw-ai-compact-divider {
+  color: var(--color-foreground-muted);
+  font-size: 11px;
+}
+
+.jw-ai-compact-model-text {
+  color: var(--color-foreground-secondary);
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jw-ai-compact-arrow {
+  font-size: 10px;
+  color: var(--color-foreground-muted);
+  margin-left: 2px;
+}
+
+/* ---------- Compact Floating Popover ---------- */
+
+.jw-ai-compact-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 290px;
+  background: var(--glass-bg, #1a1817);
+  backdrop-filter: var(--glass-blur, blur(16px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(16px));
+  border: 1px solid var(--glass-border, #332f2c);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  z-index: 1000;
+  animation: jw-pop-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.jw-ai-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.jw-ai-popover-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-foreground-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.jw-ai-popover-loading {
+  font-size: var(--text-micro);
+  color: var(--color-ai);
+  animation: pulse 1.5s infinite;
+}
+
+.jw-ai-popover-provider-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  background: var(--color-surface);
+  padding: 3px;
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+}
+
+.jw-ai-popover-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  color: var(--color-foreground-secondary);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.jw-ai-popover-tab:hover {
+  color: var(--color-foreground);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.jw-ai-popover-tab--active {
+  background: var(--color-surface-elevated, #2a2725);
+  color: var(--color-foreground);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.jw-ai-popover-section-label {
+  font-size: var(--text-micro);
+  color: var(--color-foreground-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.jw-ai-popover-models-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.jw-ai-popover-model-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.jw-ai-popover-model-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.jw-ai-popover-model-item--active {
+  background: rgba(139, 92, 246, 0.16);
+}
+
+.jw-ai-popover-model-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.jw-ai-popover-model-name {
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+
+.jw-ai-popover-model-item--active .jw-ai-popover-model-name {
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+.jw-ai-popover-model-sub {
+  font-size: var(--text-micro);
+  color: var(--color-foreground-muted);
+}
+
+.jw-ai-popover-check {
+  color: var(--color-accent);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.jw-ai-popover-empty {
+  padding: 12px 8px;
+  font-size: var(--text-caption);
+  color: var(--color-foreground-muted);
+  text-align: center;
+}
+
+/* ---------- Provider Brand Tags & Badges ---------- */
+
+.jw-ai-provider-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-micro);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.jw-ai-provider-tag--gemini {
+  background: rgba(66, 133, 244, 0.14);
+  color: #4285f4;
+  border: 1px solid rgba(66, 133, 244, 0.3);
+}
+
+.jw-ai-provider-tag--groq {
+  background: rgba(245, 80, 54, 0.14);
+  color: #f55036;
+  border: 1px solid rgba(245, 80, 54, 0.3);
+}
+
+.jw-ai-provider-tag--ollama {
+  background: rgba(16, 185, 129, 0.14);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.jw-ai-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-success, #10b981);
+}
+
+.jw-ai-status-dot--unconfigured {
+  background: var(--color-foreground-muted, #94a3b8);
+}

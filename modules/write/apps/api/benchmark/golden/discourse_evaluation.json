@@ -1,0 +1,149 @@
+[
+  {
+    "id": "dc-001",
+    "category": "discourse",
+    "task": "discourse_evaluation",
+    "result": {
+      "coherence_classification": "good",
+      "coherence_score": 78,
+      "topic_consistency_classification": "consistent",
+      "issues": []
+    },
+    "context": {
+      "sentence_count": 4
+    },
+    "expected_properties": {
+      "coherence_classification": "good",
+      "coherence_score": 78
+    }
+  },
+  {
+    "id": "dc-002",
+    "category": "discourse",
+    "task": "discourse_evaluation",
+    "result": {
+      "coherence_classification": "excellent",
+      "coherence_score": 92,
+      "topic_consistency_classification": "consistent",
+      "issues": [
+        {
+          "category": "coherence",
+          "severity": "minor",
+          "sentence_index": 2,
+          "sentence_range": [2, 2]
+        }
+      ],
+      "strengths": ["接続詞の使い方が自然"],
+      "summary": "段落構成が良い",
+      "rewrites": {
+        "minimal_fix": "修正なし",
+        "natural_rewrite": "自然な言い換え",
+        "native_rewrite": "母語話者らしい表現"
+      }
+    },
+    "context": {
+      "sentence_count": 4
+    },
+    "expected_properties": {
+      "coherence_classification": "excellent"
+    }
+  },
+  {
+    "id": "dc-003",
+    "category": "discourse",
+    "task": "discourse_evaluation",
+    "result": {
+      "coherence_classification": "acceptable",
+      "coherence_score": 58,
+      "topic_consistency_classification": "minor_drift",
+      "issues": [
+        {
+          "category": "topic_consistency",
+          "severity": "major",
+          "sentence_index": 3,
+          "sentence_range": [3, 4]
+        }
+      ]
+    },
+    "context": {
+      "sentence_count": 6
+    },
+    "expected_properties": {
+      "coherence_classification": "acceptable"
+    }
+  },
+  {
+    "id": "dc-004",
+    "category": "discourse",
+    "task": "discourse_evaluation",
+    "result": {
+      "coherence_classification": "weak",
+      "coherence_score": 35,
+      "topic_consistency_classification": "major_drift",
+      "issues": [
+        {
+          "category": "organization",
+          "severity": "critical",
+          "sentence_index": 1,
+          "sentence_range": [1, 5]
+        }
+      ]
+    },
+    "context": {
+      "sentence_count": 6
+    },
+    "expected_properties": {
+      "coherence_classification": "weak"
+    }
+  },
+  {
+    "id": "dc-005",
+    "category": "discourse",
+    "task": "discourse_evaluation",
+    "result": {
+      "coherence_classification": "excellent",
+      "coherence_score": 55,
+      "topic_consistency_classification": "consistent",
+      "issues": []
+    },
+    "context": {
+      "sentence_count": 4
+    },
+    "expected_properties": {
+      "coherence_classification": "excellent",
+      "coherence_score": 55
+    }
+  },
+  {
+    "id": "dc-006",
+    "category": "discourse",
+    "task": "discourse_evaluation",
+    "result": {
+      "coherence_classification": "good",
+      "coherence_score": 75,
+      "topic_consistency_classification": "minor_drift",
+      "issues": [
+        {
+          "category": "coherence",
+          "severity": "minor",
+          "sentence_index": 5,
+          "sentence_range": [5, 5]
+        }
+      ],
+      "strengths": ["話題の展開が明確"],
+      "summary": "全体的にまとまりがある",
+      "rewrites": {
+        "minimal_fix": "接続詞の調整",
+        "natural_rewrite": "自然な表現への修正",
+        "native_rewrite": "ネイティブ表現への修正"
+      }
+    },
+    "context": {
+      "sentence_count": 6
+    },
+    "expected_properties": {
+      "coherence_classification": "good",
+      "coherence_score": 75
+    }
+  }
+]

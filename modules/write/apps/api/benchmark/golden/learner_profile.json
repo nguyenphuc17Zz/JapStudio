@@ -1,0 +1,161 @@
+[
+  {
+    "id": "lp-001",
+    "category": "learner",
+    "task": "learner_profile_synthesis",
+    "result": {
+      "estimated_jlpt": {
+        "min_level": "N4",
+        "max_level": "N3",
+        "confidence": "high"
+      },
+      "recent_trends": {
+        "overall_score": 72
+      }
+    },
+    "expected_properties": {
+      "estimated_jlpt": {
+        "min_level": "N4"
+      }
+    }
+  },
+  {
+    "id": "lp-002",
+    "category": "learner",
+    "task": "learner_profile_synthesis",
+    "result": {
+      "estimated_jlpt": {
+        "min_level": "N5",
+        "max_level": "N5",
+        "confidence": "medium"
+      },
+      "recent_trends": {
+        "overall_score": 45
+      }
+    },
+    "expected_properties": {
+      "estimated_jlpt": {
+        "min_level": "N5"
+      }
+    }
+  },
+  {
+    "id": "lp-003",
+    "category": "learner",
+    "task": "learner_profile_synthesis",
+    "result": {
+      "estimated_jlpt": {
+        "min_level": "N2",
+        "max_level": "N1",
+        "confidence": "low"
+      },
+      "recent_trends": {
+        "overall_score": 88
+      }
+    },
+    "expected_properties": {
+      "estimated_jlpt": {
+        "max_level": "N1"
+      }
+    }
+  },
+  {
+    "id": "lp-004",
+    "category": "learner",
+    "task": "learner_profile_synthesis",
+    "result": {
+      "estimated_jlpt": {
+        "min_level": "N4",
+        "max_level": "N3",
+        "confidence": "high"
+      },
+      "recent_trends": {
+        "overall_score": 120
+      }
+    },
+    "expected_properties": {
+      "recent_trends": {
+        "overall_score": 120
+      }
+    }
+  },
+  {
+    "id": "lp-005",
+    "category": "learner",
+    "task": "learner_profile_synthesis",
+    "result": {
+      "estimated_jlpt": {
+        "min_level": "N6",
+        "max_level": "N3",
+        "confidence": "high"
+      },
+      "recent_trends": {
+        "overall_score": 60
+      }
+    },
+    "expected_properties": {
+      "estimated_jlpt": {
+        "min_level": "N6"
+      }
+    }
+  },
+  {
+    "id": "plan-001",
+    "category": "learner",
+    "task": "learning_planner",
+    "result": {
+      "planned_exercise": {
+        "exercise_type": "sentence_translation",
+        "jlpt_level": "N4",
+        "register": "polite",
+        "target_length": "sentence",
+        "difficulty": 5
+      }
+    },
+    "expected_properties": {
+      "planned_exercise": {
+        "exercise_type": "sentence_translation",
+        "jlpt_level": "N4"
+      }
+    }
+  },
+  {
+    "id": "plan-002",
+    "category": "learner",
+    "task": "learning_planner",
+    "result": {
+      "planned_exercise": {
+        "exercise_type": "email_writing",
+        "jlpt_level": "N3",
+        "register": "business",
+        "target_length": "paragraph",
+        "difficulty": 7
+      }
+    },
+    "expected_properties": {
+      "planned_exercise": {
+        "exercise_type": "email_writing",
+        "target_length": "paragraph"
+      }
+    }
+  },
+  {
+    "id": "plan-003",
+    "category": "learner",
+    "task": "learning_planner",
+    "result": {
+      "planned_exercise": {
+        "exercise_type": "klingon_translation",
+        "jlpt_level": "N4",
+        "register": "polite",
+        "target_length": "sentence",
+        "difficulty": 5
+      }
+    },
+    "expected_properties": {
+      "planned_exercise": {
+        "exercise_type": "klingon_translation"
+      }
+    }
+  }
+]

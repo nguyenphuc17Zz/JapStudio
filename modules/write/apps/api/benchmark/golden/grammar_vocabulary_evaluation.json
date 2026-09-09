@@ -1,0 +1,138 @@
+[
+  {
+    "id": "gv-001",
+    "category": "grammar_vocabulary",
+    "task": "grammar_vocabulary_evaluation",
+    "result": {
+      "grammar_score": 100,
+      "vocabulary_score": 90,
+      "issues": [
+        {
+          "category": "vocabulary",
+          "severity": "minor",
+          "original_text": "うれしい",
+          "explanation": "文脈に合う語彙ではない",
+          "suggested_fix": "喜ばしい",
+          "reason": "口語的すぎる"
+        }
+      ],
+      "confidence": "high"
+    },
+    "expected_properties": {
+      "grammar_score": 100,
+      "vocabulary_score": 90
+    }
+  },
+  {
+    "id": "gv-002",
+    "category": "grammar_vocabulary",
+    "task": "grammar_vocabulary_evaluation",
+    "result": {
+      "grammar_score": 95,
+      "vocabulary_score": 95,
+      "issues": [
+        {
+          "category": "grammar",
+          "severity": "minor",
+          "original_text": "行ったでした",
+          "explanation": "タ形＋ですの誤用",
+          "suggested_fix": "行ったんです",
+          "reason": "口語的な言い回し"
+        }
+      ],
+      "confidence": "high"
+    },
+    "expected_properties": {
+      "grammar_score": 95,
+      "vocabulary_score": 95
+    },
+    "expect_grammar_issue": true
+  },
+  {
+    "id": "gv-003",
+    "category": "grammar_vocabulary",
+    "task": "grammar_vocabulary_evaluation",
+    "result": {
+      "grammar_score": 100,
+      "vocabulary_score": 100,
+      "issues": [],
+      "confidence": "high"
+    },
+    "expected_properties": {
+      "grammar_score": 100,
+      "vocabulary_score": 100
+    }
+  },
+  {
+    "id": "gv-004",
+    "category": "grammar_vocabulary",
+    "task": "grammar_vocabulary_evaluation",
+    "result": {
+      "grammar_score": 88,
+      "vocabulary_score": 82,
+      "issues": [
+        {
+          "category": "grammar",
+          "severity": "major",
+          "original_text": "昨日、行く。",
+          "explanation": "時制の不一致",
+          "suggested_fix": "昨日、行った。",
+          "reason": "過去の出来事に現在形を使用"
+        }
+      ],
+      "confidence": "medium"
+    },
+    "expected_properties": {
+      "grammar_score": 88
+    },
+    "expect_grammar_issue": true
+  },
+  {
+    "id": "gv-005",
+    "category": "grammar_vocabulary",
+    "task": "grammar_vocabulary_evaluation",
+    "result": {
+      "grammar_score": 100,
+      "vocabulary_score": 100,
+      "issues": [
+        {
+          "category": "grammar",
+          "severity": "minor",
+          "original_text": "行ったでした",
+          "explanation": "タ形＋ですの誤用",
+          "suggested_fix": "行ったんです",
+          "reason": "口語的な言い回し"
+        }
+      ],
+      "confidence": "high"
+    },
+    "expected_properties": {
+      "grammar_score": 100
+    },
+    "expect_grammar_issue": true
+  },
+  {
+    "id": "gv-006",
+    "category": "grammar_vocabulary",
+    "task": "grammar_vocabulary_evaluation",
+    "result": {
+      "grammar_score": 91,
+      "vocabulary_score": 70,
+      "issues": [
+        {
+          "category": "grammar",
+          "severity": "major",
+          "original_text": "猫は部屋で寝ているです。",
+          "explanation": "イ形容詞にですを付加する誤用",
+          "suggested_fix": "猫は部屋で寝ています。",
+          "reason": "文末の誤った丁寧化"
+        }
+      ],
+      "confidence": "medium"
+    },
+    "expected_properties": {
+      "grammar_score": 91
+    },
+    "expect_grammar_issue": true
+  }
+]

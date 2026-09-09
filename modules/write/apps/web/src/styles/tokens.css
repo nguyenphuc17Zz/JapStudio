@@ -1,0 +1,455 @@
+/* ============================================================
+   Japanese Writing Studio — Design tokens
+   Semantic tokens only. Components must never hard-code values.
+   Dark is the default theme; light overrides via [data-theme].
+   ============================================================ */
+
+/* Inter & Noto Sans JP: primary UI & Japanese typography */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  color-scheme: dark;
+
+  /* --- Typography: UI scale & Fonts --- */
+  --font-sans:
+    'Inter',
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    'Noto Sans JP',
+    sans-serif;
+
+  --font-jp:
+    'Noto Sans JP',
+    'Hiragino Kaku Gothic ProN',
+    'Hiragino Sans',
+    'Yu Gothic UI',
+    'Yu Gothic',
+    Meiryo,
+    'BIZ UDPGothic',
+    'Inter',
+    sans-serif;
+
+  --font-japanese: var(--font-jp);
+
+  /* --- Surfaces (layered, clean slate contrast) --- */
+  --color-background: #090a0f;
+  --color-background-subtle: #0e1017;
+  --color-surface: #141722;
+  --color-surface-elevated: #1a1e2c;
+  --color-surface-hover: #202536;
+  --color-surface-active: #272d41;
+  --color-surface-focus: #2c334b;
+
+  /* --- Foreground --- */
+  --color-foreground: #f1f3f7;
+  --color-foreground-secondary: #a0a7b8;
+  --color-foreground-muted: #697184;
+  --color-foreground-disabled: #454b5a;
+
+  /* --- Borders --- */
+  --color-border-subtle: #191c28;
+  --color-border-default: #232738;
+  --color-border-strong: #33394e;
+
+  /* --- Accent: Royal Indigo (Clean Linear Workspace) --- */
+  --color-accent: #6366f1;
+  --color-accent-hover: #4f46e5;
+  --color-accent-active: #4338ca;
+  --color-accent-muted: rgba(99, 102, 241, 0.12);
+  --color-on-accent: #ffffff;
+
+  /* --- Status (Calm & Balanced) --- */
+  --color-success: #10b981;
+  --color-success-muted: rgba(16, 185, 129, 0.12);
+  --color-warning: #f59e0b;
+  --color-warning-muted: rgba(245, 158, 11, 0.12);
+  --color-error: #ef4444;
+  --color-error-muted: rgba(239, 68, 68, 0.12);
+  --color-info: #0ea5e9;
+  --color-info-muted: rgba(14, 165, 233, 0.12);
+
+  /* --- AI semantic layer (Restrained, no neon glow) --- */
+  --color-ai: #818cf8;
+  --color-ai-muted: rgba(129, 140, 248, 0.08);
+  --color-ai-border: rgba(129, 140, 248, 0.22);
+  --color-ai-glow: transparent;
+
+  /* --- Learning feedback family --- */
+  --color-grammar: #ef4444;
+  --color-grammar-muted: rgba(239, 68, 68, 0.12);
+  --color-vocabulary: #818cf8;
+  --color-vocabulary-muted: rgba(129, 140, 248, 0.12);
+  --color-naturalness: #f59e0b;
+  --color-naturalness-muted: rgba(245, 158, 11, 0.12);
+  --color-semantic: #10b981;
+  --color-semantic-muted: rgba(16, 185, 129, 0.12);
+  --color-register: #0ea5e9;
+  --color-register-muted: rgba(14, 165, 233, 0.12);
+  --color-discourse: #8b5cf6;
+  --color-discourse-muted: rgba(139, 92, 246, 0.12);
+  --color-scenario: #818cf8;
+  --color-scenario-muted: rgba(129, 140, 248, 0.1);
+  --color-communication: #06b6d4;
+  --color-communication-muted: rgba(6, 182, 212, 0.1);
+
+  /* --- Focus --- */
+  --color-focus-ring: rgba(99, 102, 241, 0.5);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* --- Sidebar (Dark Slate) --- */
+  --color-sidebar-bg: #0b0d13;
+  --color-sidebar-text: #9ca3af;
+  --color-sidebar-text-muted: #6b7280;
+  --color-sidebar-active: #ffffff;
+  --color-sidebar-hover: rgba(255, 255, 255, 0.04);
+
+  /* --- Shadows (Refined, flat depth) --- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.32);
+
+  /* ============================================================
+     Theme-independent tokens
+     ============================================================ */
+
+  --text-display: 2.25rem;
+  --text-display-lh: 1.2;
+  --text-display-ls: -0.02em;
+  --text-subtitle: 0.9375rem; /* used by shell topbar title */
+  --text-h1: 1.75rem;
+  --text-h1-lh: 1.25;
+  --text-h1-ls: -0.015em;
+  --text-h2: 1.375rem;
+  --text-h2-lh: 1.3;
+  --text-h2-ls: -0.01em;
+  --text-h3: 1.125rem;
+  --text-h3-lh: 1.35;
+  --text-h3-ls: -0.005em;
+  --text-h4: 1rem;
+  --text-h4-lh: 1.4;
+  --text-h4-ls: 0;
+  --text-body-lg: 1.0625rem;
+  --text-body-lg-lh: 1.7;
+  --text-body: 0.9375rem;
+  --text-body-lh: 1.6;
+  --text-body-sm: 0.875rem;
+  --text-body-sm-lh: 1.55;
+  --text-label: 0.8125rem;
+  --text-label-lh: 1.4;
+  --text-caption: 0.75rem;
+  --text-caption-lh: 1.4;
+  --text-micro: 0.6875rem;
+  --text-micro-lh: 1.35;
+
+  /* --- Japanese writing typography (first-class) --- */
+  --jp-display: 2rem;
+  --jp-display-lh: 1.5;
+  --jp-display-ls: 0.02em;
+  --jp-heading: 1.5rem;
+  --jp-heading-lh: 1.6;
+  --jp-heading-ls: 0.015em;
+  --jp-body: 1rem;
+  --jp-body-lh: 1.9;
+  --jp-body-ls: 0.015em;
+  --jp-writing: 1.0625rem;
+  --jp-writing-lh: 2;
+  --jp-writing-ls: 0.02em;
+  --jp-caption: 0.8125rem;
+  --jp-caption-lh: 1.7;
+  --jp-caption-ls: 0.01em;
+
+  /* --- Spacing scale --- */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  --space-4xl: 64px;
+  --space-5xl: 96px;
+
+  /* --- Radius (restrained) --- */
+  --radius-none: 0;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* --- Borders --- */
+  --border-width: 1px;
+  --border-subtle: var(--border-width) solid var(--color-border-subtle);
+  --border-default: var(--border-width) solid var(--color-border-default);
+  --border-strong: var(--border-width) solid var(--color-border-strong);
+
+  /* --- Motion (Ultra-smooth Apple/Vercel/Linear curves) --- */
+  --duration-fast: 140ms;
+  --duration-normal: 240ms;
+  --duration-slow: 450ms;
+  --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- Z-index scale --- */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-sticky: 100;
+  --z-dropdown: 1000;
+  --z-overlay: 2000;
+  --z-toast: 3000;
+
+  /* --- App shell --- */
+  --sidebar-width-expanded: 260px;
+  --sidebar-width-collapsed: 64px;
+  --topbar-height: 56px;
+
+  /* --- Breakpoints (documentation; JS mirror in src/lib/breakpoints.ts,
+     raw values are required inside @media queries) --- */
+  --bp-mobile: 767px;
+  --bp-tablet: 768px;
+  --bp-desktop: 1024px;
+
+  /* ============================================================
+     Legacy aliases — keep existing pages working unchanged.
+     ============================================================ */
+  --bg: var(--color-background);
+  --surface: var(--color-surface);
+  --border: var(--color-border-default);
+  --text: var(--color-foreground);
+  --text-muted: var(--color-foreground-muted);
+  --text-strong: var(--color-foreground);
+  --primary: var(--color-accent);
+  --primary-soft: var(--color-accent-muted);
+  --danger: var(--color-error);
+  --ok: var(--color-success);
+  --surface-2: var(--color-surface-elevated);
+  --muted: var(--color-foreground-muted);
+  --sidebar-bg: var(--color-sidebar-bg);
+  --sidebar-text: var(--color-sidebar-text);
+  --sidebar-active: var(--color-sidebar-active);
+
+  /* AGENTS.md compat aliases (ui-guidelines expectations) */
+  --color-surface-subtle: var(--color-surface-elevated);
+  --color-surface-selected: var(--color-accent-muted);
+  --color-border: var(--color-border-default);
+  --color-border-hover: var(--color-border-strong);
+  --color-primary: var(--color-accent);
+  --color-primary-hover: var(--color-accent-hover);
+  --text-title: var(--text-h3);
+  --radius-full: 9999px;
+  /* nihon compat for legacy pages */
+  --nihon-asagi: #22d3ee;
+  --nihon-toki: #f43f5e;
+}
+
+/* ============================================================
+   Light theme — Japanese Washi parchment & Sumi ink palette
+   ============================================================ */
+[data-theme='light'] {
+  color-scheme: light;
+
+  --color-background: #fbfbfa;
+  --color-background-subtle: #f4f4f1;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-surface-hover: #f7f7f5;
+  --color-surface-active: #efeee8;
+  --color-surface-focus: #e8e6df;
+
+  --color-foreground: #111318;
+  --color-foreground-secondary: #404552;
+  --color-foreground-muted: #6b7280;
+  --color-foreground-disabled: #9ca3af;
+
+  --color-border-subtle: #f0efe9;
+  --color-border-default: #e2e0d7;
+  --color-border-strong: #cac7bc;
+
+  --color-accent: #4f46e5;
+  --color-accent-hover: #4338ca;
+  --color-accent-active: #3730a3;
+  --color-accent-muted: rgba(79, 70, 229, 0.08);
+  --color-on-accent: #ffffff;
+
+  --color-success: #059669;
+  --color-success-muted: rgba(5, 150, 105, 0.1);
+  --color-warning: #d97706;
+  --color-warning-muted: rgba(217, 119, 6, 0.1);
+  --color-error: #dc2626;
+  --color-error-muted: rgba(220, 38, 38, 0.1);
+  --color-info: #0284c7;
+  --color-info-muted: rgba(2, 132, 199, 0.1);
+
+  --color-ai: #4f46e5;
+  --color-ai-muted: rgba(79, 70, 229, 0.06);
+  --color-ai-border: rgba(79, 70, 229, 0.2);
+  --color-ai-glow: transparent;
+
+  --color-grammar: #dc2626;
+  --color-grammar-muted: rgba(220, 38, 38, 0.08);
+  --color-vocabulary: #4f46e5;
+  --color-vocabulary-muted: rgba(79, 70, 229, 0.08);
+  --color-naturalness: #d97706;
+  --color-naturalness-muted: rgba(217, 119, 6, 0.08);
+  --color-semantic: #059669;
+  --color-semantic-muted: rgba(5, 150, 105, 0.08);
+  --color-register: #0284c7;
+  --color-register-muted: rgba(2, 132, 199, 0.08);
+  --color-discourse: #6366f1;
+  --color-discourse-muted: rgba(99, 102, 241, 0.08);
+  --color-scenario: #4f46e5;
+  --color-scenario-muted: rgba(79, 70, 229, 0.06);
+  --color-communication: #0891b2;
+  --color-communication-muted: rgba(8, 145, 178, 0.06);
+
+  --color-focus-ring: rgba(79, 70, 229, 0.4);
+
+  --color-sidebar-bg: #0f121a;
+  --color-sidebar-text: #9ca3af;
+  --color-sidebar-text-muted: #6b7280;
+  --color-sidebar-active: #ffffff;
+  --color-sidebar-hover: rgba(255, 255, 255, 0.05);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================================
+   Aesthetics & Semantic Gradients (Clean, Flat & Restrained)
+   ============================================================ */
+:root {
+  /* Nihon Palette - Clean references */
+  --nihon-sumi: #111319;
+  --nihon-gofun: #fbfaf6;
+  --nihon-shu: #e14d3f;
+  --nihon-shu-glow: transparent;
+  --nihon-yamabuki: #f59e0b;
+  --nihon-yamabuki-glow: transparent;
+  --nihon-kin: #f59e0b;
+  --nihon-ai: #4f46e5;
+  --nihon-ruri: #3b82f6;
+  --nihon-matcha: #10b981;
+  --nihon-moegi: #059669;
+  --nihon-kikyo: #6366f1;
+  --nihon-sakura: #ec4899;
+  --nihon-asagi: #0ea5e9;
+  --nihon-toki: #f43f5e;
+  --nihon-kin-glow: transparent;
+  --nihon-ai-glow: transparent;
+
+  /* Flat & Restrained gradients (Zero distracting neon transitions) */
+  --grad-gold: #f59e0b;
+  --grad-flame: #ef4444;
+  --grad-indigo: #6366f1;
+  --grad-matcha: #10b981;
+  --grad-hanko: #e14d3f;
+  --grad-quest: var(--color-surface-elevated);
+
+  /* Surface & Border tokens */
+  --glass-bg: var(--color-surface);
+  --glass-border: var(--color-border-default);
+  --glass-blur: none;
+
+  /* Genko Yoshi (Manuscript Paper Grid - Subtle & Calm) */
+  --genko-grid:
+    linear-gradient(to right, rgba(99, 102, 241, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.08) 1px, transparent 1px);
+}
+
+[data-theme='light'] {
+  --glass-bg: var(--color-surface);
+  --glass-border: var(--color-border-default);
+  --genko-grid:
+    linear-gradient(to right, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+}
+
+/* --- Neutralized Animations (No-op to eliminate distractions & motion nausea) --- */
+@keyframes hankoStamp {
+  0%, 100% { opacity: 1; transform: none; filter: none; }
+}
+
+@keyframes flamePulse {
+  0%, 100% { transform: none; }
+}
+
+@keyframes xpFloatUp {
+  0%, 100% { opacity: 0; }
+}
+
+@keyframes goldShimmer {
+  0%, 100% { background-position: 0 0; }
+}
+
+@keyframes shineWave {
+  0%, 100% { transform: none; }
+}
+
+@keyframes floatGently {
+  0%, 100% { transform: none; }
+}
+
+@keyframes shockwave {
+  0%, 100% { transform: none; opacity: 0; }
+}
+
+@keyframes nodeGlowPulse {
+  0%, 100% { box-shadow: none; }
+}
+
+/* --- Clean UI utility classes --- */
+.jw-glass {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-default);
+  box-shadow: var(--shadow-sm);
+}
+
+.jw-shimmer-border {
+  position: relative;
+}
+
+.jw-float {
+  /* Restrained, no continuous motion */
+}
+
+.jw-genko-canvas {
+  background-color: var(--color-surface);
+  background-image: var(--genko-grid);
+  background-size: 32px 32px;
+  background-position: 0 0;
+  line-height: 32px !important;
+  font-size: 18px !important;
+  letter-spacing: 14px !important;
+  font-family: var(--font-japanese), var(--font-sans) !important;
+  padding: 16px !important;
+  box-sizing: border-box;
+}
+
+[data-theme='light'] .jw-genko-canvas {
+  background-color: #ffffff;
+}
+
+/* --- Legacy compat: simulation components --- */
+.simulation-chip {
+  background: var(--color-surface-elevated);
+  color: var(--color-foreground);
+  border-color: var(--color-border-default);
+}
+
+.simulation-bubble-ai {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-ai-border);
+}
+
+.simulation-eval {
+  background: var(--color-surface-elevated);
+}

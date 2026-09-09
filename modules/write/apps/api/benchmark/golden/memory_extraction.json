@@ -1,0 +1,86 @@
+[
+  {
+    "id": "mem-x-001",
+    "category": "memory",
+    "task": "memory_extraction",
+    "result": {
+      "candidate_memories": [
+        {
+          "category": "mistake_pattern",
+          "type": "pattern",
+          "content": "Người học hay quên trợ từ の trong cụm danh từ.",
+          "confidence": "medium",
+          "importance": 6,
+          "evidence": [{"source_type": "evaluation", "source_id": "attempt-abc"}]
+        }
+      ]
+    },
+    "context": {"source_type": "evaluation", "source_id": "attempt-abc"},
+    "expected_properties": {"candidate_memories": []}
+  },
+  {
+    "id": "mem-x-002",
+    "category": "memory",
+    "task": "memory_extraction",
+    "result": {
+      "candidate_memories": [
+        {
+          "category": "preference",
+          "type": "preference",
+          "content": "Thích viết email công việc hơn tin nhắn thân mật.",
+          "confidence": "high",
+          "importance": 8,
+          "evidence": [{"source_type": "simulation", "source_id": "session-xyz"}]
+        }
+      ]
+    },
+    "context": {"source_type": "simulation", "source_id": "session-xyz"},
+    "expected_properties": {"candidate_memories": []}
+  },
+  {
+    "id": "mem-x-003",
+    "category": "memory",
+    "task": "memory_extraction",
+    "result": {
+      "candidate_memories": [
+        {
+          "category": "made_up_category",
+          "type": "pattern",
+          "content": "Vi phạm taxonomy.",
+          "confidence": "medium",
+          "importance": 5,
+          "evidence": [{"source_type": "evaluation", "source_id": "attempt-bad"}]
+        }
+      ]
+    },
+    "context": {"source_type": "evaluation", "source_id": "attempt-bad"},
+    "expected_violations": ["unsupported category"]
+  },
+  {
+    "id": "mem-x-004",
+    "category": "memory",
+    "task": "memory_extraction",
+    "result": {
+      "candidate_memories": [
+        {
+          "category": "mistake_pattern",
+          "type": "pattern",
+          "content": "Có bằng chứng nguồn không hợp lệ.",
+          "confidence": "medium",
+          "importance": 5,
+          "evidence": [{"source_type": "telepathy", "source_id": "x"}]
+        }
+      ]
+    },
+    "context": {"source_type": "evaluation", "source_id": "attempt-bad"},
+    "expected_violations": ["source_type unsupported"]
+  },
+  {
+    "id": "mem-x-005",
+    "category": "memory",
+    "task": "memory_extraction",
+    "result": {"candidate_memories": []},
+    "context": {"source_type": "evaluation", "source_id": "attempt-empty"},
+    "expected_properties": {"candidate_memories": []}
+  }
+]

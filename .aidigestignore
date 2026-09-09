@@ -1,0 +1,39 @@
+# AI Digest & Context Exclusions (Token-Saving Rules)
+# Exclude these from AI indexing and searching to avoid wasting tokens:
+
+# Python environments & caches
+**/.venv/
+**/venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+**/*.pyc
+**/*.pyd
+
+# Node.js dependencies & builds
+**/node_modules/
+**/.next/
+**/dist/
+**/build/
+**/*.tsbuildinfo
+
+# SQLite databases & heavy binaries
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/*.sqlite
+**/*.sqlite3
+**/*.ico
+**/*.svg
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.mp3
+**/*.wav
+**/*.onnx
+**/*.bin
+
+# Logs & benchmarks
+**/*.log
+**/benchmark/golden/
+**/coverage/

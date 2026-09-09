@@ -1,0 +1,93 @@
+/* ============================================================
+   Writing editor foundation — a premium writing environment,
+   not a generic form textarea.
+   ============================================================ */
+
+.jw-editor {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition:
+    border-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard);
+}
+
+.jw-editor:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.jw-editor-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-background-subtle);
+}
+
+.jw-editor-toolbar-spacer {
+  flex: 1;
+}
+
+.jw-editor-textarea {
+  width: 100%;
+  min-height: 260px;
+  padding: var(--space-xl);
+  border: none;
+  background: transparent;
+  color: var(--color-foreground);
+  font-family: var(--font-jp);
+  font-size: var(--jp-writing);
+  line-height: var(--jp-writing-lh);
+  letter-spacing: var(--jp-writing-ls);
+  resize: vertical;
+  outline: none;
+}
+
+.jw-editor-textarea::placeholder {
+  color: var(--color-foreground-disabled);
+}
+
+.jw-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-lg);
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-background-subtle);
+  font-size: var(--text-caption);
+  color: var(--color-foreground-muted);
+}
+
+/* ---------- Character counter ---------- */
+
+.jw-char-counter {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: var(--text-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-foreground-muted);
+}
+
+.jw-char-counter--within {
+  color: var(--color-foreground-secondary);
+}
+
+.jw-char-counter--below {
+  color: var(--color-foreground-muted);
+}
+
+.jw-char-counter--above {
+  color: var(--color-warning);
+}
+
+.jw-char-counter strong {
+  font-weight: 600;
+}

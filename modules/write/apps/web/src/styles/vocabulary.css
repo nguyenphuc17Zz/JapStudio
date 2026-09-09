@@ -1,0 +1,151 @@
+/* ============================================================
+   Vocabulary page — notebook-style word bank entries
+   ============================================================ */
+
+/* ---------- Toolbar ---------- */
+
+.jw-vocab-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.jw-vocab-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.jw-vocab-search .jw-field {
+  flex: 1;
+}
+
+.jw-vocab-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.jw-vocab-filters .jw-field,
+.jw-vocab-filters .jw-select-wrap {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Remove label from filter selects (use aria-label) */
+.jw-vocab-filters .jw-field-label {
+  display: none;
+}
+
+/* ---------- List header ---------- */
+
+.jw-vocab-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
+}
+
+/* ---------- Vocabulary list ---------- */
+
+.jw-vocab-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* ---------- Vocabulary entry card ---------- */
+
+.jw-vocab-entry {
+  transition: box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.jw-vocab-entry-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-sm);
+}
+
+.jw-vocab-entry-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.jw-vocab-expression {
+  font-size: var(--jp-heading-size);
+  font-weight: 600;
+  letter-spacing: var(--jp-heading-ls);
+  color: var(--color-foreground);
+}
+
+.jw-vocab-reading {
+  font-size: var(--text-body-sm);
+  color: var(--color-foreground-muted);
+}
+
+.jw-vocab-entry-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.jw-vocab-meaning {
+  margin: 0 0 var(--space-xs);
+  font-size: var(--text-body-sm);
+  font-weight: 500;
+  color: var(--color-foreground);
+}
+
+.jw-vocab-example {
+  margin: 0 0 var(--space-sm);
+  font-size: var(--text-body-sm);
+  line-height: var(--text-body-sm-lh);
+  color: var(--color-foreground-secondary);
+  padding-left: var(--space-md);
+  border-left: 2px solid var(--color-border-subtle);
+}
+
+.jw-vocab-entry-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border-subtle);
+  margin-top: var(--space-sm);
+}
+
+.jw-vocab-view-btn {
+  flex-shrink: 0;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 600px) {
+  .jw-vocab-entry-main {
+    flex-direction: column;
+  }
+
+  .jw-vocab-entry-badges {
+    width: 100%;
+  }
+
+  .jw-vocab-search {
+    flex-wrap: wrap;
+  }
+}

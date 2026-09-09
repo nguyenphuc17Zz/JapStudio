@@ -1,0 +1,178 @@
+[
+  {
+    "id": "voc-001",
+    "category": "vocabulary",
+    "task": "vocabulary_extraction",
+    "result": {
+      "candidates": [
+        {
+          "expression": "伺う",
+          "difficulty": 6,
+          "importance": 8,
+          "estimated_jlpt_level": "N3",
+          "register": "polite",
+          "confidence": "high"
+        },
+        {
+          "expression": "存じます",
+          "difficulty": 7,
+          "importance": 7,
+          "estimated_jlpt_level": "N2",
+          "register": "business",
+          "confidence": "medium"
+        }
+      ]
+    },
+    "expected_properties": {
+      "candidates": [
+        {
+          "expression": "伺う"
+        }
+      ]
+    }
+  },
+  {
+    "id": "voc-002",
+    "category": "vocabulary",
+    "task": "vocabulary_extraction",
+    "result": {
+      "candidates": [
+        {
+          "expression": "めっちゃ",
+          "difficulty": 2,
+          "importance": 4,
+          "estimated_jlpt_level": "N4",
+          "register": "casual",
+          "confidence": "high"
+        }
+      ]
+    },
+    "expected_properties": {
+      "candidates": [
+        {
+          "expression": "めっちゃ"
+        }
+      ]
+    }
+  },
+  {
+    "id": "voc-003",
+    "category": "vocabulary",
+    "task": "vocabulary_extraction",
+    "result": {
+      "candidates": [
+        {
+          "expression": "ご対応",
+          "difficulty": 5,
+          "importance": 8,
+          "estimated_jlpt_level": "N2",
+          "register": "business",
+          "confidence": "high"
+        },
+        {
+          "expression": "いただく",
+          "difficulty": 4,
+          "importance": 7,
+          "estimated_jlpt_level": "N4",
+          "register": "polite",
+          "confidence": "medium"
+        },
+        {
+          "expression": "お願い",
+          "difficulty": 3,
+          "importance": 6,
+          "estimated_jlpt_level": "N5",
+          "register": "casual",
+          "confidence": "high"
+        }
+      ]
+    },
+    "expected_properties": {
+      "candidates": [
+        {
+          "expression": "ご対応"
+        }
+      ]
+    }
+  },
+  {
+    "id": "voc-004",
+    "category": "vocabulary",
+    "task": "vocabulary_extraction",
+    "result": {
+      "candidates": [
+        {
+          "expression": "決済",
+          "difficulty": 8,
+          "importance": 9,
+          "estimated_jlpt_level": "N1",
+          "register": "business",
+          "confidence": "high"
+        },
+        {
+          "expression": "振込",
+          "difficulty": 6,
+          "importance": 7,
+          "estimated_jlpt_level": "N2",
+          "register": "business",
+          "confidence": "high"
+        }
+      ]
+    },
+    "expected_properties": {
+      "candidates": [
+        {
+          "expression": "決済"
+        }
+      ]
+    }
+  },
+  {
+    "id": "voc-005",
+    "category": "vocabulary",
+    "task": "vocabulary_extraction",
+    "result": {
+      "candidates": [
+        {
+          "expression": "",
+          "difficulty": 5,
+          "importance": 5,
+          "estimated_jlpt_level": "N4",
+          "register": "polite",
+          "confidence": "medium"
+        }
+      ]
+    },
+    "expected_properties": {
+      "candidates": [
+        {
+          "expression": ""
+        }
+      ]
+    }
+  },
+  {
+    "id": "voc-006",
+    "category": "vocabulary",
+    "task": "vocabulary_extraction",
+    "result": {
+      "candidates": [
+        {
+          "expression": "了解",
+          "difficulty": 3,
+          "importance": 6,
+          "estimated_jlpt_level": "N9",
+          "register": "casual",
+          "confidence": "high"
+        }
+      ]
+    },
+    "expected_properties": {
+      "candidates": [
+        {
+          "expression": "了解"
+        }
+      ]
+    }
+  }
+]

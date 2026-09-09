@@ -1,0 +1,422 @@
+[
+  {
+    "id": "we-001",
+    "category": "writing",
+    "task": "writing_evaluation",
+    "result": {
+      "scores": {
+        "overall_score": 85,
+        "semantic_score": 90,
+        "grammar_score": 88,
+        "vocabulary_score": 85,
+        "naturalness_score": 90,
+        "context_fit_score": 80,
+        "register_fit_score": 78
+      },
+      "semantic_classification": "mostly_equivalent",
+      "semantic_omissions": [],
+      "semantic_additions": [],
+      "semantic_meaning_changes": [],
+      "semantic_confidence": "high",
+      "grammar_confidence": "high",
+      "vocabulary_confidence": "medium",
+      "naturalness_confidence": "high",
+      "naturalness_classification": "natural",
+      "register_notes": "適切",
+      "issues": [
+        {
+          "category": "grammar",
+          "severity": "minor",
+          "original_text": "行ったでした",
+          "explanation": "タ形＋ですの誤用",
+          "suggested_fix": "行ったんです",
+          "reason": "口語的な言い回し"
+        }
+      ],
+      "corrections": {
+        "correct_version": "昨日、友達と映画に行ったんです。",
+        "natural_version": "昨日、友達と映画に行ったんだ。",
+        "native_version": "昨日、友人と映画を観に行った。",
+        "casual_version": null,
+        "polite_version": null,
+        "business_version": null
+      },
+      "hints": ["「行ったでした」は自然な言い方に直しましょう。"],
+      "summary": "全体的に良好な日本語です。"
+    },
+    "context": {
+      "exercise_register": "mixed"
+    },
+    "expected_properties": {
+      "semantic_classification": "mostly_equivalent",
+      "naturalness_classification": "natural"
+    },
+    "naturalness_band": [85, 100]
+  },
+  {
+    "id": "we-002",
+    "category": "writing",
+    "task": "writing_evaluation",
+    "result": {
+      "scores": {
+        "overall_score": 45,
+        "semantic_score": 40,
+        "grammar_score": 50,
+        "vocabulary_score": 55,
+        "naturalness_score": 35,
+        "context_fit_score": 45,
+        "register_fit_score": 30
+      },
+      "semantic_classification": "meaning_changed",
+      "semantic_omissions": [],
+      "semantic_additions": ["「絶対に」の主張"],
+      "semantic_meaning_changes": ["「できれば」が「絶対に」に"],
+      "semantic_confidence": "medium",
+      "grammar_confidence": "medium",
+      "vocabulary_confidence": "medium",
+      "naturalness_confidence": "medium",
+      "naturalness_classification": "unnatural",
+      "register_notes": "丁寧さの欠如",
+      "issues": [
+        {
+          "category": "register",
+          "severity": "major",
+          "original_text": "〜でござる",
+          "explanation": "時代錯誤な表現",
+          "suggested_fix": "〜です",
+          "reason": "文末が極端に不自然"
+        }
+      ],
+      "corrections": {
+        "correct_version": "できれば来週お願いしたいです。",
+        "natural_version": "来週お願いできたらと思います。",
+        "native_version": "来週お願いできればと存じます。",
+        "casual_version": null,
+        "polite_version": null,
+        "business_version": "来週ご対応いただけますと幸いです。"
+      },
+      "hints": ["意味が変わっています。原文を確認しましょう。"],
+      "summary": "意味が変わっており要修正です。"
+    },
+    "context": {
+      "exercise_register": "business"
+    },
+    "expected_properties": {
+      "semantic_classification": "meaning_changed",
+      "scores": {
+        "overall_score": 45
+      }
+    },
+    "semantic_expected": "meaning_changed"
+  },
+  {
+    "id": "we-003",
+    "category": "writing",
+    "task": "writing_evaluation",
+    "result": {
+      "scores": {
+        "overall_score": 95,
+        "semantic_score": 96,
+        "grammar_score": 100,
+        "vocabulary_score": 94,
+        "naturalness_score": 95,
+        "context_fit_score": 93,
+        "register_fit_score": 92
+      },
+      "semantic_classification": "fully_equivalent",
+      "semantic_omissions": [],
+      "semantic_additions": [],
+      "semantic_meaning_changes": [],
+      "semantic_confidence": "high",
+      "grammar_confidence": "high",
+      "vocabulary_confidence": "high",
+      "naturalness_confidence": "high",
+      "naturalness_classification": "natural",
+      "register_notes": null,
+      "issues": [],
+      "corrections": {
+        "correct_version": "昨日は本当にありがとうございました。",
+        "natural_version": "昨日はありがとう！",
+        "native_version": "昨日はお礼を申し上げます。",
+        "casual_version": null,
+        "polite_version": null,
+        "business_version": null
+      },
+      "hints": ["このままでも十分自然です。"],
+      "summary": "ほぼ完璧な日本語です。"
+    },
+    "context": {
+      "exercise_register": "mixed"
+    },
+    "expected_properties": {
+      "scores": {
+        "overall_score": 95
+      }
+    },
+    "semantic_expected": "fully_equivalent",
+    "naturalness_band": [85, 100]
+  },
+  {
+    "id": "we-004",
+    "category": "writing",
+    "task": "writing_evaluation",
+    "result": {
+      "scores": {
+        "overall_score": 70,
+        "semantic_score": 75,
+        "grammar_score": 72,
+        "vocabulary_score": 70,
+        "naturalness_score": 68,
+        "context_fit_score": 66,
+        "register_fit_score": 35
+      },
+      "semantic_classification": "mostly_equivalent",
+      "semantic_omissions": ["「だいたい」のニュアンス"],
+      "semantic_additions": [],
+      "semantic_meaning_changes": [],
+      "semantic_confidence": "medium",
+      "grammar_confidence": "medium",
+      "vocabulary_confidence": "medium",
+      "naturalness_confidence": "medium",
+      "naturalness_classification": "acceptable",
+      "register_notes": "二人称の選択に問題",
+      "issues": [
+        {
+          "category": "register",
+          "severity": "minor",
+          "original_text": "お前",
+          "explanation": "ビジネス文脈では不適切な二人称",
+          "suggested_fix": "あなた",
+          "reason": "親密度の誤認"
+        }
+      ],
+      "corrections": {
+        "correct_version": "あなたのご意見をお聞かせください。",
+        "natural_version": "ご意見を聞かせてください。",
+        "native_version": "ご高見を賜りたく存じます。",
+        "casual_version": null,
+        "polite_version": null,
+        "business_version": "ご意見をお伺いしたく存じます。"
+      },
+      "hints": ["二人称の使い方を見直しましょう。"],
+      "summary": "概ね良いですが、敬語に改善の余地があります。"
+    },
+    "context": {
+      "exercise_register": "business"
+    },
+    "expected_properties": {
+      "scores": {
+        "overall_score": 70
+      }
+    },
+    "naturalness_band": [70, 90]
+  },
+  {
+    "id": "we-005",
+    "category": "writing",
+    "task": "writing_evaluation",
+    "result": {
+      "scores": {
+        "overall_score": 30,
+        "semantic_score": 30,
+        "grammar_score": 25,
+        "vocabulary_score": 40,
+        "naturalness_score": 20,
+        "context_fit_score": 30,
+        "register_fit_score": 25
+      },
+      "semantic_classification": "meaning_changed",
+      "semantic_omissions": ["主語"],
+      "semantic_additions": [],
+      "semantic_meaning_changes": ["動詞の時制が逆転"],
+      "semantic_confidence": "medium",
+      "grammar_confidence": "medium",
+      "vocabulary_confidence": "low",
+      "naturalness_confidence": "medium",
+      "naturalness_classification": "very_unnatural",
+      "register_notes": "文末表現が崩壊",
+      "issues": [
+        {
+          "category": "grammar",
+          "severity": "critical",
+          "original_text": "昨日、行く。",
+          "explanation": "時制の不一致",
+          "suggested_fix": "昨日、行った。",
+          "reason": "過去の出来事に現在形を使用"
+        },
+        {
+          "category": "register",
+          "severity": "critical",
+          "original_text": "御社を頂戴いたします",
+          "explanation": "尊敬表現の完全な誤用",
+          "suggested_fix": "御社のご案内をいただきます",
+          "reason": "謙譲語と尊敬語の混同"
+        }
+      ],
+      "corrections": {
+        "correct_version": "昨日、行った。",
+        "natural_version": "昨日、行ったんだ。",
+        "native_version": "昨日、参りました。",
+        "casual_version": null,
+        "polite_version": null,
+        "business_version": "昨日、伺いました。"
+      },
+      "hints": ["時制と文末を最初に直しましょう。"],
+      "summary": "多くの修正が必要です。"
+    },
+    "context": {
+      "exercise_register": "polite"
+    },
+    "expected_properties": {
+      "scores": {
+        "overall_score": 30
+      }
+    },
+    "semantic_expected": "meaning_changed"
+  },
+  {
+    "id": "we-006",
+    "category": "writing",
+    "task": "writing_evaluation",
+    "result": {
+      "scores": {
+        "overall_score": 82,
+        "semantic_score": 85,
+        "grammar_score": 100,
+        "vocabulary_score": 85,
+        "naturalness_score": 85,
+        "context_fit_score": 78,
+        "register_fit_score": 55
+      },
+      "semantic_classification": "fully_equivalent",
+      "semantic_omissions": [],
+      "semantic_additions": [],
+      "semantic_meaning_changes": [],
+      "semantic_confidence": "high",
+      "grammar_confidence": "high",
+      "vocabulary_confidence": "medium",
+      "naturalness_confidence": "high",
+      "naturalness_classification": "natural",
+      "register_notes": null,
+      "issues": [
+        {
+          "category": "register",
+          "severity": "minor",
+          "original_text": "お前",
+          "explanation": "ビジネス文脈では不適切な二人称",
+          "suggested_fix": "あなた",
+          "reason": "親密度の誤認"
+        }
+      ],
+      "corrections": {
+        "correct_version": "あなたのご意見をお聞かせください。",
+        "natural_version": "ご意見を聞かせてください。",
+        "native_version": "ご高見を賜りたく存じます。",
+        "casual_version": null,
+        "polite_version": null,
+        "business_version": "ご意見をお伺いしたく存じます。"
+      },
+      "hints": ["二人称を丁寧にしましょう。"],
+      "summary": "内容は良いが、敬語を直すと完璧です。"
+    },
+    "context": {
+      "exercise_register": "business"
+    },
+    "expected_properties": {
+      "scores": {
+        "grammar_score": 100
+      }
+    },
+    "naturalness_band": [85, 100]
+  },
+  {
+    "id": "we-007",
+    "category": "writing",
+    "task": "writing_evaluation",
+    "result": {
+      "scores": {
+        "overall_score": 60,
+        "semantic_score": 60,
+        "grammar_score": 60,
+        "vocabulary_score": 60,
+        "naturalness_score": 60,
+        "context_fit_score": 60,
+        "register_fit_score": 60
+      },
+      "semantic_classification": "mostly_equivalent",
+      "semantic_omissions": [],
+      "semantic_additions": [],
+      "semantic_meaning_changes": [],
+      "semantic_confidence": "medium",
+      "grammar_confidence": "medium",
+      "vocabulary_confidence": "medium",
+      "naturalness_confidence": "medium",
+      "naturalness_classification": "acceptable",
+      "register_notes": "普通",
+      "issues": [],
+      "corrections": {
+        "correct_version": "これはテストです。",
+        "natural_version": "これはテストだ。",
+        "native_version": "これはテストでございます。",
+        "casual_version": null,
+        "polite_version": null,
+        "business_version": null
+      },
+      "hints": [],
+      "summary": "修正点を提示できないため要再生成。"
+    },
+    "context": {
+      "exercise_register": "mixed"
+    },
+    "expected_properties": {
+      "scores": {
+        "overall_score": 60
+      }
+    }
+  },
+  {
+    "id": "we-008",
+    "category": "writing",
+    "task": "writing_evaluation",
+    "result": {
+      "scores": {
+        "overall_score": 70,
+        "semantic_score": 70,
+        "grammar_score": 70,
+        "vocabulary_score": 70,
+        "naturalness_score": 70,
+        "context_fit_score": 70,
+        "register_fit_score": 70
+      },
+      "semantic_classification": "mostly_equivalent",
+      "semantic_omissions": [],
+      "semantic_additions": [],
+      "semantic_meaning_changes": [],
+      "semantic_confidence": "medium",
+      "grammar_confidence": "medium",
+      "vocabulary_confidence": "medium",
+      "naturalness_confidence": "medium",
+      "naturalness_classification": "acceptable",
+      "register_notes": null,
+      "issues": [],
+      "corrections": {
+        "correct_version": "それはテストです。",
+        "natural_version": "それはテストだ。",
+        "native_version": "それはテストでございます。",
+        "casual_version": null,
+        "polite_version": null,
+        "business_version": null
+      },
+      "hints": ["自然な言い方に直しましょう。"],
+      "summary": "ほぼ問題ありません。"
+    },
+    "context": {
+      "exercise_register": "mixed"
+    },
+    "expected_properties": {
+      "scores": {
+        "overall_score": 70
+      }
+    }
+  }
+]

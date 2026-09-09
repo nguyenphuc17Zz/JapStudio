@@ -1,0 +1,34 @@
+[
+  {
+    "id": "mem-c-001",
+    "category": "memory",
+    "task": "memory_conflict_detection",
+    "result": {
+      "verdict": "contextual",
+      "winning_memory_id": null,
+      "resolution_note": "Hai ghi nhớ đúng trong hai ngữ cảnh khác nhau."
+    },
+    "context": {"existing": {"category": "preference"}},
+    "expected_properties": {"verdict": "contextual"}
+  },
+  {
+    "id": "mem-c-002",
+    "category": "memory",
+    "task": "memory_conflict_detection",
+    "result": {
+      "verdict": "refinement",
+      "winning_memory_id": "memory-2",
+      "resolution_note": "Bản mới chính xác hơn."
+    },
+    "context": {"existing": {"category": "mistake_pattern"}},
+    "expected_properties": {"verdict": "refinement", "winning_memory_id": "memory-2"}
+  },
+  {
+    "id": "mem-c-003",
+    "category": "memory",
+    "task": "memory_conflict_detection",
+    "result": {"verdict": "fabricated", "resolution_note": "Không hợp lệ."},
+    "context": {"existing": {"category": "preference"}},
+    "expected_violations": ["verdict must be one of"]
+  }
+]

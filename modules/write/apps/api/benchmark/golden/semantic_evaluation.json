@@ -1,0 +1,145 @@
+[
+  {
+    "id": "sem-001",
+    "category": "semantic",
+    "task": "semantic_evaluation",
+    "result": {
+      "classification": "mostly_equivalent",
+      "score": 80,
+      "omissions": [],
+      "additions": ["「今週末」が文末に追加された"],
+      "meaning_changes": [],
+      "confidence": "high"
+    },
+    "expected_properties": {
+      "classification": "mostly_equivalent",
+      "score": 80,
+      "confidence": "high"
+    },
+    "semantic_expected": "mostly_equivalent"
+  },
+  {
+    "id": "sem-002",
+    "category": "semantic",
+    "task": "semantic_evaluation",
+    "result": {
+      "classification": "fully_equivalent",
+      "score": 95,
+      "omissions": [],
+      "additions": [],
+      "meaning_changes": [],
+      "confidence": "high"
+    },
+    "expected_properties": {
+      "classification": "fully_equivalent",
+      "score": 95
+    },
+    "semantic_expected": "fully_equivalent"
+  },
+  {
+    "id": "sem-003",
+    "category": "semantic",
+    "task": "semantic_evaluation",
+    "result": {
+      "classification": "partially_equivalent",
+      "score": 60,
+      "omissions": ["「だいたい」のニュアンス"],
+      "additions": [],
+      "meaning_changes": ["「行けない」が「行かない」に変わった"],
+      "confidence": "medium"
+    },
+    "expected_properties": {
+      "classification": "partially_equivalent"
+    },
+    "semantic_expected": "partially_equivalent"
+  },
+  {
+    "id": "sem-004",
+    "category": "semantic",
+    "task": "semantic_evaluation",
+    "result": {
+      "classification": "meaning_changed",
+      "score": 35,
+      "omissions": [],
+      "additions": ["「絶対に」の主張が追加"],
+      "meaning_changes": ["「できれば」が「絶対」に変わる"],
+      "confidence": "high"
+    },
+    "expected_properties": {
+      "classification": "meaning_changed",
+      "score": 35
+    },
+    "semantic_expected": "meaning_changed"
+  },
+  {
+    "id": "sem-005",
+    "category": "semantic",
+    "task": "semantic_evaluation",
+    "result": {
+      "classification": "fully_equivalent",
+      "score": 90,
+      "omissions": [],
+      "additions": [],
+      "meaning_changes": ["「行く」が「来る」に変わっている"],
+      "confidence": "medium"
+    },
+    "expected_properties": {
+      "classification": "fully_equivalent"
+    },
+    "semantic_expected": "fully_equivalent"
+  },
+  {
+    "id": "sem-006",
+    "category": "semantic",
+    "task": "semantic_evaluation",
+    "result": {
+      "classification": "meaning_changed",
+      "score": 55,
+      "omissions": [],
+      "additions": [],
+      "meaning_changes": ["時制の逆転"],
+      "confidence": "low"
+    },
+    "expected_properties": {
+      "classification": "meaning_changed",
+      "score": 55
+    },
+    "semantic_expected": "meaning_changed"
+  },
+  {
+    "id": "sem-007",
+    "category": "semantic",
+    "task": "semantic_evaluation",
+    "result": {
+      "classification": "mostly_equivalent",
+      "score": 45,
+      "omissions": ["「毎朝」の頻度"],
+      "additions": [],
+      "meaning_changes": [],
+      "confidence": "medium"
+    },
+    "expected_properties": {
+      "classification": "mostly_equivalent",
+      "score": 45
+    },
+    "semantic_expected": "mostly_equivalent"
+  },
+  {
+    "id": "sem-008",
+    "category": "semantic",
+    "task": "semantic_evaluation",
+    "result": {
+      "classification": "partially_equivalent",
+      "score": 90,
+      "omissions": ["主語"],
+      "additions": [],
+      "meaning_changes": ["語順の大幅な変更"],
+      "confidence": "high"
+    },
+    "expected_properties": {
+      "classification": "partially_equivalent",
+      "score": 90
+    },
+    "semantic_expected": "partially_equivalent"
+  }
+]

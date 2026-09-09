@@ -1,0 +1,550 @@
+/* ============================================================
+   UI Phase 3 — Core Learning Experience (Dashboard / Today)
+   ============================================================ */
+
+.jw-dash {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.jw-dash-main,
+.jw-dash-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.jw-dash .card {
+  margin-bottom: 0;
+}
+
+.jw-dash-greet {
+  grid-column: 1 / -1;
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-default);
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-md);
+}
+
+/* --- Greeting --- */
+.jw-greet {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.jw-greet-line1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-foreground);
+}
+
+.jw-greet-line2 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-foreground-secondary);
+  line-height: 1.6;
+}
+
+.jw-greet-line2 strong {
+  color: var(--color-accent);
+}
+
+/* --- Mission card --- */
+.jw-mission-progress {
+  margin: 12px 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.jw-mission-bar {
+  flex: 1;
+}
+
+.jw-mission-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-foreground-secondary);
+  white-space: nowrap;
+}
+
+.jw-mission-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.jw-mission-complete {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+/* --- AI focus card --- */
+.jw-focus-line {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.jw-focus-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.jw-focus-why {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-ai-border);
+  border-radius: var(--radius-md);
+  background: var(--color-ai-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.jw-focus-why strong {
+  color: var(--color-ai);
+}
+
+.jw-focus-evidence {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--color-foreground-muted);
+}
+
+/* --- Recommended card --- */
+.jw-rec-cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.jw-recommendation-reason {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.jw-rec-prompt {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--color-foreground-muted);
+  line-height: 1.6;
+}
+
+/* --- Progress card --- */
+.jw-progress-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.jw-progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.jw-progress-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-foreground-secondary);
+}
+
+.jw-progress-value {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.jw-progress-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* --- Secondary cards --- */
+.jw-side-section + .jw-side-section {
+  margin-top: 0;
+}
+
+.jw-recent-line {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-foreground-secondary);
+  line-height: 1.6;
+}
+
+/* --- Milestones card --- */
+.jw-milestone-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.jw-milestone-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.jw-milestone-item strong {
+  font-size: 14px;
+}
+
+.jw-milestone-item p {
+  margin: 2px 0 0;
+  font-size: 12px;
+}
+
+.jw-milestone-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+/* --- Writing Intelligence Card --- */
+.jw-dash-card--intelligence {
+  position: relative;
+  overflow: hidden;
+}
+
+.jw-intel-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.jw-intel-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.jw-intel-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-foreground-muted);
+}
+
+.jw-intel-stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-foreground);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.jw-intel-ai-box {
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(23, 27, 37, 0.95) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  animation: jw-fade-in 0.25s ease-out;
+}
+
+.jw-intel-ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+  padding-bottom: var(--space-xs);
+}
+
+.jw-intel-ai-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-foreground);
+}
+
+.jw-intel-overview-card {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+}
+
+.jw-intel-root-card {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.jw-intel-contrast-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+@media (min-width: 640px) {
+  .jw-intel-contrast-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.jw-intel-contrast-bad {
+  padding: 8px 12px;
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-japanese);
+  font-size: 13px;
+  color: var(--color-foreground);
+  line-height: 1.5;
+}
+
+.jw-intel-contrast-good {
+  padding: 8px 12px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-japanese);
+  font-size: 13px;
+  color: var(--color-foreground);
+  line-height: 1.5;
+}
+
+.jw-intel-plan-box {
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.jw-intel-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  font-size: 13px;
+  color: var(--color-foreground-secondary);
+}
+
+.jw-intel-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-success);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.jw-intel-grammar-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-default);
+  font-size: 12px;
+  color: var(--color-foreground-secondary);
+}
+
+.jw-intel-rec-box {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.jw-intel-weakness-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-default) transparent;
+}
+
+.jw-intel-weakness-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.jw-intel-weakness-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.jw-intel-weakness-list::-webkit-scrollbar-thumb {
+  background: var(--color-border-default);
+  border-radius: 3px;
+}
+
+.jw-intel-explorer-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  max-height: 540px;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-default) transparent;
+}
+
+.jw-intel-explorer-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.jw-intel-explorer-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.jw-intel-explorer-list::-webkit-scrollbar-thumb {
+  background: var(--color-border-default);
+  border-radius: 3px;
+}
+
+.jw-intel-weakness-item {
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  transition: all 0.15s ease-out;
+  cursor: pointer;
+}
+
+.jw-intel-weakness-item:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-default);
+}
+
+.jw-intel-weakness-item--persistent {
+  background: rgba(244, 63, 94, 0.05);
+  border-color: rgba(244, 63, 94, 0.2);
+}
+
+.jw-intel-weakness-item--persistent:hover {
+  background: rgba(244, 63, 94, 0.09);
+  border-color: rgba(244, 63, 94, 0.35);
+}
+
+.jw-intel-example-item {
+  padding: 6px 10px;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-japanese);
+  font-size: 13px;
+  color: var(--color-foreground);
+  line-height: 1.5;
+}
+
+.jw-intel-contrast-box {
+  padding: 6px 10px;
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-japanese);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* --- Responsive --- */
+@media (max-width: 1023px) {
+  .jw-dash {
+    grid-template-columns: 1fr;
+  }
+
+  .jw-dash-main,
+  .jw-dash-side {
+    display: contents;
+  }
+
+  .jw-dash-greet {
+    grid-column: auto;
+    order: 1;
+  }
+
+  .jw-dash-card--mission {
+    order: 2;
+  }
+
+  .jw-dash-card--recommended {
+    order: 3;
+  }
+
+  .jw-dash-card--intelligence {
+    order: 4;
+  }
+
+  .jw-dash-card--progress {
+    order: 5;
+  }
+
+  .jw-dash-card--journey {
+    order: 6;
+  }
+
+  .jw-dash-card--focus {
+    order: 7;
+  }
+
+  .jw-dash-card--improvement {
+    order: 8;
+  }
+
+  .jw-dash-card--milestones {
+    order: 9;
+  }
+
+  .jw-dash-card--health {
+    order: 10;
+  }
+}
