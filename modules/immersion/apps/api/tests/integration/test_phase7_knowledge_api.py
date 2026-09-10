@@ -211,6 +211,42 @@ async def test_spaced_review_and_analytics(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_expressions_list_tolerates_legacy_null_detail(client: AsyncClient, test_db_session):
+    """Regression: rows with NULL examples/alternatives (legacy writes) must
+    still list as [] instead of 500ing the whole endpoint."""
+    from sqlalchemy import update
+    from app.models.knowledge import UserExpression
+
+    headers = {"X-User-Id": "legacy_null_expr"}
+    payload = {
+        "event_type": "ENCOUNTERED",
+        "item_type": "EXPRESSION",
+        "term": "拍車をかける",
+        "reading": "はくしゃをかける",
+        "meaning": "thuc day",
+        "sentence_text": "政策が拍車をかける。",
+    }
+    resp = await client.post("/api/v1/immersion/knowledge/events", json=payload, headers=headers)
+    assert resp.status_code == 200, resp.text
+
+    # Simulate legacy rows written before the [] default existed.
+    await test_db_session.execute(
+        update(UserExpression)
+        .where(UserExpression.user_id == "legacy_null_expr")
+        .values(examples_json=None, alternatives_json=None)
+    )
+    await test_db_session.commit()
+
+    resp = await client.get("/api/v1/immersion/knowledge/expressions", headers=headers)
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["total"] >= 1
+    assert len(data["items"]) >= 1
+    assert data["items"][0]["examples"] == []
+    assert data["items"][0]["alternatives"] == []
+
+
+@pytest.mark.asyncio
 async def test_review_session_ai_failure_returns_502(client: AsyncClient):
     headers = {"X-User-Id": "review_ai_fail"}
     payload = {

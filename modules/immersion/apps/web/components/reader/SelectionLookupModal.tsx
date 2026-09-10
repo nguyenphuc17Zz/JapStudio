@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { SelectionLookupResponse } from "@/lib/types";
 import { immersionApi } from "@/lib/api";
 import { notify } from "@/components/ui";
@@ -42,34 +42,74 @@ export const SelectionLookupModal: React.FC<SelectionLookupModalProps> = ({
   const [activeQuery, setActiveQuery] = useState<string>("");
   const [result, setResult] = useState<SelectionLookupResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  // Tăng mỗi lần tra mới — response stale (tra liên tiếp / đóng modal) bị bỏ qua.
+  const requestSeq = useRef(0);
 
+  // Tra nhanh hiện nghĩa ngay, rồi auto lấy chi tiết full nền và merge.
   const fetchLookup = useCallback(
     (query: string, context: string) => {
+      const seq = ++requestSeq.current;
+      const trimmedContext = context ? context.slice(0, 200) : undefined;
       setActiveQuery(query);
       setResult(null);
       setError(null);
       setIsSaved(false);
       setIsLoading(true);
+      setIsDetailLoading(false);
       immersionApi
         .lookupSelection({
           query,
-          context: context || undefined,
+          context: trimmedContext,
           content_id: contentId,
           model_provider: modelProvider,
+          detail: "quick",
         })
-        .then(setResult)
-        .catch((err: any) => setError(err?.message || "Không thể tra từ lúc này."))
-        .finally(() => setIsLoading(false));
+        .then((quickRes) => {
+          if (requestSeq.current !== seq) return;
+          setResult(quickRes);
+          setIsLoading(false);
+          // Auto full nền: giữ nghĩa quick,เติม chi tiết khi xong.
+          setIsDetailLoading(true);
+          immersionApi
+            .lookupSelection({
+              query,
+              context: trimmedContext,
+              content_id: contentId,
+              model_provider: modelProvider,
+              detail: "full",
+            })
+            .then((fullRes) => {
+              if (requestSeq.current !== seq) return;
+              setResult(fullRes);
+            })
+            .catch(() => {
+              // Giữ kết quả quick, fail silently (không nút).
+            })
+            .finally(() => {
+              if (requestSeq.current === seq) setIsDetailLoading(false);
+            });
+        })
+        .catch((err: any) => {
+          if (requestSeq.current !== seq) return;
+          setResult(null);
+          setError(err?.message || "Không thể tra từ lúc này.");
+          setIsLoading(false);
+        });
     },
     [contentId, modelProvider]
   );
 
   useEffect(() => {
-    if (!request) return;
+    if (!request) {
+      // Modal đóng: hủy mọi response đang bay.
+      requestSeq.current += 1;
+      return;
+    }
     fetchLookup(request.query, request.context);
   }, [request?.query, request?.context, fetchLookup]);
 
@@ -199,9 +239,9 @@ export const SelectionLookupModal: React.FC<SelectionLookupModalProps> = ({
         {isLoading ? (
           <div className="py-10 text-center text-sumi-400 text-sm">
             <RotateCw className="w-7 h-7 animate-spin mx-auto mb-2 text-torii-400" />
-            Đang tra nghĩa theo ngữ cảnh...
+            Đang tra nghĩa nhanh...
           </div>
-        ) : error ? (
+        ) : error && !result ? (
           <div className="p-4 rounded-xl bg-torii-500/10 border border-torii-500/30 text-torii-300 text-xs space-y-3">
             <p>{error}</p>
             <button
@@ -319,6 +359,13 @@ export const SelectionLookupModal: React.FC<SelectionLookupModalProps> = ({
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+            {/* Chi tiết full đang tải nền: hint nhẹ, không nút bấm */}
+            {isDetailLoading && (
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-sumi-500 font-mono py-1">
+                <RotateCw className="w-3 h-3 animate-spin text-torii-400" />
+                <span>Đang tải chi tiết AI...</span>
               </div>
             )}
           </div>

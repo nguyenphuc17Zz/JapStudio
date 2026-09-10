@@ -28,7 +28,8 @@ function findBlockText(node: Node | null): string {
   let el = node instanceof Element ? node : node?.parentElement;
   const block = el?.closest?.("p, div, li, blockquote, article, section, td, th, h1, h2, h3, h4");
   const text = (block?.textContent || "").replace(/\s+/g, " ").trim();
-  return text.slice(0, 1000);
+  // Ngữ cảnh tối thiểu: chỉ cần câu chứa từ (~300 ký tự), không gửi cả bài
+  return text.slice(0, 300);
 }
 
 export const SelectionLookupBubble: React.FC<SelectionLookupBubbleProps> = ({ scopeRef, onLookup, onOpenSentence }) => {

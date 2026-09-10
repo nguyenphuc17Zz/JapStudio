@@ -1,0 +1,6 @@
+# Embedding model weights live here (fastembed cache layout).
+# Everything in this folder is local-only and never committed —
+# except this file and .gitkeep.
+*
+!.gitignore
+!.gitkeep

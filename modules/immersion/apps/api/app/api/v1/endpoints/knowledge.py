@@ -26,6 +26,9 @@ from app.schemas.knowledge import (
     DueBreakdownResponse,
     KnowledgeStatsResponse,
     KnowledgeGapsResponse,
+    SrsPreferenceResponse,
+    SrsPreferenceUpdateRequest,
+    ReviewForecastResponse,
 )
 from app.services.knowledge_service import KnowledgeService
 
@@ -310,6 +313,35 @@ async def ingest_learning_event(
 # ---------------------------------------------------------------------------
 # 7. Spaced Review Studio (FSRS Algorithm)
 # ---------------------------------------------------------------------------
+
+@router.get("/immersion/review/preferences", response_model=SrsPreferenceResponse)
+async def get_review_preferences(
+    x_user_id: str = Header("default_user", alias="X-User-Id"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Returns the user's SRS tuning (desired retention, interval cap, new-card pace)."""
+    return await KnowledgeService.get_srs_preferences(db=db, user_id=x_user_id)
+
+
+@router.put("/immersion/review/preferences", response_model=SrsPreferenceResponse)
+async def update_review_preferences(
+    payload: SrsPreferenceUpdateRequest,
+    x_user_id: str = Header("default_user", alias="X-User-Id"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Updates SRS tuning; retention is clamped to 0.8–0.99."""
+    return await KnowledgeService.update_srs_preferences(db=db, user_id=x_user_id, req=payload)
+
+
+@router.get("/immersion/review/forecast", response_model=ReviewForecastResponse)
+async def get_review_forecast(
+    days: int = Query(30, ge=1, le=90),
+    x_user_id: str = Header("default_user", alias="X-User-Id"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Forecasts due counts per day plus the measured 30-day recall rate."""
+    return await KnowledgeService.forecast_review_load(db=db, user_id=x_user_id, days=days)
+
 
 @router.get("/immersion/review/due-breakdown", response_model=DueBreakdownResponse)
 async def get_due_breakdown(

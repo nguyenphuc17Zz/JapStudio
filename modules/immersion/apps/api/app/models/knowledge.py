@@ -277,3 +277,37 @@ class ReviewSession(Base):
     ratings_breakdown_json: Mapped[Dict[str, int]] = mapped_column(JSON, default=dict, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+
+class ReviewLog(Base):
+    """Per-answer review history for retention stats, forecasts and future optimizer fits."""
+    __tablename__ = "review_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+
+    item_type: Mapped[str] = mapped_column(String(30), index=True, nullable=False)
+    item_id: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)  # 1=Again..4=Easy
+    retrievability: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    elapsed_days: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    interval_days: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    session_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    reviewed_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_review_logs_user_time", "user_id", "reviewed_at"),
+    )
+
+
+class SrsPreference(Base):
+    """Per-user SRS tuning: desired retention, interval cap, new-card pace."""
+    __tablename__ = "srs_preferences"
+
+    user_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    request_retention: Mapped[float] = mapped_column(Float, default=0.9, nullable=False)
+    max_interval: Mapped[int] = mapped_column(Integer, default=365, nullable=False)
+    new_per_session: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)

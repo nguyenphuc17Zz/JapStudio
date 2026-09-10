@@ -309,6 +309,59 @@ class MockAIProvider(AIProviderBase):
                 model_name=chosen_model
             )
 
+        # 5c. Specialized Task: Expression Lookup (tra cụm từ)
+        if "<selected_expression>" in prompt or (
+            "meaning" in response_schema.get("properties", {})
+            and "formation" not in response_schema.get("properties", {})
+            and "meaning_vi" not in response_schema.get("properties", {})
+        ):
+            expr_match = re.search(r"<selected_expression>(.*?)</selected_expression>", prompt, re.DOTALL)
+            expr = expr_match.group(1).strip() if expr_match else source_text[:20]
+            data = {
+                "meaning": f"Nghĩa mẫu trong ngữ cảnh cho: {expr}",
+                "usage_context": f"Cách dùng mẫu của {expr} trong văn viết trang trọng.",
+                "composition": f"Cấu tạo mẫu của {expr}.",
+                "examples": [
+                    {"sentence_ja": f"{expr}が重要です。", "sentence_vi": f"{expr} rất quan trọng."},
+                ],
+                "alternatives": [
+                    {"expression": f"{expr}関連", "reading": "れんかん", "meaning_vi": "liên quan", "difference": "Từ gần nghĩa mẫu."},
+                ],
+            }
+            return AIGenerationResult(
+                structured_data=data,
+                raw_text=str(data),
+                input_tokens=20,
+                output_tokens=40,
+                estimated_cost=0.0,
+                latency_ms=10,
+                model_provider=self.name,
+                model_name=chosen_model
+            )
+
+        # 5d. Specialized Task: Grammar Lookup (tra ngữ pháp)
+        if "<grammar_pattern>" in prompt or "formation" in response_schema.get("properties", {}):
+            pat_match = re.search(r"<grammar_pattern>(.*?)</grammar_pattern>", prompt, re.DOTALL)
+            pat = pat_match.group(1).strip() if pat_match else source_text[:20]
+            data = {
+                "formation": f"Thể từ điển + {pat}",
+                "meaning": f"Nghĩa mẫu trong ngữ cảnh cho: {pat}",
+                "usage_context": f"Cách dùng mẫu của {pat} trong văn viết trang trọng.",
+                "examples": [
+                    {"sentence_ja": f"{pat}を使った例文です。", "sentence_vi": "Câu ví dụ mẫu dùng mẫu ngữ pháp này."},
+                ],
+            }
+            return AIGenerationResult(
+                structured_data=data,
+                raw_text=str(data),
+                input_tokens=20,
+                output_tokens=40,
+                estimated_cost=0.0,
+                latency_ms=10,
+                model_provider=self.name,
+                model_name=chosen_model
+            )
+
         # Basic text heuristics for realistic mock values
         char_count = len(source_text)
         kanji_count = len(re.findall(r"[\u4E00-\u9FAF]", source_text))

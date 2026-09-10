@@ -39,6 +39,7 @@ import {
   AIProviderMeta,
   AIModelMeta,
   ActiveAIModel,
+  AdaptiveNext,
 } from "@/lib/types";
 
 export default function QuizPage() {
@@ -50,6 +51,13 @@ export default function QuizPage() {
   const [error, setError] = useState<string | null>(null);
   const [quiz, setQuiz] = useState<ReadingQuiz | null>(null);
   const [attempt, setAttempt] = useState<QuizAttempt | null>(null);
+
+  // Chế độ làm bài: đề chuẩn (toàn bộ câu) hoặc thích ứng CAT (từng câu).
+  const [quizMode, setQuizMode] = useState<"static" | "adaptive">("static");
+  const [adaptiveTheta, setAdaptiveTheta] = useState(0);
+  const [adaptiveSe, setAdaptiveSe] = useState(1);
+  const [adaptiveStopReason, setAdaptiveStopReason] = useState<string | null>(null);
+  const [loadingNext, setLoadingNext] = useState(false);
 
   // Đề bài (mới): fetch song song, lỗi không chặn quiz
   const [article, setArticle] = useState<ReaderContent | null>(null);
@@ -164,6 +172,61 @@ export default function QuizPage() {
       initQuiz();
     }
   }, [contentId, initQuiz]);
+
+  // Chế độ thích ứng CAT: mở attempt ADAPTIVE rồi lấy từng câu theo năng lực.
+  const initAdaptiveQuiz = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setAdaptiveTheta(0);
+      setAdaptiveSe(1);
+      setAdaptiveStopReason(null);
+      const [q, art] = await Promise.all([
+        api.getOrCreateQuiz(contentId, false, undefined),
+        immersionApi.getReaderContent(contentId).catch((err: any) => {
+          setArticleError(err?.message || "Không tải được đề bài.");
+          return null;
+        }),
+      ]);
+      if (art) {
+        setArticle(art);
+        setArticleError(null);
+      }
+      setArticleLoading(false);
+      const att = await api.startAdaptiveAttempt(q.id);
+      setAttempt(att);
+      const nxt: AdaptiveNext = await api.nextAdaptiveQuestion(att.id);
+      if (nxt.done || !nxt.question) {
+        setError("Chưa có câu hỏi thích ứng nào. Hãy thử đề chuẩn.");
+        return;
+      }
+      setAdaptiveTheta(nxt.theta);
+      setAdaptiveSe(nxt.se);
+      setQuiz({ ...q, questions: [nxt.question], question_count: 1 });
+      setStartTime(Date.now());
+      setCurrentIndex(0);
+      setSelectedOptionId(null);
+      setLastFeedback(null);
+      setIsCompleted(false);
+      setResult(null);
+    } catch (err: any) {
+      const errMsg = err?.message || "Không thể bắt đầu chế độ thích ứng.";
+      setError(errMsg);
+      setArticleLoading(false);
+      notify.error(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  }, [contentId]);
+
+  const handleModeSwitch = (mode: "static" | "adaptive") => {
+    if (mode === quizMode) return;
+    setQuizMode(mode);
+    setQuiz(null);
+    setAttempt(null);
+    if (mode === "adaptive") initAdaptiveQuiz();
+    else initQuiz();
+  };
 
   // Model selection handler
   const handleSelectModel = async (providerName: string, modelId: string) => {
@@ -399,29 +462,59 @@ export default function QuizPage() {
     }
   };
 
-  // Next question or finalize
+  // Next question or finalize (adaptive: fetch next CAT question on demand)
   const handleNextOrFinish = async () => {
     if (!quiz || !attempt) return;
-    if (currentIndex < quiz.questions.length - 1) {
+    if (quizMode === "adaptive" && currentIndex >= quiz.questions.length - 1 && !adaptiveStopReason) {
+      try {
+        setLoadingNext(true);
+        const nxt: AdaptiveNext = await api.nextAdaptiveQuestion(attempt.id);
+        setAdaptiveTheta(nxt.theta);
+        setAdaptiveSe(nxt.se);
+        if (nxt.done || !nxt.question) {
+          setAdaptiveStopReason(nxt.stop_reason || "ALL_ANSWERED");
+        } else {
+          setQuiz((prev) =>
+            prev ? { ...prev, questions: [...prev.questions, nxt.question!], question_count: prev.questions.length + 1 } : prev
+          );
+          setCurrentIndex((prev) => prev + 1);
+          setSelectedOptionId(null);
+          setLastFeedback(null);
+          setHintsUsed(0);
+          setShowSourceSentence(false);
+          setStartTime(Date.now());
+          return;
+        }
+      } catch (err: any) {
+        notify.error(err?.message || "Không lấy được câu tiếp theo.");
+        return;
+      } finally {
+        setLoadingNext(false);
+      }
+    } else if (currentIndex < quiz.questions.length - 1) {
       setCurrentIndex((prev) => prev + 1);
       setSelectedOptionId(null);
       setLastFeedback(null);
       setHintsUsed(0);
       setShowSourceSentence(false);
       setStartTime(Date.now());
-    } else {
-      // Finish quiz
-      try {
-        setLoading(true);
-        const res = await api.completeQuizAttempt(attempt.id);
-        setResult(res);
-        setIsCompleted(true);
-        notify.success("Bạn đã hoàn thành bài kiểm tra đọc hiểu!");
-      } catch (err: any) {
-        notify.error(err?.message || "Lỗi khi hoàn tất bài kiểm tra.");
-      } finally {
-        setLoading(false);
-      }
+      return;
+    }
+    // Finish quiz
+    try {
+      setLoading(true);
+      const res = await api.completeQuizAttempt(attempt.id);
+      setResult(res);
+      setIsCompleted(true);
+      notify.success(
+        quizMode === "adaptive" && adaptiveStopReason === "SE_THRESHOLD"
+          ? "Đã đủ chính xác — kết thúc sớm bài thích ứng!"
+          : "Bạn đã hoàn thành bài kiểm tra đọc hiểu!"
+      );
+    } catch (err: any) {
+      notify.error(err?.message || "Lỗi khi hoàn tất bài kiểm tra.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1024,7 +1117,13 @@ export default function QuizPage() {
           <div className="flex-1 max-w-xs text-center">
             <div className="flex justify-between text-xs font-semibold text-sumi-400 mb-1">
               <span>Câu {currentIndex + 1} / {quiz.questions.length}</span>
-              <span>{progressPct}%</span>
+              {quizMode === "adaptive" ? (
+                <span className="font-mono text-indigo-400" title="Năng lực ước lượng (θ) — càng cao càng giỏi">
+                  θ {adaptiveTheta >= 0 ? "+" : ""}{adaptiveTheta.toFixed(2)}
+                </span>
+              ) : (
+                <span>{progressPct}%</span>
+              )}
             </div>
             <div className="w-full bg-sumi-850 rounded-full h-1.5 overflow-hidden">
               <div
@@ -1035,6 +1134,21 @@ export default function QuizPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1 p-0.5 rounded-lg bg-sumi-900 border border-sumi-800" title="Đề chuẩn: toàn bộ câu hỏi. Thích ứng: câu hỏi theo trình độ, dừng sớm khi đủ chính xác.">
+              {(["static", "adaptive"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => handleModeSwitch(m)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${
+                    quizMode === m
+                      ? "bg-indigo-500 text-white"
+                      : "text-sumi-400 hover:text-sumi-100"
+                  }`}
+                >
+                  {m === "static" ? "Đề chuẩn" : "Thích ứng"}
+                </button>
+              ))}
+            </div>
             <ThemeSwitcher compact />
             {renderAISelector("right")}
             <button
@@ -1123,9 +1237,13 @@ export default function QuizPage() {
           ) : (
             <button
               onClick={handleNextOrFinish}
-              className="ml-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium text-sm transition flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+              disabled={loadingNext}
+              className="ml-auto px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white rounded-xl font-medium text-sm transition flex items-center gap-2 shadow-lg shadow-emerald-500/20"
             >
-              {currentIndex < quiz.questions.length - 1 ? (
+              {loadingNext ? (
+                <>Đang chọn câu tiếp theo...</>
+              ) : currentIndex < quiz.questions.length - 1 ||
+                (quizMode === "adaptive" && !adaptiveStopReason) ? (
                 <>Câu tiếp theo <ChevronRight className="w-4 h-4" /></>
               ) : (
                 <>Xem Báo Cáo Kết Quả <Award className="w-4 h-4" /></>

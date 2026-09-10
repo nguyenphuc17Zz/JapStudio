@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Literal, Optional, List, Dict, Any
 from pydantic import BaseModel, ConfigDict, Field
 from app.schemas.enrichment import (
     ContentVocabularyResponse,
@@ -152,6 +152,8 @@ class SelectionLookupRequest(BaseModel):
     context: Optional[str] = Field(default=None, max_length=1000)
     content_id: Optional[int] = None
     model_provider: Optional[str] = None
+    # quick = chỉ reading + nghĩa (mặc định, nhanh); full = chi tiết AI đầy đủ
+    detail: Literal["quick", "full"] = Field(default="quick")
 
 
 class LookupExample(BaseModel):
@@ -186,6 +188,7 @@ class GrammarLookupRequest(BaseModel):
     context: Optional[str] = Field(default=None, max_length=1000)
     content_id: Optional[int] = None
     model_provider: Optional[str] = None
+    detail: Literal["quick", "full"] = Field(default="quick")
 
 
 class GrammarLookupResponse(BaseModel):
@@ -203,6 +206,7 @@ class ExpressionLookupRequest(BaseModel):
     context: Optional[str] = Field(default=None, max_length=1000)
     content_id: Optional[int] = None
     model_provider: Optional[str] = None
+    detail: Literal["quick", "full"] = Field(default="quick")
 
 
 class ExpressionLookupResponse(BaseModel):

@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 from sqlalchemy import select, and_
 
 from app.models.knowledge import ReviewState, UserVocabulary, UserExpression, UserGrammar
-from app.schemas.knowledge import LearningEventRequest
+from app.schemas.knowledge import LearningEventRequest, SrsPreferenceUpdateRequest
 from app.services.knowledge_service import KnowledgeService
 
 
@@ -83,9 +83,13 @@ async def test_session_builds_all_three_card_types(test_db_session):
     await _save_grammar(test_db_session, "〜ざるを得ない")
     await _save_grammar(test_db_session, "〜がちだ")
 
+    await KnowledgeService.update_srs_preferences(
+        db=test_db_session, user_id="user_unit_test",
+        req=SrsPreferenceUpdateRequest(new_per_session=20),
+    )
     with patch.object(
         KnowledgeService, "_ai_session_distractors", new=AsyncMock(side_effect=_echo_distractors)
-    ), patch.object(KnowledgeService, "NEW_CARDS_PER_SESSION", 20):
+    ):
         resp = await KnowledgeService.start_review_session(
             db=test_db_session, user_id="user_unit_test", limit=12
         )
@@ -208,5 +212,5 @@ async def test_new_cards_capped_per_session(test_db_session):
         resp = await KnowledgeService.start_review_session(
             db=test_db_session, user_id="user_unit_test", limit=12
         )
-    # 8 new states but capped at NEW_CARDS_PER_SESSION
-    assert len(resp.cards) <= KnowledgeService.NEW_CARDS_PER_SESSION
+    # 8 new states but capped at the default 5 new cards per session
+    assert len(resp.cards) <= 5

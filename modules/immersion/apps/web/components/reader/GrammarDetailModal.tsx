@@ -63,9 +63,10 @@ export const GrammarDetailModal: React.FC<GrammarDetailModalProps> = ({
     try {
       const res = await api.lookupGrammar({
         pattern: grammar.pattern,
-        context: sentenceText || undefined,
+        context: sentenceText ? sentenceText.slice(0, 200) : undefined,
         content_id: contentId,
         model_provider: modelProvider,
+        detail: "full",
       });
       setAnalysis(res);
     } catch (err: any) {

@@ -32,6 +32,7 @@ from app.models.quiz import (
     QuizQuestionOption,
     QuizAttempt,
     QuizAnswer,
+    LearnerAbility,
 )
 from app.models.knowledge import (
     UserVocabulary,
@@ -41,6 +42,8 @@ from app.models.knowledge import (
     UserSavedSentence,
     ReviewState,
     ReviewSession,
+    ReviewLog,
+    SrsPreference,
 )
 from app.models.discovery import (
     Topic,
@@ -79,6 +82,7 @@ __all__ = [
     "QuizQuestionOption",
     "QuizAttempt",
     "QuizAnswer",
+    "LearnerAbility",
     "UserVocabulary",
     "VocabularyEncounter",
     "UserExpression",
@@ -86,6 +90,8 @@ __all__ = [
     "UserSavedSentence",
     "ReviewState",
     "ReviewSession",
+    "ReviewLog",
+    "SrsPreference",
     "Topic",
     "TrendingTopic",
     "TopicContent",

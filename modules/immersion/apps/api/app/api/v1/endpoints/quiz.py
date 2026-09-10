@@ -15,6 +15,8 @@ from app.schemas.quiz import (
     SubmitAnswerResponse,
     CompleteQuizResponse,
     QuizAdminStatsResponse,
+    AdaptiveNextResponse,
+    LearnerAbilityResponse,
 )
 from app.services.quiz_service import QuizService
 
@@ -64,6 +66,69 @@ async def get_content_quiz(
         raise
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.post("/quizzes/{id}/adaptive/start", response_model=QuizAttemptResponse)
+async def start_adaptive_attempt(
+    id: int,
+    x_user_id: str = Header("default_user", alias="X-User-Id"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Starts (or resumes) an adaptive CAT attempt: one question at a time."""
+    try:
+        attempt = await QuizService.start_adaptive_attempt(db=db, user_id=x_user_id, quiz_id=id)
+        return QuizAttemptResponse.model_validate(attempt)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.post("/attempts/{id}/adaptive/next", response_model=AdaptiveNextResponse)
+async def next_adaptive_question(
+    id: int,
+    x_user_id: str = Header("default_user", alias="X-User-Id"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Selects the next CAT question by Fisher information (or stops early)."""
+    try:
+        res = await QuizService.next_adaptive_question(db=db, user_id=x_user_id, attempt_id=id)
+        return AdaptiveNextResponse(
+            attempt_id=id,
+            done=res["done"],
+            theta=res["theta"],
+            se=res["se"],
+            answered_count=res["answered"],
+            total_count=res["total"],
+            stop_reason=res.get("stop_reason"),
+            question=res.get("question"),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.get("/learner/ability", response_model=LearnerAbilityResponse)
+async def get_learner_ability(
+    x_user_id: str = Header("default_user", alias="X-User-Id"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Returns the user's online IRT ability estimate (global + per-skill)."""
+    ability = await QuizService.get_or_create_ability(db=db, user_id=x_user_id)
+    return LearnerAbilityResponse(
+        user_id=ability.user_id,
+        theta=float(ability.theta or 0.0),
+        se=float(ability.se or 1.0),
+        answers_count=int(ability.answers_count or 0),
+        skill_thetas=dict(ability.skill_thetas_json or {}),
+    )
+
+
+@router.post("/quizzes/admin/calibrate")
+async def trigger_calibration(
+    limit: int = Query(500, ge=1, le=2000),
+    x_user_id: str = Header("default_user", alias="X-User-Id"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Refits IRT params for recently answered questions (admin trigger / nightly)."""
+    return await QuizService.calibrate_all_questions(db=db, limit=limit)
 
 
 @router.get("/quizzes/admin/stats", response_model=QuizAdminStatsResponse)

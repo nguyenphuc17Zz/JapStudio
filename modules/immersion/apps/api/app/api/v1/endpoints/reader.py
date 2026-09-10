@@ -178,7 +178,7 @@ async def lookup_selection(
     req: SelectionLookupRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Explains a free-selected word/phrase from the reader in its sentence context (no cache)."""
+    """Tra từ bôi đen: mặc định quick (reading + nghĩa, nhanh), detail=full để lấy chi tiết AI."""
     try:
         return await ReaderService.lookup_selection(
             db=db,
@@ -186,6 +186,7 @@ async def lookup_selection(
             context=req.context,
             content_id=req.content_id,
             model_provider=req.model_provider,
+            detail=req.detail,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -196,7 +197,7 @@ async def lookup_grammar(
     req: GrammarLookupRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Explains a Japanese grammar pattern: formation, meaning, usage situations, real examples (no cache)."""
+    """Tra ngữ pháp: mặc định quick (formation + meaning), detail=full để lấy ví dụ đầy đủ."""
     try:
         return await ReaderService.lookup_grammar(
             db=db,
@@ -204,6 +205,7 @@ async def lookup_grammar(
             context=req.context,
             content_id=req.content_id,
             model_provider=req.model_provider,
+            detail=req.detail,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -214,7 +216,7 @@ async def lookup_expression(
     req: ExpressionLookupRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Explains a Japanese collocation/expression: meaning, usage, composition, examples (no cache)."""
+    """Tra cụm từ: mặc định quick (nghĩa cốt lõi), detail=full để lấy chi tiết AI."""
     try:
         return await ReaderService.lookup_expression(
             db=db,
@@ -222,6 +224,7 @@ async def lookup_expression(
             context=req.context,
             content_id=req.content_id,
             model_provider=req.model_provider,
+            detail=req.detail,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

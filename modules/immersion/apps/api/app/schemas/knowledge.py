@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # ---------------------------------------------------------------------------
@@ -82,6 +82,13 @@ class UserExpressionResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
+    @field_validator("examples", "alternatives", "contexts", mode="before")
+    @classmethod
+    def _empty_list_when_null(cls, v: Any) -> Any:
+        # Old rows store JSON null instead of [] — coerce so list endpoints
+        # never 500 on legacy data.
+        return [] if v is None else v
+
 
 class ExpressionListResponse(BaseModel):
     items: List[UserExpressionResponse]
@@ -110,6 +117,11 @@ class UserGrammarResponse(BaseModel):
     examples: List[Dict[str, Any]] = Field(default_factory=list, validation_alias="examples_json")
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
+
+    @field_validator("examples", "contexts", mode="before")
+    @classmethod
+    def _empty_list_when_null(cls, v: Any) -> Any:
+        return [] if v is None else v
 
 
 class GrammarListResponse(BaseModel):
@@ -284,6 +296,32 @@ class DueBreakdownResponse(BaseModel):
     expression: int = 0
     grammar: int = 0
     new: int = 0
+
+
+class SrsPreferenceResponse(BaseModel):
+    user_id: str
+    request_retention: float = 0.9
+    max_interval: int = 365
+    new_per_session: int = 5
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SrsPreferenceUpdateRequest(BaseModel):
+    request_retention: Optional[float] = Field(default=None, ge=0.8, le=0.99)
+    max_interval: Optional[int] = Field(default=None, ge=7, le=3650)
+    new_per_session: Optional[int] = Field(default=None, ge=0, le=20)
+
+
+class ForecastDayItem(BaseModel):
+    date: str  # YYYY-MM-DD
+    due_count: int = 0
+    new_count: int = 0
+
+
+class ReviewForecastResponse(BaseModel):
+    days: List[ForecastDayItem] = Field(default_factory=list)
+    retention_30d: float = 0.0  # measured recall rate over the last 30 days (0 when no data)
 
 
 # ---------------------------------------------------------------------------

@@ -53,5 +53,16 @@ class Settings(BaseSettings):
     # ONLY when the user presses the button on the article detail page.
     ENRICHMENT_AUTO_QUEUE_ENABLED: bool = False
 
+    # Local embedding model (topic discovery upgrade). Weights live in
+    # EMBEDDING_MODEL_DIR (fastembed cache layout, git-ignored) so the model
+    # survives restarts and works offline once downloaded/copied there.
+    # Requires: pip install fastembed numpy
+    EMBEDDING_MODEL_DIR: str = "./models"
+    EMBEDDING_MODEL_NAME: str = "intfloat/multilingual-e5-small"
+    EMBEDDING_MODEL_VERSION: str = "e5-small-v1"
+    # Kill-switch for embedding-based clustering. Default OFF: the keyword
+    # path stays the active one until the model is in place and backfilled.
+    EMBEDDING_CLUSTERING_ENABLED: bool = False
+
 
 settings = Settings()

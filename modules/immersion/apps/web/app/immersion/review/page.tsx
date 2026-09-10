@@ -25,10 +25,13 @@ import {
   ReviewCardItem,
   SubmitReviewAnswerResponse,
   DueBreakdown,
+  SrsPreference,
+  ReviewForecast,
 } from "@/lib/types";
 import { notify } from "@/components/ui";
 
 const SESSION_SIZES = [5, 12, 20, 30];
+const RETENTION_OPTIONS = [0.8, 0.85, 0.9, 0.95];
 
 const TYPE_META: Record<string, { label: string; short: string; icon: React.ReactNode; color: string }> = {
   VOCABULARY: {
@@ -73,6 +76,9 @@ export default function SpacedReviewPage() {
   const [breakdown, setBreakdown] = useState<DueBreakdown | null>(null);
   const [sessionSize, setSessionSize] = useState(12);
   const [sessionType, setSessionType] = useState("ALL");
+  const [prefs, setPrefs] = useState<SrsPreference | null>(null);
+  const [forecast, setForecast] = useState<ReviewForecast | null>(null);
+  const [savingPrefs, setSavingPrefs] = useState(false);
 
   // Session State (queue-based: Again requeues to the end)
   const [session, setSession] = useState<ReviewSessionData | null>(null);
@@ -96,12 +102,33 @@ export default function SpacedReviewPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await api.getDueBreakdown();
+      const [res, p, fc] = await Promise.all([
+        api.getDueBreakdown(),
+        api.getReviewPreferences().catch(() => null),
+        api.getReviewForecast(14).catch(() => null),
+      ]);
       setBreakdown(res);
+      if (p) setPrefs(p);
+      if (fc) setForecast(fc);
     } catch (err: any) {
       setError(err?.message || "Không thể kiểm tra số lượng thẻ cần ôn.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRetentionChange = async (value: number) => {
+    if (savingPrefs) return;
+    setSavingPrefs(true);
+    try {
+      const updated = await api.updateReviewPreferences({ request_retention: value });
+      setPrefs(updated);
+      api.getReviewForecast(14).then(setForecast).catch(() => {});
+      notify.success(`Mức nhớ mục tiêu: ${Math.round(value * 100)}%`);
+    } catch (err: any) {
+      notify.error(err?.message || "Không thể lưu cài đặt.");
+    } finally {
+      setSavingPrefs(false);
     }
   };
 
@@ -408,6 +435,51 @@ export default function SpacedReviewPage() {
                   ))}
                 </div>
               </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-sumi-300 font-semibold">Mức nhớ mục tiêu</span>
+                <div className="flex items-center gap-1.5">
+                  {RETENTION_OPTIONS.map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => handleRetentionChange(r)}
+                      disabled={savingPrefs}
+                      title={r === 0.8 ? "Ít bài ôn hơn, quên nhiều hơn" : r === 0.95 ? "Nhớ kỹ hơn, nhiều bài ôn hơn" : "Cân bằng"}
+                      className={`px-3 py-1 rounded-lg text-xs font-mono transition-colors disabled:opacity-50 ${
+                        (prefs?.request_retention ?? 0.9) === r
+                          ? "bg-emerald-500 text-slate-950 font-bold"
+                          : "bg-sumi-800 text-sumi-300 hover:text-white"
+                      }`}
+                    >
+                      {Math.round(r * 100)}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {forecast && forecast.days.length > 0 && (
+                <div className="pt-3 border-t border-sumi-800/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-sumi-300 font-semibold">Tải ôn 14 ngày tới</span>
+                    {forecast.retention_30d > 0 && (
+                      <span className="text-[11px] text-sumi-400 font-mono">
+                        Nhớ thực tế 30 ngày: {Math.round(forecast.retention_30d * 100)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-end gap-1 h-12">
+                    {forecast.days.map((d) => {
+                      const max = Math.max(1, ...forecast.days.map((x) => x.due_count));
+                      return (
+                        <div
+                          key={d.date}
+                          title={`${d.date.slice(5)}: ${d.due_count} thẻ`}
+                          className="flex-1 rounded-sm bg-emerald-500/70 min-h-[3px]"
+                          style={{ height: `${Math.max(8, Math.round((d.due_count / max) * 100))}%` }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <button

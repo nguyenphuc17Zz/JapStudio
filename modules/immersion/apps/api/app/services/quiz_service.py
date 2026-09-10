@@ -22,6 +22,7 @@ from app.models.quiz import (
     QuizQuestionOption,
     QuizAttempt,
     QuizAnswer,
+    LearnerAbility,
 )
 from app.schemas.quiz import (
     ReadingQuizResponse,
@@ -41,6 +42,7 @@ from app.schemas.quiz import (
 )
 from fastapi import HTTPException, status
 from app.services.ai.provider_registry import ai_provider_registry
+from app.services import irt as irt_engine
 
 logger = logging.getLogger(__name__)
 
@@ -504,6 +506,7 @@ Return ONLY valid JSON with this exact structure:
             await db.flush()
 
             for idx, q_data in enumerate(valid_questions):
+                diff_label = str(q_data["difficulty"] or "STANDARD").upper()
                 question = ReadingQuizQuestion(
                     quiz_id=quiz.id,
                     question_index=idx,
@@ -517,6 +520,10 @@ Return ONLY valid JSON with this exact structure:
                     points=q_data["points"],
                     source_scope=q_data["sourceScope"],
                     source_sentence_id=str(q_data["sourceSentenceId"]),
+                    # IRT cold start from the static label; refined by calibration.
+                    irt_a=irt_engine.DEFAULT_A,
+                    irt_b=irt_engine.LABEL_TO_B.get(diff_label, 0.0),
+                    irt_n=0,
                     hints_json=q_data.get("hints", [
                         "Đọc kỹ đoạn văn liên quan trong bài đọc.",
                         "Chú ý đến các từ khóa chính.",
@@ -763,6 +770,14 @@ Return ONLY valid JSON with this exact structure:
             db.add(answer_record)
 
         await db.commit()
+
+        # Online ability update + lazy per-question calibration (never breaks answering).
+        try:
+            await cls.refresh_ability(db, user_id)
+            await cls.calibrate_question(db, question.id)
+            await db.commit()
+        except Exception as e:
+            logger.warning(f"Ability/calibration update skipped: {e}")
 
         # Fetch source sentence text if sentence_id provided
         source_sentence_text: Optional[str] = None
@@ -1079,4 +1094,332 @@ Return ONLY valid JSON with this exact structure:
             completed_attempts=completed_attempts,
             avg_accuracy_percentage=round(float(avg_acc), 1),
             quizzes_list=quizzes_list,
+            item_analysis=await cls.analyze_recent_items(db=db, limit=100),
         )
+
+    # ---------------------------------------------------------------------------
+    # 8. IRT Ability Tracking, Calibration & Adaptive Testing
+    # ---------------------------------------------------------------------------
+
+    ADAPTIVE_SE_STOP = 0.35
+    ADAPTIVE_MIN_ITEMS = 4
+    ADAPTIVE_MAX_ITEMS = 8
+    ABILITY_HISTORY_LIMIT = 200
+
+    @classmethod
+    async def get_or_create_ability(cls, db: AsyncSession, user_id: str) -> LearnerAbility:
+        ability = (await db.execute(
+            select(LearnerAbility).where(LearnerAbility.user_id == user_id)
+        )).scalars().first()
+        if not ability:
+            ability = LearnerAbility(user_id=user_id)
+            db.add(ability)
+            await db.flush()
+        return ability
+
+    @classmethod
+    async def _recent_responses(
+        cls, db: AsyncSession, user_id: str, limit: int = 200,
+    ) -> List[Tuple[float, float, int, str]]:
+        """Recent (a, b, correct, skill) tuples, newest first, for ability fits."""
+        rows = (await db.execute(
+            select(QuizAnswer, ReadingQuizQuestion)
+            .join(QuizAttempt, QuizAnswer.attempt_id == QuizAttempt.id)
+            .join(ReadingQuizQuestion, QuizAnswer.question_id == ReadingQuizQuestion.id)
+            .where(QuizAttempt.user_id == user_id)
+            .order_by(desc(QuizAnswer.answered_at))
+            .limit(max(int(limit or 200), 1))
+        )).all()
+        out = []
+        for ans, q in rows:
+            out.append((
+                float(q.irt_a or irt_engine.DEFAULT_A),
+                float(q.irt_b or 0.0),
+                1 if ans.is_correct else 0,
+                str(q.skill_type or "DETAIL"),
+            ))
+        return out
+
+    @classmethod
+    async def refresh_ability(cls, db: AsyncSession, user_id: str) -> LearnerAbility:
+        """Recomputes global + per-skill θ from recent answers (deterministic)."""
+        ability = await cls.get_or_create_ability(db, user_id)
+        responses = await cls._recent_responses(db, user_id, cls.ABILITY_HISTORY_LIMIT)
+        if responses:
+            triples = [(a, b, u) for a, b, u, _ in responses]
+            ability.theta = irt_engine.update_theta(0.0, triples)
+            ability.se = irt_engine.standard_error(ability.theta, triples)
+            by_skill: Dict[str, List[Tuple[float, float, int]]] = {}
+            for a, b, u, skill in responses:
+                by_skill.setdefault(skill, []).append((a, b, u))
+            ability.skill_thetas_json = {
+                skill: {
+                    "theta": round(irt_engine.update_theta(0.0, rs), 3),
+                    "n": len(rs),
+                }
+                for skill, rs in by_skill.items() if len(rs) >= 3
+            }
+            ability.answers_count = len(responses)
+        await db.flush()
+        return ability
+
+    @classmethod
+    async def _answerer_thetas(cls, db: AsyncSession, user_ids: List[str]) -> Dict[str, float]:
+        if not user_ids:
+            return {}
+        rows = (await db.execute(
+            select(LearnerAbility).where(LearnerAbility.user_id.in_(list(set(user_ids))))
+        )).scalars().all()
+        return {r.user_id: float(r.theta or 0.0) for r in rows}
+
+    @classmethod
+    async def calibrate_question(cls, db: AsyncSession, question_id: int) -> Dict[str, Any]:
+        """Refits one question's IRT params from its answer log + quality flags."""
+        q = (await db.execute(
+            select(ReadingQuizQuestion)
+            .where(ReadingQuizQuestion.id == question_id)
+            .options(selectinload(ReadingQuizQuestion.options))
+        )).scalars().first()
+        if not q:
+            raise ValueError(f"Question {question_id} not found.")
+        answers = (await db.execute(
+            select(QuizAnswer, QuizAttempt.user_id)
+            .join(QuizAttempt, QuizAnswer.attempt_id == QuizAttempt.id)
+            .where(QuizAnswer.question_id == question_id)
+        )).all()
+        n = len(answers)
+        n_correct = sum(1 for ans, _ in answers if ans.is_correct)
+        thetas = await cls._answerer_thetas(db, [uid for _, uid in answers])
+        mean_theta = (sum(thetas.values()) / len(thetas)) if thetas else 0.0
+
+        fitted_b = irt_engine.fit_difficulty(n, n_correct, mean_theta)
+        if fitted_b is not None:
+            q.irt_b = fitted_b
+            # 2PL discrimination proxy once enough data: high-vs-low ability gap.
+            if n >= irt_engine.MIN_N_FOR_A and thetas:
+                order = sorted(thetas.values())
+                mid = order[len(order) // 2]
+                hi = [1 if ans.is_correct else 0 for ans, uid in answers if thetas.get(uid, 0.0) >= mid]
+                lo = [1 if ans.is_correct else 0 for ans, uid in answers if thetas.get(uid, 0.0) < mid]
+                if hi and lo:
+                    gap = (sum(hi) / len(hi)) - (sum(lo) / len(lo))
+                    q.irt_a = min(max(1.0 + 2.0 * gap, irt_engine.A_MIN), irt_engine.A_MAX)
+        q.irt_n = n
+
+        times = [a.response_time_ms for a, _ in answers if a.response_time_ms]
+        hints = [a.hints_used or 0 for a, _ in answers]
+        opt_counts: Dict[int, int] = {}
+        for ans, _ in answers:
+            if ans.selected_option_id:
+                opt_counts[ans.selected_option_id] = opt_counts.get(ans.selected_option_id, 0) + 1
+        opt_rates = (
+            [opt_counts.get(o.id, 0) / n for o in (q.options or [])] if n else []
+        )
+        p_value = (n_correct / n) if n else 0.0
+        flags = irt_engine.quality_flags(n, p_value, float(q.irt_a or 1.0), opt_rates)
+        await db.flush()
+        return {
+            "question_id": q.id,
+            "quiz_id": q.quiz_id,
+            "skill": q.skill_type,
+            "n": n,
+            "p_value": round(p_value, 3),
+            "irt_a": round(float(q.irt_a or 1.0), 3),
+            "irt_b": round(float(q.irt_b or 0.0), 3),
+            "avg_response_time_ms": int(sum(times) / len(times)) if times else None,
+            "hint_rate": round(sum(hints) / n, 2) if n else 0.0,
+            "option_rates": [round(r, 3) for r in opt_rates],
+            "flags": flags,
+        }
+
+    @classmethod
+    async def calibrate_all_questions(
+        cls, db: AsyncSession, limit: int = 500,
+    ) -> Dict[str, Any]:
+        """Batch-calibrates recently answered questions (admin trigger / nightly)."""
+        qids = (await db.execute(
+            select(QuizAnswer.question_id)
+            .order_by(desc(QuizAnswer.answered_at))
+            .limit(max(int(limit or 500), 1))
+        )).scalars().all()
+        seen: List[int] = []
+        for qid in qids:
+            if qid not in seen:
+                seen.append(qid)
+        results = []
+        for qid in seen:
+            try:
+                results.append(await cls.calibrate_question(db, qid))
+            except Exception as e:
+                logger.warning(f"Calibration skipped for question {qid}: {e}")
+        await db.commit()
+        flagged = sum(1 for r in results if r["flags"] != ["OK"] and r["flags"] != ["NEEDS_DATA"])
+        return {"calibrated": len(results), "flagged": flagged, "items": results}
+
+    @classmethod
+    async def analyze_recent_items(
+        cls, db: AsyncSession, limit: int = 100,
+    ) -> List[Dict[str, Any]]:
+        """Bulk item analysis for admin (bounded queries, no per-item N+1)."""
+        qids = (await db.execute(
+            select(ReadingQuizQuestion.id)
+            .where(ReadingQuizQuestion.irt_n > 0)
+            .order_by(desc(ReadingQuizQuestion.id))
+            .limit(max(int(limit or 100), 1))
+        )).scalars().all()
+        if not qids:
+            return []
+        questions = (await db.execute(
+            select(ReadingQuizQuestion)
+            .where(ReadingQuizQuestion.id.in_(qids))
+            .options(selectinload(ReadingQuizQuestion.options))
+        )).scalars().all()
+        qmap = {q.id: q for q in questions}
+        answers = (await db.execute(
+            select(QuizAnswer, QuizAttempt.user_id)
+            .join(QuizAttempt, QuizAnswer.attempt_id == QuizAttempt.id)
+            .where(QuizAnswer.question_id.in_(qids))
+        )).all()
+        thetas = await cls._answerer_thetas(db, [uid for _, uid in answers])
+        by_q: Dict[int, List[Any]] = {}
+        for ans, uid in answers:
+            by_q.setdefault(ans.question_id, []).append((ans, uid))
+        out = []
+        for qid in qids:
+            q = qmap.get(qid)
+            if not q:
+                continue
+            rows = by_q.get(qid, [])
+            n = len(rows)
+            n_correct = sum(1 for ans, _ in rows if ans.is_correct)
+            p_value = (n_correct / n) if n else 0.0
+            times = [a.response_time_ms for a, _ in rows if a.response_time_ms]
+            hints = [a.hints_used or 0 for a, _ in rows]
+            opt_counts: Dict[int, int] = {}
+            for ans, _ in rows:
+                if ans.selected_option_id:
+                    opt_counts[ans.selected_option_id] = opt_counts.get(ans.selected_option_id, 0) + 1
+            opt_rates = [opt_counts.get(o.id, 0) / n for o in (q.options or [])] if n else []
+            out.append({
+                "question_id": q.id,
+                "quiz_id": q.quiz_id,
+                "skill": q.skill_type,
+                "difficulty": q.difficulty,
+                "n": n,
+                "p_value": round(p_value, 3),
+                "irt_a": round(float(q.irt_a or 1.0), 3),
+                "irt_b": round(float(q.irt_b or 0.0), 3),
+                "avg_response_time_ms": int(sum(times) / len(times)) if times else None,
+                "hint_rate": round(sum(hints) / n, 2) if n else 0.0,
+                "option_rates": [round(r, 3) for r in opt_rates],
+                "flags": irt_engine.quality_flags(n, p_value, float(q.irt_a or 1.0), opt_rates),
+            })
+        return out
+
+    # ---------------------------------------------------------------------------
+    # 9. Adaptive (CAT) Session Flow
+    # ---------------------------------------------------------------------------
+
+    @classmethod
+    def _serialize_adaptive_question(
+        cls, q: ReadingQuizQuestion, seed: str,
+    ) -> Dict[str, Any]:
+        """Single question view: answers hidden, options seeded-shuffled."""
+        from app.schemas.quiz import QuizQuestionClientResponse, QuizOptionClientResponse
+        rng = random.Random(seed)
+        opts = list(q.options or [])
+        rng.shuffle(opts)
+        return QuizQuestionClientResponse(
+            id=q.id,
+            question_index=q.question_index,
+            question_type=q.question_type,
+            skill_type=q.skill_type,
+            prompt=q.prompt,
+            prompt_vi=q.prompt_vi,
+            difficulty=q.difficulty,
+            points=q.points,
+            source_scope=q.source_scope,
+            source_sentence_id=q.source_sentence_id,
+            hints=q.hints_json or [],
+            options=[
+                QuizOptionClientResponse(
+                    id=o.id, option_index=o.option_index, text=o.text, text_vi=o.text_vi,
+                )
+                for o in opts
+            ],
+        )
+
+    @classmethod
+    async def _adaptive_state(
+        cls, db: AsyncSession, user_id: str, attempt_id: int,
+    ) -> Tuple[QuizAttempt, ReadingQuiz, List[QuizAnswer], LearnerAbility]:
+        attempt = (await db.execute(
+            select(QuizAttempt)
+            .where(and_(QuizAttempt.id == attempt_id, QuizAttempt.user_id == user_id))
+            .options(
+                selectinload(QuizAttempt.quiz).selectinload(ReadingQuiz.questions).selectinload(ReadingQuizQuestion.options),
+            )
+        )).scalars().first()
+        if not attempt:
+            raise ValueError("Attempt not found or unauthorized.")
+        if attempt.completion_status != "IN_PROGRESS":
+            raise ValueError("Attempt is already completed or abandoned.")
+        # Direct answer query (not the relationship) so repeated calls in one
+        # session never see a stale identity-mapped collection.
+        answers = (await db.execute(
+            select(QuizAnswer).where(QuizAnswer.attempt_id == attempt.id)
+        )).scalars().all()
+        ability = await cls.get_or_create_ability(db, user_id)
+        return attempt, attempt.quiz, list(answers), ability
+
+    @classmethod
+    async def start_adaptive_attempt(
+        cls, db: AsyncSession, user_id: str, quiz_id: int,
+    ) -> QuizAttempt:
+        """Starts (or resumes) an ADAPTIVE attempt for a quiz."""
+        return await cls.start_attempt(db=db, user_id=user_id, quiz_id=quiz_id, mode="ADAPTIVE")
+
+    @classmethod
+    async def next_adaptive_question(
+        cls, db: AsyncSession, user_id: str, attempt_id: int,
+    ) -> Dict[str, Any]:
+        """Selects the next CAT question (or stops early on precision)."""
+        attempt, quiz, answers, ability = await cls._adaptive_state(db, user_id, attempt_id)
+        questions = list(quiz.questions or [])
+        by_qid = {a.question_id: a for a in answers}
+        answered_ids = list(by_qid.keys())
+        theta = float(ability.theta or 0.0)
+
+        responses = [
+            (float(q.irt_a or irt_engine.DEFAULT_A), float(q.irt_b or 0.0),
+             1 if by_qid[q.id].is_correct else 0)
+            for q in questions if q.id in by_qid
+        ]
+        live_theta = irt_engine.update_theta(theta, responses) if responses else theta
+        se = irt_engine.standard_error(live_theta, responses) if responses else 1.0
+
+        if answers and (se < cls.ADAPTIVE_SE_STOP and len(answers) >= cls.ADAPTIVE_MIN_ITEMS):
+            return {"done": True, "stop_reason": "SE_THRESHOLD", "theta": round(live_theta, 3),
+                    "se": round(se, 3), "answered": len(answers), "total": len(questions)}
+        if len(answers) >= min(len(questions), cls.ADAPTIVE_MAX_ITEMS):
+            return {"done": True, "stop_reason": "MAX_ITEMS", "theta": round(live_theta, 3),
+                    "se": round(se, 3), "answered": len(answers), "total": len(questions)}
+
+        blueprint = (quiz.blueprint_json or {}) if isinstance(quiz.blueprint_json, dict) else {}
+        wanted_skills = [str(s) for s in (blueprint.get("skills") or [])]
+        covered = {q.skill_type for q in questions if q.id in answered_ids}
+        required = [s for s in wanted_skills if s not in covered]
+        candidates = [
+            {"id": q.id, "a": float(q.irt_a or irt_engine.DEFAULT_A),
+             "b": float(q.irt_b or 0.0), "skill": str(q.skill_type)}
+            for q in questions
+        ]
+        rng = random.Random(f"{attempt_id}:{len(answers)}")
+        pick = irt_engine.select_next(live_theta, candidates, answered_ids, top_k=3, rng=rng, required_skills=required)
+        if pick is None:
+            return {"done": True, "stop_reason": "ALL_ANSWERED", "theta": round(live_theta, 3),
+                    "se": round(se, 3), "answered": len(answers), "total": len(questions)}
+        target = next(q for q in questions if q.id == int(pick["id"]))
+        return {"done": False, "stop_reason": None, "theta": round(live_theta, 3),
+                "se": round(se, 3), "answered": len(answers), "total": len(questions),
+                "question": cls._serialize_adaptive_question(target, f"{attempt_id}:{target.id}")}

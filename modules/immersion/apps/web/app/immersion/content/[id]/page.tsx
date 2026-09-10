@@ -422,7 +422,10 @@ export default function SmartReaderPage() {
     }
 
     setLookupSentenceText(matchedSentence?.text ?? context ?? null);
-    setSelectionLookup({ query: query.trim(), context });
+    // Ngữ cảnh tối thiểu cho tra nhanh: ưu tiên câu chứa từ (~200 ký tự),
+    // không gửi cả block/bài báo → lookup quick trả nghĩa trong 1-2s.
+    const minimalContext = (matchedSentence?.text || context || "").slice(0, 200);
+    setSelectionLookup({ query: query.trim(), context: minimalContext });
   };
 
   // Bubble action 2: open the SentenceActionSheet of the sentence owning the selection.

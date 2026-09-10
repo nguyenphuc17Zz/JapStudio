@@ -820,6 +820,29 @@ class ReaderService:
             cached=False
         )
 
+    @staticmethod
+    def _local_reading(term: str) -> str:
+        """Generates the reading locally via fugashi/UniDic (0 AI tokens).
+
+        Falls back to the term itself when the tagger is unavailable or the
+        term has no kanji. Context-free by design (dictionary-style reading).
+        """
+        try:
+            _, tokens = furigana_service.generate_sentence_furigana(term)
+            if not tokens:
+                return term
+            parts = []
+            for t in tokens:
+                if not isinstance(t, dict):
+                    continue
+                if t.get("reading") and t.get("is_kanji"):
+                    parts.append(str(t["reading"]))
+                elif t.get("text"):
+                    parts.append(str(t["text"]))
+            return "".join(parts) or term
+        except Exception:
+            return term
+
     @classmethod
     async def lookup_selection(
         cls,
@@ -828,11 +851,17 @@ class ReaderService:
         context: Optional[str] = None,
         content_id: Optional[int] = None,
         model_provider: Optional[str] = None,
+        detail: str = "quick",
     ) -> SelectionLookupResponse:
         """Explains a free-selected word/phrase (bôi đen) in its sentence context.
 
         No persistent cache: lookups are only persisted when the user
         explicitly saves them into the Personal Knowledge Library.
+
+        detail="quick" (default): chỉ nghĩa + từ loại, context tối
+        thiểu ~200 ký tự → nhanh (~1-2s). detail="full": giải thích đầy đủ
+        kèm sắc thái, cụm chuẩn, ví dụ, từ gần nghĩa.
+        Reading do thư viện furigana local sinh (0 token AI), không qua AI.
         """
         term = (query or "").strip()
         if len(term) < 2 or len(term) > 80:
@@ -840,62 +869,85 @@ class ReaderService:
 
         provider, chosen_model = ai_provider_registry.get_active_provider_and_model(model_provider)
 
-        context_block = f"<sentence_context>\n{(context or '').strip()[:1000]}\n</sentence_context>" if (context or "").strip() else ""
+        detail_norm = (detail or "quick").strip().lower()
+        if detail_norm not in ("quick", "full"):
+            detail_norm = "quick"
+        is_quick = detail_norm == "quick"
+
+        max_ctx = 200 if is_quick else 1000
+        context_block = f"<sentence_context>\n{(context or '').strip()[:max_ctx]}\n</sentence_context>" if (context or "").strip() else ""
         prompt = (
             f"Giải nghĩa từ/cụm tiếng Nhật mà người học vừa bôi đen trong bài đọc:\n\n"
             f"<selected_text>\n{term}\n</selected_text>\n"
             f"{context_block}"
         )
-        sys_inst = (
-            "Bạn là từ điển Nhật-Việt theo ngữ cảnh cho người học tiếng Nhật.\n"
-            "Trả về JSON định dạng sau:\n"
-            "{\n"
-            "  \"reading\": \"cách đọc hiragana/katakana của cụm được chọn (giữ nguyên nếu là số/ký hiệu)\",\n"
-            "  \"meaning_vi\": \"nghĩa tiếng Việt chính xác nhất TRONG NGỮ CẢNH câu (1-2 dòng, không lan man)\",\n"
-            "  \"part_of_speech\": \"từ loại (noun/verb/adjective/adverb/expression/other)\",\n"
-            "  \"jlpt_level\": \"cấp độ JLPT ước lượng (N5/N4/N3/N2/N1, để trống nếu không chắc)\",\n"
-            "  \"nuance\": \"sắc thái sử dụng: trang trọng hay thân mật, nhấn mạnh điều gì, dễ nhầm với từ nào (2-3 câu)\",\n"
-            "  \"collocation\": \"cụm từ đi kèm chuẩn nhất của người bản xứ (dạng: Cụm + nghĩa ngắn)\",\n"
-            "  \"example_usage\": \"1 câu ví dụ ngắn dùng cụm này kèm nghĩa tiếng Việt\",\n"
-            "  \"examples\": [{\"sentence_ja\": \"câu ví dụ thực tế 1\", \"sentence_vi\": \"nghĩa tiếng Việt 1\"}, {\"sentence_ja\": \"câu ví dụ thực tế 2\", \"sentence_vi\": \"nghĩa tiếng Việt 2\"}],\n"
-            "  \"alternatives\": [{\"expression\": \"từ gần nghĩa 1\", \"reading\": \"cách đọc\", \"meaning_vi\": \"nghĩa\", \"difference\": \"khác ở điểm nào (1 dòng)\"}]\n"
-            "}"
-        )
-        schema = {
-            "type": "object",
-            "properties": {
-                "reading": {"type": "string"},
-                "meaning_vi": {"type": "string"},
-                "part_of_speech": {"type": "string"},
-                "jlpt_level": {"type": "string"},
-                "nuance": {"type": "string"},
-                "collocation": {"type": "string"},
-                "example_usage": {"type": "string"},
-                "examples": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "sentence_ja": {"type": "string"},
-                            "sentence_vi": {"type": "string"},
+        if is_quick:
+            sys_inst = (
+                "Bạn là từ điển Nhật-Việt tốc độ cao cho người học tiếng Nhật.\n"
+                "Chỉ trả nghĩa cốt lõi, ngắn gọn, không lan man.\n"
+                "Trả về JSON định dạng sau:\n"
+                "{\n"
+                "  \"meaning_vi\": \"nghĩa tiếng Việt cốt lõi nhất (1 dòng, không lan man)\",\n"
+                "  \"part_of_speech\": \"từ loại (noun/verb/adjective/adverb/expression/other)\"\n"
+                "}"
+            )
+            schema = {
+                "type": "object",
+                "properties": {
+                    "meaning_vi": {"type": "string"},
+                    "part_of_speech": {"type": "string"},
+                },
+                "required": ["meaning_vi"]
+            }
+        else:
+            sys_inst = (
+                "Bạn là từ điển Nhật-Việt theo ngữ cảnh cho người học tiếng Nhật.\n"
+                "Trả về JSON định dạng sau:\n"
+                "{\n"
+                "  \"meaning_vi\": \"nghĩa tiếng Việt chính xác nhất TRONG NGỮ CẢNH câu (1-2 dòng, không lan man)\",\n"
+                "  \"part_of_speech\": \"từ loại (noun/verb/adjective/adverb/expression/other)\",\n"
+                "  \"jlpt_level\": \"cấp độ JLPT ước lượng (N5/N4/N3/N2/N1, để trống nếu không chắc)\",\n"
+                "  \"nuance\": \"sắc thái sử dụng: trang trọng hay thân mật, nhấn mạnh điều gì, dễ nhầm với từ nào (2-3 câu)\",\n"
+                "  \"collocation\": \"cụm từ đi kèm chuẩn nhất của người bản xứ (dạng: Cụm + nghĩa ngắn)\",\n"
+                "  \"example_usage\": \"1 câu ví dụ ngắn dùng cụm này kèm nghĩa tiếng Việt\",\n"
+                "  \"examples\": [{\"sentence_ja\": \"câu ví dụ thực tế 1\", \"sentence_vi\": \"nghĩa tiếng Việt 1\"}, {\"sentence_ja\": \"câu ví dụ thực tế 2\", \"sentence_vi\": \"nghĩa tiếng Việt 2\"}],\n"
+                "  \"alternatives\": [{\"expression\": \"từ gần nghĩa 1\", \"reading\": \"cách đọc\", \"meaning_vi\": \"nghĩa\", \"difference\": \"khác ở điểm nào (1 dòng)\"}]\n"
+                "}"
+            )
+            schema = {
+                "type": "object",
+                "properties": {
+                    "meaning_vi": {"type": "string"},
+                    "part_of_speech": {"type": "string"},
+                    "jlpt_level": {"type": "string"},
+                    "nuance": {"type": "string"},
+                    "collocation": {"type": "string"},
+                    "example_usage": {"type": "string"},
+                    "examples": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "sentence_ja": {"type": "string"},
+                                "sentence_vi": {"type": "string"},
+                            },
+                        },
+                    },
+                    "alternatives": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "expression": {"type": "string"},
+                                "reading": {"type": "string"},
+                                "meaning_vi": {"type": "string"},
+                                "difference": {"type": "string"},
+                            },
                         },
                     },
                 },
-                "alternatives": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "expression": {"type": "string"},
-                            "reading": {"type": "string"},
-                            "meaning_vi": {"type": "string"},
-                            "difference": {"type": "string"},
-                        },
-                    },
-                },
-            },
-            "required": ["reading", "meaning_vi"]
-        }
+                "required": ["meaning_vi"]
+            }
 
         try:
             gen_result = await provider.generate_structured(
@@ -918,7 +970,7 @@ class ReaderService:
 
         return SelectionLookupResponse(
             query=term,
-            reading=data.get("reading") or term,
+            reading=cls._local_reading(term),
             meaning_vi=data.get("meaning_vi", ""),
             part_of_speech=data.get("part_of_speech") or "noun",
             jlpt_level=data.get("jlpt_level") or "",
@@ -945,11 +997,13 @@ class ReaderService:
         context: Optional[str] = None,
         content_id: Optional[int] = None,
         model_provider: Optional[str] = None,
+        detail: str = "quick",
     ) -> ExpressionLookupResponse:
         """Explains a Japanese collocation/expression in its sentence context.
 
-        Returns meaning, usage situations, composition, real examples, and
-        related expressions. No persistent cache: results persist only when
+        detail="quick" (default): chỉ nghĩa cốt lõi → nhanh.
+        detail="full": đầy đủ usage/composition/examples/alternatives.
+        No persistent cache: results persist only when
         the user saves the expression into the Personal Knowledge Library.
         """
         expr = (expression or "").strip()
@@ -958,54 +1012,77 @@ class ReaderService:
 
         provider, chosen_model = ai_provider_registry.get_active_provider_and_model(model_provider)
 
-        context_block = f"<sentence_context>\n{(context or '').strip()[:1000]}\n</sentence_context>" if (context or "").strip() else ""
+        detail_norm = (detail or "quick").strip().lower()
+        if detail_norm not in ("quick", "full"):
+            detail_norm = "quick"
+        is_quick = detail_norm == "quick"
+
+        max_ctx = 200 if is_quick else 1000
+        context_block = f"<sentence_context>\n{(context or '').strip()[:max_ctx]}\n</sentence_context>" if (context or "").strip() else ""
         prompt = (
             f"Giải thích cụm từ/collocation tiếng Nhật mà người học vừa chọn trong bài đọc:\n\n"
             f"<selected_expression>\n{expr}\n</selected_expression>\n"
             f"{context_block}"
         )
-        sys_inst = (
-            "Bạn là từ điển Nhật-Việt theo ngữ cảnh cho người học tiếng Nhật.\n"
-            "Trả về JSON định dạng sau:\n"
-            "{\n"
-            "  \"meaning\": \"nghĩa tiếng Việt chính xác nhất TRONG NGỮ CẢNH câu (1-2 dòng, không lan man)\",\n"
-            "  \"usage_context\": \"hoàn cảnh sử dụng: văn nói hay văn viết, trang trọng hay thân mật, dùng khi nào, đi kèm từ loại gì (2-3 câu)\",\n"
-            "  \"composition\": \"cấu tạo cụm: các từ thành phần + vai trò từng từ (1-2 dòng)\",\n"
-            "  \"examples\": [{\"sentence_ja\": \"câu ví dụ thực tế 1\", \"sentence_vi\": \"nghĩa tiếng Việt 1\"}, {\"sentence_ja\": \"câu ví dụ thực tế 2\", \"sentence_vi\": \"nghĩa tiếng Việt 2\"}],\n"
-            "  \"alternatives\": [{\"expression\": \"cụm gần nghĩa 1\", \"reading\": \"cách đọc\", \"meaning_vi\": \"nghĩa\", \"difference\": \"khác ở điểm nào (1 dòng)\"}]\n"
-            "}"
-        )
-        schema = {
-            "type": "object",
-            "properties": {
-                "meaning": {"type": "string"},
-                "usage_context": {"type": "string"},
-                "composition": {"type": "string"},
-                "examples": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "sentence_ja": {"type": "string"},
-                            "sentence_vi": {"type": "string"},
+        if is_quick:
+            sys_inst = (
+                "Bạn là từ điển Nhật-Việt tốc độ cao cho người học tiếng Nhật.\n"
+                "Chỉ trả nghĩa cốt lõi, ngắn gọn.\n"
+                "Trả về JSON định dạng sau:\n"
+                "{\n"
+                "  \"meaning\": \"nghĩa tiếng Việt cốt lõi nhất (1 dòng, không lan man)\"\n"
+                "}"
+            )
+            schema = {
+                "type": "object",
+                "properties": {
+                    "meaning": {"type": "string"},
+                },
+                "required": ["meaning"]
+            }
+        else:
+            sys_inst = (
+                "Bạn là từ điển Nhật-Việt theo ngữ cảnh cho người học tiếng Nhật.\n"
+                "Trả về JSON định dạng sau:\n"
+                "{\n"
+                "  \"meaning\": \"nghĩa tiếng Việt chính xác nhất TRONG NGỮ CẢNH câu (1-2 dòng, không lan man)\",\n"
+                "  \"usage_context\": \"hoàn cảnh sử dụng: văn nói hay văn viết, trang trọng hay thân mật, dùng khi nào, đi kèm từ loại gì (2-3 câu)\",\n"
+                "  \"composition\": \"cấu tạo cụm: các từ thành phần + vai trò từng từ (1-2 dòng)\",\n"
+                "  \"examples\": [{\"sentence_ja\": \"câu ví dụ thực tế 1\", \"sentence_vi\": \"nghĩa tiếng Việt 1\"}, {\"sentence_ja\": \"câu ví dụ thực tế 2\", \"sentence_vi\": \"nghĩa tiếng Việt 2\"}],\n"
+                "  \"alternatives\": [{\"expression\": \"cụm gần nghĩa 1\", \"reading\": \"cách đọc\", \"meaning_vi\": \"nghĩa\", \"difference\": \"khác ở điểm nào (1 dòng)\"}]\n"
+                "}"
+            )
+            schema = {
+                "type": "object",
+                "properties": {
+                    "meaning": {"type": "string"},
+                    "usage_context": {"type": "string"},
+                    "composition": {"type": "string"},
+                    "examples": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "sentence_ja": {"type": "string"},
+                                "sentence_vi": {"type": "string"},
+                            },
+                        },
+                    },
+                    "alternatives": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "expression": {"type": "string"},
+                                "reading": {"type": "string"},
+                                "meaning_vi": {"type": "string"},
+                                "difference": {"type": "string"},
+                            },
                         },
                     },
                 },
-                "alternatives": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "expression": {"type": "string"},
-                            "reading": {"type": "string"},
-                            "meaning_vi": {"type": "string"},
-                            "difference": {"type": "string"},
-                        },
-                    },
-                },
-            },
-            "required": ["meaning"]
-        }
+                "required": ["meaning"]
+            }
 
         try:
             gen_result = await provider.generate_structured(
@@ -1051,10 +1128,12 @@ class ReaderService:
         context: Optional[str] = None,
         content_id: Optional[int] = None,
         model_provider: Optional[str] = None,
+        detail: str = "quick",
     ) -> GrammarLookupResponse:
         """Explains a Japanese grammar pattern in its sentence context.
 
-        Returns formation, meaning, usage situations, and real examples.
+        detail="quick" (default): chỉ formation + meaning → nhanh.
+        detail="full": thêm usage_context + examples.
         No persistent cache: results persist only when the user saves the
         pattern into the Personal Knowledge Library.
         """
@@ -1064,41 +1143,66 @@ class ReaderService:
 
         provider, chosen_model = ai_provider_registry.get_active_provider_and_model(model_provider)
 
-        context_block = f"<sentence_context>\n{(context or '').strip()[:1000]}\n</sentence_context>" if (context or "").strip() else ""
+        detail_norm = (detail or "quick").strip().lower()
+        if detail_norm not in ("quick", "full"):
+            detail_norm = "quick"
+        is_quick = detail_norm == "quick"
+
+        max_ctx = 200 if is_quick else 1000
+        context_block = f"<sentence_context>\n{(context or '').strip()[:max_ctx]}\n</sentence_context>" if (context or "").strip() else ""
         prompt = (
             f"Giải thích mẫu ngữ pháp tiếng Nhật mà người học vừa chọn trong bài đọc:\n\n"
             f"<grammar_pattern>\n{pat}\n</grammar_pattern>\n"
             f"{context_block}"
         )
-        sys_inst = (
-            "Bạn là giáo viên ngữ pháp Nhật-Việt cho người học tiếng Nhật.\n"
-            "Trả về JSON định dạng sau:\n"
-            "{\n"
-            "  \"formation\": \"công thức cấu tạo mẫu câu (dạng: Thể từ điển + pattern, N + pattern... 1-2 dòng)\",\n"
-            "  \"meaning\": \"ý nghĩa cốt lõi TRONG NGỮ CẢNH câu (1-2 dòng, không lan man)\",\n"
-            "  \"usage_context\": \"hoàn cảnh sử dụng: văn nói hay văn viết, trang trọng hay thân mật, dùng khi nào (2-3 câu)\",\n"
-            "  \"examples\": [{\"sentence_ja\": \"câu ví dụ thực tế 1\", \"sentence_vi\": \"nghĩa tiếng Việt 1\"}, {\"sentence_ja\": \"câu ví dụ thực tế 2\", \"sentence_vi\": \"nghĩa tiếng Việt 2\"}, {\"sentence_ja\": \"câu ví dụ thực tế 3\", \"sentence_vi\": \"nghĩa tiếng Việt 3\"}]\n"
-            "}"
-        )
-        schema = {
-            "type": "object",
-            "properties": {
-                "formation": {"type": "string"},
-                "meaning": {"type": "string"},
-                "usage_context": {"type": "string"},
-                "examples": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "sentence_ja": {"type": "string"},
-                            "sentence_vi": {"type": "string"},
+        if is_quick:
+            sys_inst = (
+                "Bạn là giáo viên ngữ pháp Nhật-Việt tốc độ cao.\n"
+                "Chỉ trả công thức và ý nghĩa cốt lõi, ngắn gọn.\n"
+                "Trả về JSON định dạng sau:\n"
+                "{\n"
+                "  \"formation\": \"công thức cấu tạo mẫu câu (1 dòng)\",\n"
+                "  \"meaning\": \"ý nghĩa cốt lõi (1 dòng, không lan man)\"\n"
+                "}"
+            )
+            schema = {
+                "type": "object",
+                "properties": {
+                    "formation": {"type": "string"},
+                    "meaning": {"type": "string"},
+                },
+                "required": ["formation", "meaning"]
+            }
+        else:
+            sys_inst = (
+                "Bạn là giáo viên ngữ pháp Nhật-Việt cho người học tiếng Nhật.\n"
+                "Trả về JSON định dạng sau:\n"
+                "{\n"
+                "  \"formation\": \"công thức cấu tạo mẫu câu (dạng: Thể từ điển + pattern, N + pattern... 1-2 dòng)\",\n"
+                "  \"meaning\": \"ý nghĩa cốt lõi TRONG NGỮ CẢNH câu (1-2 dòng, không lan man)\",\n"
+                "  \"usage_context\": \"hoàn cảnh sử dụng: văn nói hay văn viết, trang trọng hay thân mật, dùng khi nào (2-3 câu)\",\n"
+                "  \"examples\": [{\"sentence_ja\": \"câu ví dụ thực tế 1\", \"sentence_vi\": \"nghĩa tiếng Việt 1\"}, {\"sentence_ja\": \"câu ví dụ thực tế 2\", \"sentence_vi\": \"nghĩa tiếng Việt 2\"}, {\"sentence_ja\": \"câu ví dụ thực tế 3\", \"sentence_vi\": \"nghĩa tiếng Việt 3\"}]\n"
+                "}"
+            )
+            schema = {
+                "type": "object",
+                "properties": {
+                    "formation": {"type": "string"},
+                    "meaning": {"type": "string"},
+                    "usage_context": {"type": "string"},
+                    "examples": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "sentence_ja": {"type": "string"},
+                                "sentence_vi": {"type": "string"},
+                            },
                         },
                     },
                 },
-            },
-            "required": ["formation", "meaning"]
-        }
+                "required": ["formation", "meaning"]
+            }
 
         try:
             gen_result = await provider.generate_structured(

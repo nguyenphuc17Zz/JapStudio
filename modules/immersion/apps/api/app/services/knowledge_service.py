@@ -18,6 +18,8 @@ from app.models.knowledge import (
     UserSavedSentence,
     ReviewState,
     ReviewSession,
+    ReviewLog,
+    SrsPreference,
 )
 from app.schemas.knowledge import (
     UserVocabularyResponse,
@@ -40,7 +42,12 @@ from app.schemas.knowledge import (
     KnowledgeStatsResponse,
     KnowledgeGapItem,
     KnowledgeGapsResponse,
+    SrsPreferenceResponse,
+    SrsPreferenceUpdateRequest,
+    ForecastDayItem,
+    ReviewForecastResponse,
 )
+from app.services import fsrs as fsrs_engine
 from app.services.review_scheduler import ReviewScheduler
 
 logger = logging.getLogger(__name__)
@@ -167,6 +174,7 @@ class KnowledgeService:
                 query=term,
                 context=sentence_text,
                 content_id=content_id,
+                detail="full",
             )
         except Exception as e:
             logger.warning(f"AI enrich-on-save skipped for '{term}': {e}")
@@ -300,6 +308,7 @@ class KnowledgeService:
                 pattern=pat,
                 context=sentence_text,
                 content_id=content_id,
+                detail="full",
             )
         except Exception as e:
             logger.warning(f"AI grammar enrich-on-save skipped for '{pat}': {e}")
@@ -460,6 +469,7 @@ class KnowledgeService:
                 expression=expr.expression.strip(),
                 context=sentence_text,
                 content_id=content_id,
+                detail="full",
             )
         except Exception as e:
             logger.warning(f"AI expression backfill skipped for '{expr.expression}': {e}")
@@ -668,6 +678,8 @@ class KnowledgeService:
                         "content_id": req.content_id,
                         "date": now.isoformat(),
                     }],
+                    examples_json=[],
+                    alternatives_json=[],
                 )
                 db.add(expr)
             else:
@@ -1360,25 +1372,171 @@ class KnowledgeService:
     # 5b. SRS 2.0 Card Builders, Distractors & Session Composition
     # ---------------------------------------------------------------------------
 
+    # Legacy default for new cards per session (now per-user via SrsPreference).
     NEW_CARDS_PER_SESSION = 5
     LEECH_LAPSE_THRESHOLD = 8
+    # Interleave: 1 new card per N due cards. Sibling spacing: cards sharing
+    # the same source article stay this far apart. Band shuffle keeps priority
+    # order while varying surface order per day.
+    INTERLEAVE_EVERY = 4
+    SIBLING_GAP = 3
+    SHUFFLE_BAND = 4
+    SERENDIPITY_PER_SESSION = 1
+
+    @classmethod
+    async def get_srs_preferences(cls, db: AsyncSession, user_id: str) -> SrsPreference:
+        """Loads per-user SRS tuning, creating defaults on first use."""
+        pref = (await db.execute(
+            select(SrsPreference).where(SrsPreference.user_id == user_id)
+        )).scalars().first()
+        if not pref:
+            pref = SrsPreference(user_id=user_id)
+            db.add(pref)
+            await db.flush()
+        return pref
+
+    @classmethod
+    async def update_srs_preferences(
+        cls, db: AsyncSession, user_id: str, req: SrsPreferenceUpdateRequest,
+    ) -> SrsPreferenceResponse:
+        pref = await cls.get_srs_preferences(db, user_id)
+        if req.request_retention is not None:
+            pref.request_retention = fsrs_engine.clamp_retention(req.request_retention)
+        if req.max_interval is not None:
+            pref.max_interval = max(int(req.max_interval), 1)
+        if req.new_per_session is not None:
+            pref.new_per_session = min(max(int(req.new_per_session), 0), 20)
+        await db.commit()
+        await db.refresh(pref)
+        return SrsPreferenceResponse.model_validate(pref)
+
+    @staticmethod
+    def _card_retrievability(state: ReviewState, now: datetime) -> Optional[float]:
+        """Predicted recall probability now; None for never-reviewed cards."""
+        if state.last_review_at is None:
+            return None
+        elapsed = max((now - state.last_review_at).total_seconds() / 86400.0, 0.0)
+        return fsrs_engine.forgetting_curve(elapsed, state.stability)
+
+    @staticmethod
+    def _sibling_key(item_type: str, item: Any) -> str:
+        """Groups cards from the same article so they can be spaced apart."""
+        ctxs = getattr(item, "contexts_json", None) or []
+        for ctx in reversed(ctxs):
+            if isinstance(ctx, dict) and ctx.get("content_id"):
+                return f"{item_type}:{ctx['content_id']}"
+        return f"{item_type}:item:{getattr(item, 'id', '?')}"
+
+    @classmethod
+    def _order_session_queue(
+        cls,
+        due: List[Dict[str, Any]],
+        new: List[Dict[str, Any]],
+        upcoming: List[Dict[str, Any]],
+        limit: int,
+        seed: str,
+    ) -> List[Dict[str, Any]]:
+        """R-first ordering with new-card interleave, sibling spacing and band shuffle.
+
+        Each entry: {"state", "spec", "item", "retrievability"}. Deterministic
+        for a given seed (user + day), so refreshes don't reshuffle mid-day.
+        """
+        rng = fsrs_engine.seeded_rng(seed)
+        due_sorted = sorted(due, key=lambda p: (p["retrievability"] if p["retrievability"] is not None else 1.0))
+        # Interleave new cards: 1 per INTERLEAVE_EVERY due cards.
+        merged: List[Dict[str, Any]] = []
+        new_iter = iter(new)
+        since_new = 0
+        for entry in due_sorted:
+            merged.append(entry)
+            since_new += 1
+            if since_new >= cls.INTERLEAVE_EVERY:
+                nxt = next(new_iter, None)
+                if nxt is not None:
+                    merged.append(nxt)
+                since_new = 0
+        for leftover in new_iter:
+            merged.append(leftover)
+        # Upcoming fill.
+        merged.extend(upcoming)
+        # Sibling spacing: postpone cards whose group appeared recently.
+        spaced: List[Dict[str, Any]] = []
+        deferred: List[Dict[str, Any]] = []
+        last_seen: Dict[str, int] = {}
+        for pos, entry in enumerate(merged):
+            key = entry.get("sibling_key") or ""
+            last = last_seen.get(key)
+            if last is not None and pos - last < cls.SIBLING_GAP:
+                deferred.append(entry)
+                continue
+            spaced.append(entry)
+            last_seen[key] = len(spaced) - 1
+        spaced.extend(deferred)
+        # Band shuffle: stable priority, varied surface order.
+        order = fsrs_engine.band_shuffle(list(range(len(spaced))), cls.SHUFFLE_BAND, rng)
+        ordered = [spaced[i] for i in order]
+        return ordered[: max(int(limit), 1)]
+
+    @classmethod
+    async def forecast_review_load(
+        cls, db: AsyncSession, user_id: str, days: int = 30,
+    ) -> ReviewForecastResponse:
+        """Simulates due counts per day + measured 30-day recall rate."""
+        days = max(1, min(int(days or 30), 90))
+        pref = await cls.get_srs_preferences(db, user_id)
+        retention = fsrs_engine.clamp_retention(pref.request_retention)
+        now = datetime.utcnow()
+        states = (await db.execute(
+            select(ReviewState).where(
+                and_(ReviewState.user_id == user_id, ReviewState.due_status != "SUSPENDED")
+            )
+        )).scalars().all()
+        buckets = [0] * days
+        new_count = 0
+        for s in states:
+            if s.last_review_at is None:
+                new_count += 1
+                continue
+            elapsed_now = max((now - s.last_review_at).total_seconds() / 86400.0, 0.0)
+            placed = False
+            for d in range(days):
+                if fsrs_engine.forgetting_curve(elapsed_now + d, s.stability) < retention:
+                    buckets[d] += 1
+                    placed = True
+                    break
+            if not placed:
+                buckets[-1] += 1
+        cutoff = now - timedelta(days=30)
+        logs = (await db.execute(
+            select(ReviewLog.rating).where(
+                and_(ReviewLog.user_id == user_id, ReviewLog.reviewed_at >= cutoff)
+            )
+        )).scalars().all()
+        recall_rate = (
+            round(sum(1 for r in logs if r and r >= 3) / len(logs), 3) if logs else 0.0
+        )
+        out_days = [
+            ForecastDayItem(
+                date=(now + timedelta(days=d)).date().isoformat(),
+                due_count=buckets[d],
+                new_count=new_count if d == 0 else 0,
+            )
+            for d in range(days)
+        ]
+        return ReviewForecastResponse(days=out_days, retention_30d=recall_rate)
 
     @classmethod
     def _preview_intervals(
-        cls, stability: float, difficulty: float, reps: int
+        cls, stability: float, difficulty: float, reps: int,
+        retention: float = fsrs_engine.DEFAULT_RETENTION,
+        max_interval: int = fsrs_engine.DEFAULT_MAX_INTERVAL,
     ) -> Dict[str, int]:
         """Real Again/Hard/Good/Easy intervals (days) for one card's FSRS state."""
-        out: Dict[str, int] = {}
-        for rating, key in ((1, "again"), (2, "hard"), (3, "good"), (4, "easy")):
-            _, _, interval, _, _, _ = ReviewScheduler.calculate_next_schedule(
-                rating,
-                current_stability=stability,
-                current_difficulty=difficulty,
-                reps=reps,
-                lapses=0,
-            )
-            out[key] = int(interval)
-        return out
+        return fsrs_engine.preview_intervals(
+            stability, difficulty,
+            retention=retention, max_interval=max_interval,
+            is_new=(reps == 0),
+        )
 
     @staticmethod
     def _pick_context(contexts_json: Optional[list], examples_json: Optional[list] = None) -> Optional[str]:
@@ -1577,13 +1735,21 @@ class KnowledgeService:
         limit: int = 12,
         item_type: Optional[str] = None,
     ) -> ReviewSessionResponse:
-        """Builds an SRS 2.0 session: due reviews first, then new cards (capped).
+        """Builds an FSRS session: most-forgotten first, new cards interleaved.
+
+        Ordering is R-first (predicted recall ascending) with new-card
+        interleave, same-article spacing, seeded band shuffle and one
+        serendipity bonus card. Deterministic within a day per user.
 
         One AI call generates distractors for the whole session; any failure
         falls back to distractors sampled from the user's own library.
         """
         limit = max(1, min(limit or 12, 50))
         now = datetime.utcnow()
+        pref = await cls.get_srs_preferences(db, user_id)
+        retention = fsrs_engine.clamp_retention(pref.request_retention)
+        max_interval = max(int(pref.max_interval or fsrs_engine.DEFAULT_MAX_INTERVAL), 1)
+        new_cap = min(max(int(pref.new_per_session), 0), 20)
         base_filters = [
             ReviewState.user_id == user_id,
             ReviewState.due_status != "SUSPENDED",
@@ -1591,70 +1757,92 @@ class KnowledgeService:
         if item_type and item_type != "ALL":
             base_filters.append(ReviewState.item_type == item_type)
 
-        # 1. Due reviews (already seen at least once), oldest first
-        due_states = (await db.execute(
+        # Over-fetch pools; final ordering happens in Python (needs R + siblings).
+        due_pool = (await db.execute(
             select(ReviewState)
             .where(and_(*base_filters,
                         ReviewState.last_review_at.isnot(None),
                         ReviewState.next_review_at <= now))
             .order_by(ReviewState.next_review_at)
+            .limit(limit * 2)
+        )).scalars().all()
+        new_pool = (await db.execute(
+            select(ReviewState)
+            .where(and_(*base_filters, ReviewState.last_review_at.is_(None)))
+            .order_by(ReviewState.next_review_at)
+            .limit(min(limit, new_cap) if new_cap else 0)
+        )).scalars().all() if new_cap else []
+        upcoming_pool = (await db.execute(
+            select(ReviewState)
+            .where(and_(*base_filters,
+                        ReviewState.last_review_at.isnot(None),
+                        ReviewState.next_review_at > now))
+            .order_by(ReviewState.next_review_at)
             .limit(limit)
         )).scalars().all()
-        selected = list(due_states)
 
-        # 2. New cards (never reviewed), capped per session
-        if len(selected) < limit:
-            room = limit - len(selected)
-            new_states = (await db.execute(
-                select(ReviewState)
-                .where(and_(*base_filters, ReviewState.last_review_at.is_(None)))
-                .order_by(ReviewState.next_review_at)
-                .limit(min(room, cls.NEW_CARDS_PER_SESSION))
-            )).scalars().all()
-            selected.extend(new_states)
+        # 4. Load items + collect card specs (with sibling keys + R).
+        async def _load_pending(states: List[ReviewState]) -> List[Dict[str, Any]]:
+            out: List[Dict[str, Any]] = []
+            for state in states:
+                item = None
+                spec = None
+                if state.item_type == "VOCABULARY":
+                    item = (await db.execute(
+                        select(UserVocabulary).where(UserVocabulary.id == state.item_id)
+                    )).scalars().first()
+                    if item:
+                        spec = cls._vocab_card_spec(item)
+                elif state.item_type == "EXPRESSION":
+                    item = (await db.execute(
+                        select(UserExpression).where(UserExpression.id == state.item_id)
+                    )).scalars().first()
+                    if item:
+                        spec = cls._expression_card_spec(item)
+                elif state.item_type == "GRAMMAR":
+                    item = (await db.execute(
+                        select(UserGrammar).where(UserGrammar.id == state.item_id)
+                    )).scalars().first()
+                    if item:
+                        spec = cls._grammar_card_spec(item)
+                if item is None or spec is None:
+                    continue
+                out.append({
+                    "state": state,
+                    "spec": spec,
+                    "sibling_key": cls._sibling_key(state.item_type, item),
+                    "retrievability": cls._card_retrievability(state, now),
+                })
+            return out
 
-        # 3. Backfill with upcoming reviews when the queue runs dry
-        if len(selected) < limit:
-            room = limit - len(selected)
-            taken_ids = [s.id for s in selected]
-            upcoming = (await db.execute(
+        due = [p for p in await _load_pending(list(due_pool)) if p["retrievability"] is not None]
+        new = await _load_pending(list(new_pool))
+        upcoming = [p for p in await _load_pending(list(upcoming_pool)) if p["retrievability"] is not None]
+        pending = cls._order_session_queue(
+            due, new, upcoming, limit, seed=f"{user_id}:{now.date().isoformat()}",
+        )
+
+        # 5. Serendipity bonus: one random well-known card for retrieval variety.
+        if len(pending) >= 1 and cls.SERENDIPITY_PER_SESSION:
+            taken = {(p["state"].item_type, p["state"].item_id) for p in pending}
+            bonus_states = (await db.execute(
                 select(ReviewState)
                 .where(and_(*base_filters,
+                            ReviewState.last_review_at.isnot(None),
                             ReviewState.next_review_at > now,
-                            ReviewState.id.not_in(taken_ids) if taken_ids else True))
-                .order_by(ReviewState.next_review_at)
-                .limit(room)
+                            ReviewState.reps >= 3))
+                .order_by(func.random())
+                .limit(3)
             )).scalars().all()
-            selected.extend(upcoming)
+            for bs in bonus_states:
+                if (bs.item_type, bs.item_id) in taken:
+                    continue
+                bonus = await _load_pending([bs])
+                if bonus:
+                    pending.append(bonus[0])
+                    break
 
-        # 4. Load items + collect card specs
-        pending: List[Dict[str, Any]] = []
-        for state in selected:
-            item = None
-            spec = None
-            if state.item_type == "VOCABULARY":
-                item = (await db.execute(
-                    select(UserVocabulary).where(UserVocabulary.id == state.item_id)
-                )).scalars().first()
-                if item:
-                    spec = cls._vocab_card_spec(item)
-            elif state.item_type == "EXPRESSION":
-                item = (await db.execute(
-                    select(UserExpression).where(UserExpression.id == state.item_id)
-                )).scalars().first()
-                if item:
-                    spec = cls._expression_card_spec(item)
-            elif state.item_type == "GRAMMAR":
-                item = (await db.execute(
-                    select(UserGrammar).where(UserGrammar.id == state.item_id)
-                )).scalars().first()
-                if item:
-                    spec = cls._grammar_card_spec(item)
-            if item is None or spec is None:
-                continue
-            pending.append({"state": state, "spec": spec})
-
-        # 5. One AI call for the whole session's distractors.
+        # 6. One AI call for the whole session's distractors.
         # No fallback: if AI fails, the session is refused with a clear
         # error so the user knows instead of getting junk options.
         ai_map = await cls._ai_session_distractors([
@@ -1692,7 +1880,8 @@ class KnowledgeService:
                 difficulty=state.difficulty,
                 reps=state.reps,
                 interval_preview=cls._preview_intervals(
-                    state.stability, state.difficulty, state.reps
+                    state.stability, state.difficulty, state.reps,
+                    retention=retention, max_interval=max_interval,
                 ),
             ))
 
@@ -1736,13 +1925,27 @@ class KnowledgeService:
         if not state:
             raise ValueError(f"ReviewState for item {req.item_id} not found.")
 
-        # Calculate FSRS schedule
+        # Snapshot pre-review memory state for the history log.
+        old_stability = float(state.stability or 1.0)
+
+        # FSRS transition with the user's retention tuning + deterministic fuzz.
+        pref = await cls.get_srs_preferences(db, user_id)
+        retention = fsrs_engine.clamp_retention(pref.request_retention)
+        max_interval = max(int(pref.max_interval or fsrs_engine.DEFAULT_MAX_INTERVAL), 1)
+        if state.last_review_at is None:
+            elapsed = None
+        else:
+            elapsed = max((datetime.utcnow() - state.last_review_at).total_seconds() / 86400.0, 0.0)
         new_s, new_d, interval, next_rev, new_reps, new_lapses = ReviewScheduler.calculate_next_schedule(
             rating=req.rating,
             current_stability=state.stability,
             current_difficulty=state.difficulty,
             reps=state.reps,
             lapses=state.lapses,
+            elapsed_days=elapsed,
+            request_retention=retention,
+            max_interval=max_interval,
+            seed=f"{user_id}:{req.item_type}:{req.item_id}:{state.reps}",
         )
 
         state.stability = new_s
@@ -1836,6 +2039,24 @@ class KnowledgeService:
                 new_status = "LEARNING"
 
         await db.commit()
+
+        # Per-answer history for retention stats, forecasts and future fits.
+        try:
+            db.add(ReviewLog(
+                user_id=user_id,
+                item_type=req.item_type,
+                item_id=req.item_id,
+                rating=req.rating,
+                retrievability=(
+                    fsrs_engine.forgetting_curve(elapsed, old_stability)
+                    if elapsed is not None else 1.0
+                ),
+                elapsed_days=elapsed,
+                interval_days=interval,
+            ))
+            await db.commit()
+        except Exception as e:
+            logger.warning(f"Review log write skipped: {e}")
 
         return SubmitReviewAnswerResponse(
             item_id=req.item_id,

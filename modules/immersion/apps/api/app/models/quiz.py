@@ -95,6 +95,12 @@ class ReadingQuizQuestion(Base):
     difficulty: Mapped[str] = mapped_column(String(30), default="STANDARD", nullable=False)
     points: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
 
+    # IRT 2PL calibration (cold-started from the static difficulty label,
+    # refined by the calibration job as real answers accumulate).
+    irt_a: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    irt_b: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    irt_n: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
     # Grounding references
     source_sentence_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     source_section_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
@@ -245,3 +251,17 @@ class QuizAnswer(Base):
     __table_args__ = (
         UniqueConstraint("attempt_id", "question_id", name="uq_attempt_question_answer"),
     )
+
+
+class LearnerAbility(Base):
+    """Online IRT ability estimate per user (global + per-skill thetas)."""
+    __tablename__ = "learner_ability"
+
+    user_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    theta: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    se: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    # {"MAIN_IDEA": {"theta": 0.2, "n": 12}, ...}
+    skill_thetas_json: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    answers_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)

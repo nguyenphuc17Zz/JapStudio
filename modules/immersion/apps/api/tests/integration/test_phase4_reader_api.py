@@ -264,13 +264,29 @@ async def test_selection_lookup_and_validation(test_db_session):
     headers = {"X-User-Id": "user_tester_99"}
 
     async with AsyncClient(transport=transport, base_url="http://test", headers=headers) as ac:
-        # A. Successful lookup with sentence context
+        # A1. Quick lookup (default): chỉ reading + nghĩa, nhanh
+        quick_resp = await ac.post(
+            "/api/v1/immersion/lookup",
+            json={
+                "query": "対策を講じる",
+                "context": "日本政府は新たな対策を講じる方針を決定した。",
+                "model_provider": "mock",
+            },
+        )
+        assert quick_resp.status_code == 200, quick_resp.text
+        quick_data = quick_resp.json()
+        assert quick_data["query"] == "対策を講じる"
+        assert len(quick_data["meaning_vi"]) > 0
+        assert len(quick_data["reading"]) > 0
+
+        # A2. Full lookup: chi tiết AI đầy đủ
         resp = await ac.post(
             "/api/v1/immersion/lookup",
             json={
                 "query": "対策を講じる",
                 "context": "日本政府は新たな対策を講じる方針を決定した。",
                 "model_provider": "mock",
+                "detail": "full",
             },
         )
         assert resp.status_code == 200, resp.text

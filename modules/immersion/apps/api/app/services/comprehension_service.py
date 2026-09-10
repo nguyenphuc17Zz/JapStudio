@@ -376,11 +376,22 @@ class ComprehensionService:
                     )
 
             try:
+                # JLPT-aware generation: match question wording to the article level.
+                article_jlpt = ""
+                try:
+                    article_jlpt = (getattr(content.enrichment, "estimated_jlpt", None) or "").strip().upper()
+                except Exception:
+                    article_jlpt = ""
+                level_hint = (
+                    f"\nLearner level: {article_jlpt}. Keep vocabulary and sentence patterns at this level."
+                    if article_jlpt else ""
+                )
                 # Checkpoint 1: Main Idea Checkpoint
                 cp1_prompt = f"""Task: Generate an active reading comprehension checkpoint for a Japanese learner.
 Article Title: {content.title}
 Content Section (Sentences 1 to {mid_point}):
 {section1_text}
+{level_hint}
 
 Generate 1 multiple-choice question with exactly 3 options testing the MAIN IDEA of this specific section.
 Requirements:
@@ -420,6 +431,7 @@ Requirements:
 Article Title: {content.title}
 Content Section (Sentences {mid_point + 1} to {sentence_count}):
 {section2_text}
+{level_hint}
 
 Generate 1 multiple-choice question with exactly 3 options testing the AUTHOR'S INTENTION or KEY TAKEAWAY of this specific section.
 Requirements:

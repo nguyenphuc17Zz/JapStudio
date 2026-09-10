@@ -135,6 +135,27 @@ class QuizAttemptResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class AdaptiveNextResponse(BaseModel):
+    attempt_id: int
+    done: bool = False
+    theta: float = 0.0
+    se: float = 1.0
+    answered_count: int = 0
+    total_count: int = 0
+    stop_reason: Optional[str] = None  # SE_THRESHOLD, ALL_ANSWERED, MAX_ITEMS
+    question: Optional[QuizQuestionClientResponse] = None
+
+
+class LearnerAbilityResponse(BaseModel):
+    user_id: str
+    theta: float = 0.0
+    se: float = 1.0
+    answers_count: int = 0
+    skill_thetas: Dict[str, Any] = Field(default_factory=dict)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class SubmitAnswerRequest(BaseModel):
     question_id: int
     selected_option_id: Optional[int] = None
@@ -232,3 +253,5 @@ class QuizAdminStatsResponse(BaseModel):
     completed_attempts: int
     avg_accuracy_percentage: float
     quizzes_list: List[Dict[str, Any]] = Field(default_factory=list)
+    # Per-question IRT item analysis (p-value, discrimination, timing, flags).
+    item_analysis: List[Dict[str, Any]] = Field(default_factory=list)
