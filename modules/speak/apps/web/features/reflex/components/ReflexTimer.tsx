@@ -11,7 +11,7 @@ interface Props {
   state: "normal" | "warning" | "critical";
   isActive: boolean;
   isPaused?: boolean;
-  variant?: "ring" | "badge" | "bar" | "minimal";
+  variant?: "ring" | "badge" | "bar" | "minimal" | "laser-bar";
   className?: string;
 }
 
@@ -51,6 +51,57 @@ export function ReflexTimer({
     : "";
 
   const secs = isInfinite ? (remainingMs / 1000).toFixed(1) : (remainingMs / 1000).toFixed(1);
+
+  if (variant === "laser-bar") {
+    return (
+      <div
+        className={cn(
+          "w-full flex items-center justify-between gap-3 bg-muted/40 dark:bg-black/30 border border-border/80 dark:border-white/10 rounded-xl px-3 py-2 shadow-2xs backdrop-blur-md",
+          className
+        )}
+        role="progressbar"
+        aria-valuenow={Math.round(pct * 100)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider shrink-0 flex items-center gap-1.5">
+          <Clock className={cn("h-3.5 w-3.5", isActive && "text-primary animate-spin duration-3000")} />
+          <span>{isPaused ? "Tạm dừng" : isInfinite ? "Tự do" : "Đồng hồ"}</span>
+        </span>
+        <div className="flex-1 h-2 bg-muted dark:bg-white/10 rounded-full overflow-hidden">
+          <div
+            className={cn(
+              "h-full rounded-full transition-all duration-100 ease-linear",
+              isPaused
+                ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                : isInfinite
+                ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                : state === "critical"
+                ? "bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.6)] animate-pulse"
+                : state === "warning"
+                ? "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
+                : "bg-gradient-to-r from-blue-600 via-primary to-emerald-400 shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+            )}
+            style={{ width: `${pct * 100}%` }}
+          />
+        </div>
+        <span
+          className={cn(
+            "font-mono font-black text-xs shrink-0",
+            isPaused
+              ? "text-amber-500"
+              : state === "critical"
+              ? "text-rose-500 animate-pulse"
+              : state === "warning"
+              ? "text-amber-500"
+              : "text-foreground"
+          )}
+        >
+          {isInfinite ? `∞ (${secs}s)` : `${secs}s / ${(timerLimitMs / 1000).toFixed(0)}s`}
+        </span>
+      </div>
+    );
+  }
 
   if (variant === "minimal") {
     return (

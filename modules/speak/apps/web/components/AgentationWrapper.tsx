@@ -4,13 +4,22 @@ import { useEffect, useState } from "react";
 import { Agentation } from "agentation";
 
 export function AgentationDev() {
-  const [isMounted, setIsMounted] = useState(false);
+  const [isEnabled, setIsEnabled] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true);
+    if (process.env.NODE_ENV !== "development") return;
+
+    try {
+      if (
+        process.env.NEXT_PUBLIC_ENABLE_AGENTATION === "true" ||
+        localStorage.getItem("enable_agentation") === "true"
+      ) {
+        setIsEnabled(true);
+      }
+    } catch {}
   }, []);
 
-  if (process.env.NODE_ENV !== "development" || !isMounted) {
+  if (!isEnabled) {
     return null;
   }
 

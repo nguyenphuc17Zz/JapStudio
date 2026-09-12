@@ -31,6 +31,37 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi" className="dark" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function shouldIgnore(err) {
+                  var str = (err && (err.stack || err.message)) || String(err || '');
+                  return str.indexOf('chrome-extension://') !== -1 ||
+                         str.indexOf('moz-extension://') !== -1 ||
+                         str.indexOf('bkkbcggnhapdmkeljlodobbkopceiche') !== -1 ||
+                         str.indexOf('injectScriptAdjust') !== -1 ||
+                         str.indexOf('page-toolbar-css') !== -1 ||
+                         str.indexOf('4747') !== -1;
+                }
+                window.addEventListener('unhandledrejection', function(event) {
+                  if (shouldIgnore(event.reason)) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                  }
+                }, true);
+                window.addEventListener('error', function(event) {
+                  if (shouldIgnore(event.error) || (event.filename && (event.filename.indexOf('chrome-extension://') !== -1 || event.filename.indexOf('moz-extension://') !== -1))) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                  }
+                }, true);
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-background text-foreground">
         <ThemeProvider>
           <Suspense fallback={null}>

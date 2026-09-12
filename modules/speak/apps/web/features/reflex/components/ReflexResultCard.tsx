@@ -32,6 +32,7 @@ interface Props {
   onRetry?: () => void;
   onSlowMode?: () => void;
   onCancelAutoNext?: () => void;
+  className?: string;
 }
 
 export function ReflexResultCard({
@@ -41,6 +42,7 @@ export function ReflexResultCard({
   onRetry,
   onSlowMode,
   onCancelAutoNext,
+  className,
 }: Props) {
   const [isUserAudioPlaying, setIsUserAudioPlaying] = useState(false);
   const [userAudioCurrentTime, setUserAudioCurrentTime] = useState(0);
@@ -251,8 +253,9 @@ export function ReflexResultCard({
   return (
     <div
       className={cn(
-        "rounded-3xl border p-5 md:p-6 space-y-4 shadow-lg transition-all animate-in fade-in zoom-in-95 duration-200 washi-texture",
-        statusConfig.borderClass
+        "rounded-3xl border p-4 sm:p-5 shadow-lg transition-all animate-in fade-in zoom-in-95 duration-200 washi-texture h-full flex flex-col justify-between overflow-y-auto space-y-3",
+        statusConfig.borderClass,
+        className
       )}
     >
       {/* Hidden HTML5 audio element for User voice playback */}
@@ -871,51 +874,51 @@ export function ReflexResultCard({
       )}
 
       {/* 5. Action Buttons Strip */}
-      <div className="flex flex-wrap items-center gap-2.5 pt-1">
+      <div className="flex items-center gap-2 pt-1 shrink-0">
         <Button
           size="md"
           variant="akane"
-          className="flex-1 font-black text-sm md:text-base h-11 rounded-2xl gap-2 shadow-md hover:shadow-lg transition-all animate-bounce ring-2 ring-primary/20"
+          className="flex-1 font-black text-xs sm:text-sm h-10 rounded-xl gap-1.5 shadow-md hover:shadow-lg transition-all bg-gradient-to-r from-blue-600 via-primary to-indigo-600 text-white cursor-pointer ring-2 ring-primary/25"
           onClick={() => {
             stopWebSpeech();
             onNext?.();
           }}
         >
           <span>Câu Tiếp Theo</span>
-          <span className="text-[11px] font-mono px-2 py-0.5 rounded-lg bg-black/20 text-white font-bold">Space / Enter</span>
+          <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/20 text-white font-bold">Space / ↵</kbd>
           <ArrowRight className="h-4 w-4" />
         </Button>
 
         <Button
           size="md"
           variant="outline"
-          className="h-11 px-4 rounded-2xl gap-1.5 font-bold border-border"
+          className="h-10 px-3 rounded-xl gap-1 font-bold text-xs border-border cursor-pointer"
           onClick={() => {
             stopWebSpeech();
             onRetry?.();
           }}
           title="Luyện tập lại câu này (Phím R)"
         >
-          <RotateCcw className="h-4 w-4" />
+          <RotateCcw className="h-3.5 w-3.5" />
           <span>Làm lại (R)</span>
         </Button>
 
         <Button
           size="md"
           variant="outline"
-          className="h-11 px-3.5 rounded-2xl gap-1.5 font-bold border-primary/30 text-primary hover:bg-primary/10"
+          className="h-10 px-3 rounded-xl gap-1 font-bold text-xs border-primary/30 text-primary hover:bg-primary/10 cursor-pointer"
           onClick={handlePlayModelTTS}
           title="Nghe lại phát âm mẫu (Phím A)"
         >
-          <Volume2 className={cn("h-4 w-4 text-primary", isTTSPlaying && "animate-bounce")} />
-          <span>{isTTSPlaying ? "Đang đọc..." : "Nghe lại (A)"}</span>
+          <Volume2 className={cn("h-3.5 w-3.5 text-primary", isTTSPlaying && "animate-bounce")} />
+          <span>{isTTSPlaying ? "Đang đọc..." : "Nghe mẫu (A)"}</span>
         </Button>
 
         {isTimeout && (
           <Button
             size="md"
             variant="ghost"
-            className="h-11 px-3 rounded-2xl text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 gap-1.5 font-bold text-xs"
+            className="h-10 px-2.5 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 gap-1 font-bold text-xs cursor-pointer"
             onClick={() => {
               stopWebSpeech();
               onSlowMode?.();

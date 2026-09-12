@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useKeigoSession } from "@/features/keigo/hooks/useKeigoSession";
 import { ReflexTimer as KeigoTimer } from "@/features/reflex/components/ReflexTimer";
+import { CombatCapsuleHUD } from "@/features/reflex/components/CombatCapsuleHUD";
 import { KeigoPromptCard } from "@/features/keigo/components/KeigoPromptCard";
 import { KeigoResultCard } from "@/features/keigo/components/KeigoResultCard";
 import { KeigoSessionSummary } from "@/features/keigo/components/KeigoSessionSummary";
@@ -384,222 +385,222 @@ export default function KeigoPage() {
   const currentSubModeInfo = KEIGO_SUB_MODES.find((m) => m.id === subMode) || KEIGO_SUB_MODES[0];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 animate-in fade-in duration-300 pb-8">
-      {/* Session Top Status Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#121722]/90 backdrop-blur-2xl shadow-md">
-        <div className="flex items-center gap-2">
-          <Badge variant={currentSubModeInfo.badgeVariant} size="sm" className="font-bold rounded-full shadow-2xs">
-            {currentSubModeInfo.ja} • {currentSubModeInfo.label}
-          </Badge>
-          <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-            <span>•</span>
-            <span>Đúng: <strong className="text-emerald-500 font-mono">{session.stats.correct}</strong>/{session.stats.total}</span>
-            <span>•</span>
-            <span>TB: <strong className="text-foreground font-mono">{session.stats.avgLatency ? Math.round(session.stats.avgLatency) : "—"}ms</strong></span>
+    <div className="w-full max-w-7xl mx-auto h-full flex flex-col justify-between px-2 sm:px-4 py-2 gap-2 overflow-hidden select-none animate-in fade-in duration-200">
+      {/* 1. Combat Capsule HUD */}
+      <CombatCapsuleHUD
+        questionNumber={session.stats.total + (session.phase === "result" ? 0 : 1)}
+        subModeLabel={currentSubModeInfo.label}
+        subModeJa={currentSubModeInfo.ja}
+        currentStreak={session.stats.correct}
+        duration={duration}
+        sessionRemainingSec={sessionRemainingSec}
+        sessionElapsedSec={elapsedSec}
+        subtitleMode={subtitleMode}
+        setSubtitleMode={setSubtitleMode}
+        startTrigger={startTrigger}
+        setStartTrigger={setStartTrigger}
+        autoNext={autoNext}
+        setAutoNext={setAutoNext}
+        filterTrigger={{
+          label: "Sổ tay kính ngữ",
+          onClick: () => setShowCheatsheet(true),
+        }}
+        onSubmit={() => {
+          stopWebSpeech();
+          session.recorder.releaseMicrophone();
+          session.speech.stopListening();
+          setShowSummary(true);
+          sessionSetPhase("summary" as any);
+          soundFX.playVictory();
+        }}
+        onExit={() => {
+          stopWebSpeech();
+          session.setPhase("idle" as any);
+          setShowSummary(false);
+        }}
+        onOpenHelp={() => setShowKeybindingsModal(true)}
+      />
+
+      {/* 2. Middle Arena Stage */}
+      <div className="flex-1 min-h-0 w-full overflow-hidden">
+        {session.phase === "loading" || (!activeExercise && !showSummary) ? (
+          <div className="h-full flex items-center justify-center rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl shadow-xl p-6">
+            <ZenLoadingState
+              variant="studio"
+              title="AI Đang Thiết Lập Thử Thách Kính Ngữ..."
+              ja="敬語課題生成中..."
+              description="AI đang thiết lập tình huống kinh doanh, đối tượng giao tiếp và ngữ cảnh tôn kính..."
+            />
           </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full min-h-0">
+            {/* LEFT COLUMN: Mission Deck */}
+            <div className="lg:col-span-5 h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
+              <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-72 h-36 bg-amber-500/10 blur-3xl rounded-full pointer-events-none -z-10" />
+
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <KeigoPromptCard
+                  exercise={activeExercise}
+                  subtitleMode={subtitleMode}
+                  onPlayAudio={() => playPromptAudio(false)}
+                  phase={session.phase}
+                  hintLevel={session.hintLevel}
+                  onCycleHint={session.cycleHint}
+                />
+              </div>
+
+              <div className="pt-2 shrink-0 border-t border-border/60 dark:border-white/10 space-y-1.5">
+                <KeigoTimer
+                  variant="laser-bar"
+                  remainingMs={session.timer.remainingMs}
+                  timerLimitMs={session.timer.isActive ? timerMs : activeExercise?.timerLimitMs ?? timerMs}
+                  progress={session.timer.progress}
+                  state={session.timer.state}
+                  isActive={session.timer.isActive}
+                />
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: Combat Action Deck or Result Card */}
+            <div className="lg:col-span-7 h-full min-h-0 relative">
+              {session.phase === "result" && session.result ? (
+                <div className="h-full overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                  <KeigoResultCard
+                    result={session.result}
+                    exercise={activeExercise}
+                    onNext={() => {
+                      soundFX.playSuikinkutsu();
+                      session.startNext();
+                    }}
+                    onRetry={() => {
+                      soundFX.playSuikinkutsu();
+                      session.retry();
+                    }}
+                    onAskCoach={handleCoachSelect}
+                    onCancelAutoNext={session.cancelAutoNext}
+                  />
+                </div>
+              ) : (
+                <div className="h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
+                  {/* Status Header */}
+                  <div className="flex items-center justify-between gap-2 shrink-0 pb-2 border-b border-border/60 dark:border-white/10">
+                    <span className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      {isEvaluating ? (
+                        <span className="text-primary">AI ĐANG CHẤM ĐIỂM...</span>
+                      ) : session.phase === "ready" ? (
+                        <>
+                          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                          <span className="text-amber-500">ĐÃ SẴN SÀNG TRẢ LỜI</span>
+                        </>
+                      ) : isRecordingOrWaiting ? (
+                        <>
+                          <Mic className="h-3.5 w-3.5 text-rose-500 animate-pulse" />
+                          <span className="text-rose-500">ĐANG THU ÂM KÍNH NGỮ...</span>
+                        </>
+                      ) : (
+                        <span>LUYỆN TẬP KÍNH NGỮ THỰC CHIẾN</span>
+                      )}
+                    </span>
+
+                    <Badge variant="outline" size="sm" className="text-[10px] font-mono border-white/15 bg-white/5 text-primary rounded-full">
+                      Business Keigo Engine
+                    </Badge>
+                  </div>
+
+                  {/* Soundwaves & Actions */}
+                  <div className="flex-1 min-h-0 flex flex-col items-center justify-center py-2 space-y-4">
+                    <div className="flex items-center gap-1.5 h-14">
+                      {[0.5, 1.1, 0.7, 1.5, 0.9, 1.3, 0.6].map((scale, i) => {
+                        const activeMultiplier = isRecordingOrWaiting ? 36 : 6;
+                        const height = Math.max(6, Math.min(50, activeMultiplier * scale + 6));
+                        return (
+                          <span
+                            key={i}
+                            className={cn(
+                              "w-1.5 rounded-full transition-all duration-75",
+                              isRecordingOrWaiting
+                                ? "bg-gradient-to-t from-rose-500 to-amber-400"
+                                : "bg-gradient-to-t from-blue-600 to-primary/60"
+                            )}
+                            style={{ height: `${height}px` }}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {session.phase === "ready" && (
+                      <Button
+                        size="lg"
+                        className="font-extrabold text-sm h-11 px-6 rounded-2xl shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all gap-2 bg-gradient-to-r from-amber-500 via-amber-600 to-primary text-white cursor-pointer ring-2 ring-amber-500/30"
+                        onClick={() => session.startVoiceRecording()}
+                      >
+                        <Mic className="h-4 w-4" />
+                        <span>🎙️ Bắt Đầu Trả Lời ({formatKeyDisplay(keybindings.keigoStartVoice)})</span>
+                      </Button>
+                    )}
+
+                    {isRecordingOrWaiting && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="akane"
+                          className="font-bold text-xs h-9 px-4 rounded-xl shadow-xs gap-1.5 cursor-pointer bg-gradient-to-r from-blue-600 to-primary text-white"
+                          onClick={() => handleDirectSubmit(true)}
+                          disabled={isEvaluating}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span>Nộp câu này</span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="font-bold text-xs h-9 px-3 rounded-xl border-border/80 text-muted-foreground hover:text-foreground"
+                          onClick={() => session.skip()}
+                          disabled={isEvaluating}
+                        >
+                          Bỏ qua câu ({formatKeyDisplay(keybindings.keigoSkip)})
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Unified Input Bar */}
+                  <div className="shrink-0 pt-2 border-t border-border/60 dark:border-white/10">
+                    <ZenUnifiedInputBar
+                      value={transcriptInput}
+                      onChange={setTranscriptInput}
+                      onSubmit={handleDirectSubmit}
+                      speechTranscript={session.speech.transcript}
+                      isRecording={isRecordingOrWaiting}
+                      isEvaluating={isEvaluating}
+                      placeholder="Nói vào mic hoặc gõ câu kính ngữ... (VD: ご覧になります / 参ります)"
+                      submitButtonText={`Gửi (${formatKeyDisplay(keybindings.keigoSubmitOrNext)})`}
+                      autoFocus={true}
+                      hintText="Gõ phím thay mic khi ở văn phòng"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Bottom Shortcuts Strip */}
+      <div className="h-7 shrink-0 border-t border-border/60 dark:border-white/10 flex items-center justify-between text-[11px] text-muted-foreground px-1">
+        <div className="flex items-center gap-3">
+          <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.keigoSubmitOrNext)}</kbd> Bắt đầu / Nộp</span>
+          <span className="hidden sm:inline"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.keigoRetry)}</kbd> Làm lại</span>
+          <span className="hidden md:inline"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.keigoListenPrompt)}</kbd> Nghe đề</span>
         </div>
-
-        <div className="flex items-center gap-2.5 ml-auto">
-          <div
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold border shadow-2xs backdrop-blur-md",
-              sessionRemainingSec <= 30
-                ? "bg-rose-500/15 text-rose-500 border-rose-500/30 animate-pulse"
-                : "bg-white/5 text-foreground border-white/15"
-            )}
-          >
-            <Clock className="h-3.5 w-3.5 text-primary" />
-            <span>{duration === 0 ? `Phiên: ${formatSessionTime(elapsedSec)} / ∞` : formatSessionTime(sessionRemainingSec)}</span>
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCheatsheet(true)}
-            className="h-8 gap-1 text-xs font-bold border-amber-500/30 text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 rounded-xl backdrop-blur-md shadow-2xs"
-            title="Mở Sổ tay Kính ngữ"
-          >
-            <BookOpen className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Sổ tay ({formatKeyDisplay(keybindings.keigoOpenCheatsheet)})</span>
-          </Button>
-
-          <Button
-            variant="akane"
-            size="sm"
-            onClick={() => {
-              stopWebSpeech();
-              session.recorder.releaseMicrophone();
-              session.speech.stopListening();
-              setShowSummary(true);
-              sessionSetPhase("summary" as any);
-              soundFX.playVictory();
-            }}
-            className="h-8 gap-1.5 px-3 text-xs font-bold rounded-xl shadow-2xs cursor-pointer bg-primary text-white"
-            title="Nộp bài và xem bảng điểm tổng kết (kết thúc phiên)"
-          >
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            <span>Nộp bài</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              stopWebSpeech();
-              session.setPhase("idle" as any);
-              setShowSummary(false);
-            }}
-            className="h-8 text-xs font-bold text-muted-foreground hover:text-foreground rounded-xl"
-          >
-            Thoát (Esc)
-          </Button>
+        <div className="flex items-center gap-2">
+          <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.keigoOpenCheatsheet)}</kbd> Sổ tay</span>
+          <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">Esc</kbd> Thoát</span>
         </div>
       </div>
 
-      {/* Main Workout Stage */}
-      {session.phase === "loading" || (!activeExercise && !showSummary) ? (
-        <ZenLoadingState
-          variant="studio"
-          title="AI Đang Thiết Lập Thử Thách Kính Ngữ..."
-          ja="敬語課題生成中..."
-          description="AI đang thiết lập tình huống kinh doanh, đối tượng giao tiếp và ngữ cảnh tôn kính..."
-        />
-      ) : session.phase === "result" && session.result ? (
-        <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-200">
-          <KeigoResultCard
-            result={session.result}
-            exercise={activeExercise}
-            onNext={() => {
-              soundFX.playSuikinkutsu();
-              session.startNext();
-            }}
-            onRetry={() => {
-              soundFX.playSuikinkutsu();
-              session.retry();
-            }}
-            onAskCoach={handleCoachSelect}
-            onCancelAutoNext={session.cancelAutoNext}
-          />
-        </div>
-      ) : (
-        /* Unified Center Stage */
-        <div className="max-w-4xl mx-auto rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#121722]/85 backdrop-blur-2xl shadow-xl p-5 sm:p-7 flex flex-col items-center text-center space-y-5 relative overflow-hidden">
-          <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[480px] h-[240px] bg-amber-500/10 blur-3xl rounded-full pointer-events-none -z-10" />
-
-          {/* Prompt Card */}
-          <div className="w-full">
-            <KeigoPromptCard
-              exercise={activeExercise}
-              subtitleMode={subtitleMode}
-              onPlayAudio={() => playPromptAudio(false)}
-              phase={session.phase}
-              hintLevel={session.hintLevel}
-              onCycleHint={session.cycleHint}
-            />
-          </div>
-
-          <div className="w-full h-px bg-gradient-to-r from-transparent via-border/80 dark:via-white/10 to-transparent my-1" />
-
-          {/* Cockpit: Timer, Status Alert, Action Button */}
-          <div className="w-full flex flex-col items-center justify-center space-y-4">
-            <KeigoTimer
-              variant="minimal"
-              remainingMs={session.timer.remainingMs}
-              timerLimitMs={session.timer.isActive ? timerMs : activeExercise?.timerLimitMs ?? timerMs}
-              progress={session.timer.progress}
-              state={session.timer.state}
-              isActive={session.timer.isActive}
-            />
-
-            {/* Status Alert Message */}
-            <div className="text-center">
-              {isEvaluating ? (
-                <ZenLoadingState
-                  variant="inline"
-                  title="AI Đang Phân Tích Phản Xạ & Chuẩn Mực Kính Ngữ..."
-                  ja="敬語分析中..."
-                />
-              ) : session.phase === "ready" ? (
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-extrabold shadow-2xs">
-                  <Sparkles className="h-4 w-4" />
-                  <span>🎯 ĐÃ SẴN SÀNG! Hãy suy nghĩ câu kính ngữ và bắt đầu trả lời</span>
-                </div>
-              ) : isRecordingOrWaiting ? (
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs sm:text-sm font-black animate-pulse">
-                  <Mic className="h-4 w-4" />
-                  <span>ĐANG GHI NHẬN GIỌNG NÓI KÍNH NGỮ CỦA BẠN...</span>
-                </div>
-              ) : null}
-            </div>
-
-            {/* Big Action Button */}
-            {session.phase === "ready" && (
-              <Button
-                size="lg"
-                className="font-extrabold text-sm md:text-base h-13 min-w-[270px] px-8 rounded-2xl shadow-xl shadow-amber-500/20 hover:shadow-amber-500/40 transition-all gap-2.5 ring-2 ring-amber-500/30 cursor-pointer bg-gradient-to-r from-amber-500 via-amber-600 to-primary text-white"
-                onClick={() => session.startVoiceRecording()}
-              >
-                <Mic className="h-5 w-5" />
-                <span>🎙️ Bắt Đầu Trả Lời ({formatKeyDisplay(keybindings.keigoStartVoice)})</span>
-              </Button>
-            )}
-
-            {/* Unified Input Bar for Voice or Typing */}
-            <div className="w-full max-w-xl mx-auto space-y-1">
-              <ZenUnifiedInputBar
-                value={transcriptInput}
-                onChange={setTranscriptInput}
-                onSubmit={handleDirectSubmit}
-                speechTranscript={session.speech.transcript}
-                isRecording={isRecordingOrWaiting}
-                isEvaluating={isEvaluating}
-                placeholder="Nói vào mic hoặc gõ câu kính ngữ... (VD: ご覧になります / 参ります)"
-                submitButtonText={`Gửi (${formatKeyDisplay(keybindings.keigoSubmitOrNext)})`}
-                autoFocus={true}
-                hintText="Gõ phím thay mic khi ở văn phòng"
-              />
-            </div>
-
-            {/* Quick action buttons */}
-            <div className="flex items-center gap-2.5 pt-0.5">
-              <Button
-                size="sm"
-                variant="akane"
-                className="font-bold text-xs h-8 px-4 rounded-xl shadow-xs gap-1.5 cursor-pointer bg-primary text-white"
-                onClick={() => handleDirectSubmit(true)}
-                disabled={isEvaluating}
-              >
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>Nộp câu này</span>
-              </Button>
-
-              <Button
-                size="sm"
-                variant="outline"
-                className="font-bold text-xs h-8 px-3 rounded-xl border-border/80 text-muted-foreground hover:text-foreground"
-                onClick={() => session.skip()}
-                disabled={isEvaluating}
-              >
-                Bỏ qua câu ({formatKeyDisplay(keybindings.keigoSkip)})
-              </Button>
-            </div>
-          </div>
-
-          {insights.length > 0 && (
-            <div className="w-full pt-2 text-left">
-              <CoachInsightCard
-                insight={insights[0]}
-                onDismiss={() => dismiss(insights[0].id)}
-                onAction={(ins) => handleCoachSelect(ins.recommended_action || ins.description)}
-              />
-            </div>
-          )}
-        </div>
-      )}
-
       <KeigoCheatsheetModal isOpen={showCheatsheet} onClose={() => setShowCheatsheet(false)} />
       <GlobalKeybindingsModal isOpen={showKeybindingsModal} onClose={() => setShowKeybindingsModal(false)} />
-
       <CoachPanel open={coachOpen} onClose={() => setCoachOpen(false)} />
     </div>
   );

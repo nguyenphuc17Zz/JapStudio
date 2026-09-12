@@ -24,6 +24,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { ReflexTimer as SituationsTimerBar } from "@/features/reflex/components/ReflexTimer";
+import { CombatCapsuleHUD } from "@/features/reflex/components/CombatCapsuleHUD";
 import {
   SituationsLobby,
   SituationsPromptCard,
@@ -291,218 +292,216 @@ export default function SituationsPage() {
         />
       )}
 
-      {/* 2. Active Session View */}
+      {/* 2. Active Session View (Zero-Scroll Split Arena) */}
       {session.phase !== "idle" && session.phase !== "summary" && (
-        <div className="max-w-5xl mx-auto space-y-4 animate-in fade-in duration-200">
-          {/* Top Session Navigation Header */}
-          <div className="px-4 py-2.5 rounded-2xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#121722]/80 backdrop-blur-xl shadow-xs flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  soundFX.playFurin();
-                  session.setPhase("idle");
-                }}
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-xl"
-                title="Về Sảnh chính (Esc)"
-              >
-                <Home className="h-4 w-4" />
-              </Button>
+        <div className="w-full max-w-7xl mx-auto h-full flex flex-col justify-between px-2 sm:px-4 py-2 gap-2 overflow-hidden select-none animate-in fade-in duration-200">
+          {/* Top Combat Capsule HUD */}
+          <CombatCapsuleHUD
+            questionNumber={session.results.length + 1}
+            subModeLabel="Tình Huống Thực Chiến"
+            subModeJa="場面"
+            currentStreak={1}
+            duration={duration}
+            sessionRemainingSec={session.timer.remainingMs ? Math.ceil(session.timer.remainingMs / 1000) : 0}
+            sessionElapsedSec={elapsedSec}
+            subtitleMode={subtitleMode}
+            setSubtitleMode={setSubtitleMode}
+            filterTrigger={{
+              label: "Sổ tay bối cảnh",
+              onClick: () => setIsCheatsheetOpen(true),
+            }}
+            onSubmit={() => {
+              stopWebSpeech();
+              sessionRef.current.recorder.releaseMicrophone();
+              sessionRef.current.speech.stopListening();
+              session.setPhase("summary");
+              soundFX.playVictory();
+            }}
+            onExit={() => {
+              stopWebSpeech();
+              session.setPhase("idle");
+            }}
+            onOpenHelp={() => setIsKeybindingsOpen(true)}
+          />
 
-              <Badge variant="matcha" size="sm" className="font-bold text-[10px] tracking-wide">
-                TÌNH HUỐNG THỰC CHIẾN
-              </Badge>
-
-              <span className="text-xs font-bold text-muted-foreground">
-                Câu #{session.results.length + 1}
-              </span>
-
-              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-muted/80 text-foreground border border-border/80 shadow-2xs">
-                <Clock className="h-3 w-3 text-emerald-500" />
-                <span>
-                  {duration === 0
-                    ? `Phiên: ${Math.floor(elapsedSec / 60)}:${String(elapsedSec % 60).padStart(2, "0")} / ∞`
-                    : `Phiên: ${Math.floor(elapsedSec / 60)}:${String(elapsedSec % 60).padStart(2, "0")} / ${duration}m`}
-                </span>
+          {/* Middle Stage: 2-Column Split */}
+          <div className="flex-1 min-h-0 w-full overflow-hidden">
+            {session.phase === "loading" ? (
+              <div className="h-full flex items-center justify-center rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl shadow-xl p-6">
+                <ZenLoadingState
+                  variant="ai"
+                  title="AI Đang Khởi Tạo Tình Huống Sống Động..."
+                  ja="ロールプレイ生成中..."
+                  description="Đang thiết lập bối cảnh thực tế, nhân vật AI bản xứ và mục tiêu giao tiếp..."
+                />
               </div>
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full min-h-0">
+                {/* LEFT COLUMN: Mission Deck */}
+                <div className="lg:col-span-5 h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
+                  <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-72 h-36 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none -z-10" />
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  soundFX.playFurin();
-                  setIsCheatsheetOpen(true);
-                }}
-                className="h-8 gap-1.5 text-xs font-bold shadow-2xs rounded-xl"
-              >
-                <BookOpen className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Sổ tay (C)</span>
-              </Button>
+                  <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                    <SituationsPromptCard
+                      exercise={activeExercise}
+                      subtitleMode={subtitleMode}
+                      onPlayAudio={() => playPromptAudio(false)}
+                      phase={session.phase}
+                      hintTier={hintTier}
+                      onSetHintTier={setHintTier}
+                    />
+                  </div>
 
-              <Button
-                variant="akane"
-                size="sm"
-                onClick={() => {
-                  stopWebSpeech();
-                  sessionRef.current.recorder.releaseMicrophone();
-                  sessionRef.current.speech.stopListening();
-                  session.setPhase("summary");
-                  soundFX.playVictory();
-                }}
-                className="h-8 gap-1.5 px-3 text-xs font-bold shadow-2xs cursor-pointer rounded-xl bg-primary text-white"
-                title="Nộp bài và xem bảng điểm tổng kết (kết thúc phiên)"
-              >
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                <span>Nộp bài</span>
-              </Button>
-            </div>
+                  <div className="pt-2 shrink-0 border-t border-border/60 dark:border-white/10 space-y-1.5">
+                    <SituationsTimerBar
+                      variant="laser-bar"
+                      remainingMs={session.timer.remainingMs}
+                      timerLimitMs={session.timer.totalLimitMs}
+                      progress={session.timer.progress}
+                      state={session.timer.state}
+                      isActive={session.timer.isActive}
+                      isPaused={session.timer.isPaused}
+                    />
+                  </div>
+                </div>
+
+                {/* RIGHT COLUMN: Combat Action Deck or Result Card */}
+                <div className="lg:col-span-7 h-full min-h-0 relative">
+                  {session.phase === "result" && session.result ? (
+                    <div className="h-full overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                      <SituationsResultCard
+                        result={session.result}
+                        exercise={activeExercise}
+                        onNext={session.startNext}
+                        onRetry={session.retry}
+                        onAskCoach={(prompt) => setCoachHint(prompt)}
+                        onCancelAutoNext={session.cancelAutoNext}
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
+                      {/* Status Header */}
+                      <div className="flex items-center justify-between gap-2 shrink-0 pb-2 border-b border-border/60 dark:border-white/10">
+                        <span className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                          {session.phase === "prompt_playing" ? (
+                            <>
+                              <Volume2 className="h-3.5 w-3.5 text-primary animate-pulse" />
+                              <span className="text-primary">NPC ĐANG NÓI CÂU MỞ ĐẦU...</span>
+                            </>
+                          ) : session.phase === "ready" ? (
+                            <>
+                              <Sparkles className="h-3.5 w-3.5 text-primary" />
+                              <span className="text-primary">ĐÃ SẴN SÀNG ĐỐI ĐÁP</span>
+                            </>
+                          ) : (session.phase === "waiting_for_speech" || session.phase === "recording") ? (
+                            <>
+                              <Mic className="h-3.5 w-3.5 text-rose-500 animate-pulse" />
+                              <span className="text-rose-500">
+                                {session.isUserSpeaking ? "ĐANG GHI NHẬN GIỌNG NÓI..." : "MỜI BẠN NÓI HOẶC GÕ ĐỐI ĐÁP..."}
+                              </span>
+                            </>
+                          ) : session.phase === "evaluating" ? (
+                            <span className="text-primary">AI ĐANG CHẤM ĐIỂM...</span>
+                          ) : null}
+                        </span>
+
+                        <Badge variant="outline" size="sm" className="text-[10px] font-mono border-white/15 bg-white/5 text-primary rounded-full">
+                          AI Roleplay Live
+                        </Badge>
+                      </div>
+
+                      {/* Soundwaves & Actions */}
+                      <div className="flex-1 min-h-0 flex flex-col items-center justify-center py-2 space-y-4">
+                        <div className="flex items-center gap-1.5 h-14">
+                          {[0.5, 1.1, 0.7, 1.5, 0.9, 1.3, 0.6].map((scale, i) => {
+                            const activeMultiplier = session.isUserSpeaking || session.phase === "recording" ? 36 : 6;
+                            const height = Math.max(6, Math.min(50, activeMultiplier * scale + 6));
+                            return (
+                              <span
+                                key={i}
+                                className={cn(
+                                  "w-1.5 rounded-full transition-all duration-75",
+                                  session.isUserSpeaking
+                                    ? "bg-gradient-to-t from-rose-500 to-amber-400"
+                                    : "bg-gradient-to-t from-blue-600 to-primary/60"
+                                )}
+                                style={{ height: `${height}px` }}
+                              />
+                            );
+                          })}
+                        </div>
+
+                        {session.phase === "ready" && (
+                          <Button
+                            size="lg"
+                            className="font-extrabold text-sm h-11 px-6 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all gap-2 bg-gradient-to-r from-blue-600 via-primary to-indigo-600 text-white cursor-pointer ring-2 ring-primary/40"
+                            onClick={() => {
+                              soundFX.playFurin();
+                              session.startVoiceRecording();
+                            }}
+                          >
+                            <Mic className="h-4 w-4" />
+                            <span>🎙️ Bắt Đầu Trả Lời ({formatKeyDisplay(keybindings.situationsStartVoice)})</span>
+                          </Button>
+                        )}
+
+                        {(session.phase === "waiting_for_speech" || session.phase === "recording") && (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="akane"
+                              className="font-bold text-xs h-9 px-4 rounded-xl shadow-xs gap-1.5 cursor-pointer bg-gradient-to-r from-blue-600 to-primary text-white"
+                              onClick={() => handleDirectSubmit(true)}
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              <span>Nộp câu đối đáp</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="font-bold text-xs h-9 px-3 rounded-xl border-border/80 text-muted-foreground hover:text-foreground"
+                              onClick={() => session.startNext()}
+                            >
+                              Bỏ qua câu ({formatKeyDisplay(keybindings.situationsSkip)})
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Unified Input Bar */}
+                      <div className="shrink-0 pt-2 border-t border-border/60 dark:border-white/10">
+                        <ZenUnifiedInputBar
+                          value={transcriptInput}
+                          onChange={setTranscriptInput}
+                          onSubmit={() => handleDirectSubmit(true)}
+                          speechTranscript={session.speech.transcript}
+                          isRecording={session.phase === "recording" || session.isUserSpeaking}
+                          isEvaluating={session.phase === "evaluating"}
+                          placeholder="Nói vào mic hoặc gõ câu đối đáp tiếng Nhật... (VD: すみません、...)"
+                          submitButtonText={`Gửi (${formatKeyDisplay(keybindings.situationsSubmitOrNext)})`}
+                          autoFocus={true}
+                          hintText="Gõ phím thoải mái khi ở văn phòng"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Loading State */}
-          {session.phase === "loading" && (
-            <ZenLoadingState
-              variant="ai"
-              title="AI Đang Khởi Tạo Tình Huống Sống Động..."
-              ja="ロールプレイ生成中..."
-              description="Đang thiết lập bối cảnh thực tế, nhân vật AI bản xứ và mục tiêu giao tiếp..."
-            />
-          )}
-
-          {/* Result State */}
-          {session.phase === "result" && session.result && (
-            <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-200">
-              <SituationsResultCard
-                result={session.result}
-                exercise={activeExercise}
-                onNext={session.startNext}
-                onRetry={session.retry}
-                onAskCoach={(prompt) => setCoachHint(prompt)}
-                onCancelAutoNext={session.cancelAutoNext}
-              />
+          {/* Bottom Shortcuts Strip */}
+          <div className="h-7 shrink-0 border-t border-border/60 dark:border-white/10 flex items-center justify-between text-[11px] text-muted-foreground px-1">
+            <div className="flex items-center gap-3">
+              <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.situationsSubmitOrNext)}</kbd> Bắt đầu / Nộp</span>
+              <span className="hidden sm:inline"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.situationsRetry)}</kbd> Làm lại</span>
+              <span className="hidden md:inline"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.situationsListenPrompt)}</kbd> Nghe NPC</span>
             </div>
-          )}
-
-          {/* Active Workout Cockpit (Unified Center Stage) */}
-          {(session.phase === "prompt_playing" ||
-            session.phase === "ready" ||
-            session.phase === "waiting_for_speech" ||
-            session.phase === "recording" ||
-            session.phase === "evaluating") && (
-            <div className="max-w-4xl mx-auto rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#121722]/85 backdrop-blur-2xl shadow-xl p-5 sm:p-7 flex flex-col items-center text-center space-y-5 relative overflow-hidden">
-              <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[480px] h-[240px] bg-emerald-500/10 blur-3xl rounded-full pointer-events-none -z-10" />
-
-              {/* Prompt Card */}
-              <div className="w-full">
-                <SituationsPromptCard
-                  exercise={activeExercise}
-                  subtitleMode={subtitleMode}
-                  onPlayAudio={() => playPromptAudio(false)}
-                  phase={session.phase}
-                  hintTier={hintTier}
-                  onSetHintTier={setHintTier}
-                />
-              </div>
-
-              <div className="w-full h-px bg-gradient-to-r from-transparent via-border/80 dark:via-white/10 to-transparent my-1" />
-
-              {/* Cockpit: Timer, Status Alert, Action Button */}
-              <div className="w-full flex flex-col items-center justify-center space-y-4">
-                <SituationsTimerBar
-                  variant="minimal"
-                  remainingMs={session.timer.remainingMs}
-                  timerLimitMs={session.timer.totalLimitMs}
-                  progress={session.timer.progress}
-                  state={session.timer.state}
-                  isActive={session.timer.isActive}
-                  isPaused={session.timer.isPaused}
-                />
-
-                {/* Status Alert Message */}
-                <div className="text-center">
-                  {session.phase === "prompt_playing" ? (
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-extrabold animate-pulse">
-                      <Volume2 className="h-4 w-4" />
-                      <span>NPC đang nói câu mở đầu... Hãy lắng nghe kỹ để đối đáp phù hợp</span>
-                    </div>
-                  ) : session.phase === "ready" ? (
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-extrabold shadow-2xs">
-                      <Sparkles className="h-4 w-4" />
-                      <span>🎯 NPC đã dứt lời! Bấm bắt đầu hoặc phím tắt để trả lời</span>
-                    </div>
-                  ) : (session.phase === "waiting_for_speech" || session.phase === "recording") ? (
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs sm:text-sm font-black animate-pulse">
-                      <Mic className="h-4 w-4" />
-                      <span>{session.isUserSpeaking ? "ĐANG GHI NHẬN GIỌNG NÓI CỦA BẠN..." : "MỜI BẠN NÓI HOẶC GÕ CÂU ĐỐI ĐÁP..."}</span>
-                    </div>
-                  ) : session.phase === "evaluating" ? (
-                    <ZenLoadingState
-                      variant="inline"
-                      title="AI Đang Đánh Giá Ngữ Dụng & Mục Tiêu Giao Tiếp..."
-                      ja="語用論・会話目標分析中..."
-                    />
-                  ) : null}
-                </div>
-
-                {/* Big Action Button */}
-                {session.phase === "ready" && (
-                  <Button
-                    size="lg"
-                    className="font-extrabold text-sm md:text-base h-13 min-w-[270px] px-8 rounded-2xl shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all gap-2.5 ring-2 ring-emerald-500/30 cursor-pointer bg-gradient-to-r from-emerald-500 via-teal-600 to-primary text-white"
-                    onClick={() => {
-                      soundFX.playFurin();
-                      session.startVoiceRecording();
-                    }}
-                  >
-                    <Mic className="h-5 w-5" />
-                    <span>🎙️ Bắt Đầu Trả Lời ({formatKeyDisplay(keybindings.situationsStartVoice)})</span>
-                  </Button>
-                )}
-
-                {/* Unified Input Bar for Voice or Typing */}
-                <div className="w-full max-w-xl mx-auto space-y-1">
-                  <ZenUnifiedInputBar
-                    value={transcriptInput}
-                    onChange={setTranscriptInput}
-                    onSubmit={() => handleDirectSubmit(true)}
-                    speechTranscript={session.speech.transcript}
-                    isRecording={session.phase === "recording" || session.isUserSpeaking}
-                    isEvaluating={session.phase === "evaluating"}
-                    placeholder="Nói vào mic hoặc gõ câu đối đáp tiếng Nhật... (VD: すみません、...)"
-                    submitButtonText={`Gửi (${formatKeyDisplay(keybindings.situationsSubmitOrNext)})`}
-                    autoFocus={true}
-                    hintText="Gõ phím thoải mái khi ở văn phòng"
-                  />
-                </div>
-
-                {/* Quick action buttons */}
-                <div className="flex items-center gap-2.5 pt-0.5">
-                  <Button
-                    size="sm"
-                    variant="akane"
-                    className="font-bold text-xs h-8 px-4 rounded-xl shadow-xs gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
-                    onClick={() => handleDirectSubmit(true)}
-                    disabled={session.phase === "evaluating"}
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>Nộp câu đối đáp</span>
-                  </Button>
-
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="font-bold text-xs h-8 px-3 rounded-xl border-border/80 text-muted-foreground hover:text-foreground"
-                    onClick={() => session.startNext()}
-                    disabled={session.phase === "evaluating"}
-                  >
-                    Bỏ qua câu ({formatKeyDisplay(keybindings.situationsSkip)})
-                  </Button>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.situationsOpenCheatsheet)}</kbd> Sổ tay</span>
+              <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">Esc</kbd> Thoát</span>
             </div>
-          )}
+          </div>
         </div>
       )}
 

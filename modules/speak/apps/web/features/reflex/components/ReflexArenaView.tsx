@@ -3,20 +3,12 @@
 import React from "react";
 import {
   Clock,
-  HelpCircle,
-  Flame,
   Zap,
   Volume2,
   Sparkles,
   Activity,
   Mic,
   Play,
-  Sliders,
-  MessageSquare,
-  Repeat,
-  Compass,
-  BookText,
-  Crown,
   CheckCircle2,
   SkipForward,
 } from "lucide-react";
@@ -24,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ZenLoadingState } from "@/components/ui/zen-loading-state";
 import { ZenUnifiedInputBar } from "@/components/ui/zen-unified-input-bar";
+import { CombatCapsuleHUD } from "./CombatCapsuleHUD";
 import { ReflexTimer } from "./ReflexTimer";
 import { ReflexPromptCard } from "./ReflexPromptCard";
 import { ReflexResultCard } from "./ReflexResultCard";
@@ -97,331 +90,101 @@ export function ReflexArenaView({
   const isReady = session.phase === "ready";
   const isResult = session.phase === "result";
 
+  const subModeInfo = DEDICATED_MODES.find((m) => m.id === subMode);
+  const subModeLabel = subMode === "mixed" ? "Tổng Hợp Toàn Diện" : subModeInfo?.title || "Phản Xạ";
+  const subModeJa = subModeInfo?.titleJa || "瞬発";
+
+  const filterTrigger =
+    (subMode === "reflex_conjugation" || (activeExercise as any)?.exercise_type === "reflex_conjugation")
+      ? {
+          label: filters.selectedForms.length === 0 ? "50 Thể" : `${filters.selectedForms.length} Thể`,
+          onClick: () => filters.setShowFormFilterModal(true),
+        }
+      : (subMode === "reflex_qna" || (activeExercise as any)?.exercise_type === "reflex_qna")
+      ? {
+          label: filters.customKeywords.trim()
+            ? `💡 "${filters.customKeywords.trim()}"`
+            : filters.selectedQnaTopics.length === 0
+            ? "Ngẫu nhiên vô tận"
+            : `${filters.selectedQnaTopics.length} Chủ đề`,
+          onClick: () => filters.setShowQnaTopicFilterModal(true),
+        }
+      : (subMode === "reflex_transformation" || (activeExercise as any)?.exercise_type === "reflex_transformation")
+      ? {
+          label: filters.selectedTransformCategories.length === 0
+            ? "Ngẫu nhiên 75+ dạng"
+            : `${filters.selectedTransformCategories.length} Nhóm`,
+          onClick: () => filters.setShowTransformFilterModal(true),
+        }
+      : (subMode === "reflex_context" || (activeExercise as any)?.exercise_type === "reflex_context")
+      ? {
+          label: filters.selectedContextCategories.length === 0
+            ? "Ngẫu nhiên 60+ tình huống"
+            : `${filters.selectedContextCategories.length} Bối cảnh`,
+          onClick: () => filters.setShowContextFilterModal(true),
+        }
+      : (subMode === "reflex_vocabulary" || (activeExercise as any)?.exercise_type === "reflex_vocabulary")
+      ? {
+          label: filters.customVocabKeywords.trim()
+            ? `Từ khóa: "${filters.customVocabKeywords.trim()}"`
+            : filters.selectedVocabCategories.length === 0
+            ? "Ngẫu nhiên 500+ từ"
+            : `${filters.selectedVocabCategories.length} Từ vựng`,
+          onClick: () => filters.setShowVocabFilterModal(true),
+        }
+      : (subMode === "reflex_keigo_vocab" || (activeExercise as any)?.exercise_type === "reflex_keigo_vocab")
+      ? {
+          label: filters.customKeigoKeywords.trim()
+            ? `Kính ngữ: "${filters.customKeigoKeywords.trim()}"`
+            : filters.selectedKeigoCategories.length === 0
+            ? "Ngẫu nhiên 80+ cặp"
+            : `${filters.selectedKeigoCategories.length} Kính ngữ`,
+          onClick: () => filters.setShowKeigoFilterModal(true),
+        }
+      : undefined;
+
   return (
-    <div className="max-w-5xl mx-auto min-h-[calc(100vh-5.5rem)] flex flex-col justify-between animate-in fade-in duration-200 px-2 sm:px-4 space-y-3 pb-4">
-      {/* 1. Top HUD Bar */}
-      <div className="p-3 px-4 rounded-2xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#121722]/90 backdrop-blur-2xl shadow-md flex flex-wrap items-center justify-between gap-2.5 shrink-0">
-        <div className="flex items-center gap-2 shrink-0">
-          <Badge variant="kintsugi" size="sm" className="font-bold rounded-full shadow-2xs">
-            Câu {session.stats.total + (isResult ? 0 : 1)}
-          </Badge>
-          <span className="text-xs font-bold text-foreground hidden md:inline font-jp">
-            {subMode === "mixed" ? "Mixed" : DEDICATED_MODES.find((m) => m.id === subMode)?.title}
-          </span>
-          <span className="text-xs font-mono text-muted-foreground hidden sm:inline">• {pressure} ({timerMs / 1000}s)</span>
-        </div>
+    <div className="w-full max-w-7xl mx-auto h-full flex flex-col justify-between px-2 sm:px-4 py-2 gap-2 overflow-hidden select-none animate-in fade-in duration-200">
+      {/* 1. Combat Capsule HUD */}
+      <CombatCapsuleHUD
+        questionNumber={session.stats.total + (isResult ? 0 : 1)}
+        subModeLabel={subModeLabel}
+        subModeJa={subModeJa}
+        currentStreak={currentStreak}
+        duration={duration}
+        sessionRemainingSec={sessionRemainingSec}
+        sessionElapsedSec={sessionElapsedSec}
+        subtitleMode={subtitleMode}
+        setSubtitleMode={setSubtitleMode}
+        micGain={session.micGain ?? 2.0}
+        setMicGain={(g) => session.setMicGain(g)}
+        startTrigger={startTrigger}
+        setStartTrigger={setStartTrigger}
+        autoNext={autoNext}
+        setAutoNext={setAutoNext}
+        filterTrigger={filterTrigger}
+        onSubmit={() => {
+          stopWebSpeech();
+          session.recorder.releaseMicrophone();
+          session.speech.stopListening();
+          setShowSummary(true);
+          session.setPhase("summary" as any);
+          soundFX.playVictory();
+        }}
+        onExit={() => {
+          stopWebSpeech();
+          session.recorder.releaseMicrophone();
+          session.speech.stopListening();
+          session.setPhase("idle" as any);
+          setShowSummary(false);
+        }}
+        onOpenHelp={onOpenHelp}
+      />
 
-        <div className="flex items-center gap-2 flex-wrap justify-center">
-          {/* Live Session Countdown Clock / Elapsed Clock */}
-          <div
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-mono font-bold shadow-xs backdrop-blur-md"
-            title={duration === 0 ? "Chế độ luyện tập không giới hạn thời gian (Endless)" : `Thời lượng phiên: ${duration} phút`}
-          >
-            <Clock className="h-3.5 w-3.5" />
-            <span>
-              {duration === 0 ? (
-                `Phiên: ${Math.floor(sessionElapsedSec / 60).toString().padStart(2, "0")}:${(sessionElapsedSec % 60).toString().padStart(2, "0")} / ∞`
-              ) : (
-                `Phiên: ${Math.floor(sessionRemainingSec / 60).toString().padStart(2, "0")}:${(sessionRemainingSec % 60).toString().padStart(2, "0")} / ${duration}m`
-              )}
-            </span>
-          </div>
-
-          {/* Quick Subtitle Mode Segmented Switcher */}
-          <div className="hidden sm:flex items-center rounded-2xl bg-white/5 dark:bg-white/5 p-1 border border-white/10 text-[11px] font-bold backdrop-blur-md">
-            <button
-              type="button"
-              onClick={() => {
-                soundFX.playFurin();
-                setSubtitleMode("japanese");
-              }}
-              className={cn(
-                "px-2.5 py-1 rounded-xl transition-all",
-                subtitleMode === "japanese"
-                  ? "bg-primary text-white shadow-xs font-extrabold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Chỉ hiển thị tiếng Nhật"
-            >
-              🇯🇵 Nhật
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                soundFX.playFurin();
-                setSubtitleMode("vietnamese");
-              }}
-              className={cn(
-                "px-2.5 py-1 rounded-xl transition-all",
-                subtitleMode === "vietnamese"
-                  ? "bg-primary text-white shadow-xs font-extrabold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Tiếng Nhật kèm dịch nghĩa tiếng Việt"
-            >
-              🇻🇳 Dịch
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                soundFX.playFurin();
-                setSubtitleMode("hidden");
-              }}
-              className={cn(
-                "px-2.5 py-1 rounded-xl transition-all",
-                subtitleMode === "hidden"
-                  ? "bg-rose-500 text-white shadow-xs font-extrabold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="Ẩn phụ đề (Audio-Only)"
-            >
-              🎧 Ẩn
-            </button>
-          </div>
-
-          {currentStreak > 1 && (
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-500 text-xs font-bold shadow-xs animate-pulse">
-              <Flame className="h-3.5 w-3.5 fill-current" />
-              <span>{currentStreak} Streak</span>
-            </div>
-          )}
-
-          {session.stats.avgLatency > 0 && (
-            <div className="hidden md:flex items-center gap-1 text-xs font-mono font-bold text-muted-foreground">
-              <Zap className="h-3 w-3 text-amber-500" />
-              <span>TB: {Math.round(session.stats.avgLatency)}ms</span>
-            </div>
-          )}
-
-          {/* HUD Start Trigger Mode Switcher */}
-          <button
-            type="button"
-            onClick={() => setStartTrigger((v) => (v === "manual" ? "auto" : "manual"))}
-            className={cn(
-              "hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all",
-              startTrigger === "manual"
-                ? "bg-primary/15 text-primary border-primary/30 shadow-2xs"
-                : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
-            )}
-            title={startTrigger === "manual" ? "Chế độ Chủ động: Bấm Space/Nút khi sẵn sàng (Click để chuyển Tự động)" : "Chế độ Tự động: Đếm giờ ngay sau đề bài (Click để chuyển Chủ động)"}
-          >
-            <span>{startTrigger === "manual" ? "🎯 Chủ động" : "⚡ Tự động"}</span>
-          </button>
-
-          {/* HUD Auto-Next Switcher */}
-          <button
-            type="button"
-            onClick={() => setAutoNext((v) => !v)}
-            className={cn(
-              "hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all",
-              autoNext
-                ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 shadow-2xs"
-                : "bg-muted text-muted-foreground border-border hover:text-foreground"
-            )}
-            title={autoNext ? "Tự động chuyển câu (Bấm để tắt)" : "Chuyển câu thủ công (Bấm để bật)"}
-          >
-            <span>Auto</span>
-            <span className="font-mono text-[10px] font-black">{autoNext ? "ON" : "OFF"}</span>
-          </button>
-
-          {/* HUD Mic Gain Booster (Software Pre-Amp for Quiet Voices) */}
-          <button
-            type="button"
-            onClick={() => {
-              soundFX.playTaiko();
-              const gains = [1.0, 1.5, 2.0, 3.0, 4.0];
-              const cur = session.micGain ?? 2.0;
-              const curIdx = gains.findIndex((g) => Math.abs(g - cur) < 0.1);
-              const next = gains[(curIdx + 1) % gains.length];
-              session.setMicGain(next);
-            }}
-            className={cn(
-              "inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all cursor-pointer shadow-2xs",
-              (session.micGain ?? 2.0) > 1.0
-                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/25"
-                : "bg-muted text-muted-foreground border-border hover:text-foreground"
-            )}
-            title={`Khuếch đại Micro phần mềm: x${session.micGain ?? 2.0}. Bấm để chuyển giữa x1 (gốc), x1.5, x2, x3, x4 cho giọng nói nhỏ/thì thầm.`}
-          >
-            <Zap className="h-3 w-3 text-amber-500" />
-            <span>Boost</span>
-            <span className="font-mono text-[10px] font-black">x{session.micGain ?? 2.0}</span>
-          </button>
-
-          {/* HUD Conjugation Form Filter */}
-          {(subMode === "reflex_conjugation" || (activeExercise as any)?.exercise_type === "reflex_conjugation") && (
-            <button
-              type="button"
-              onClick={() => {
-                soundFX.playFurin();
-                filters.setShowFormFilterModal(true);
-              }}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 transition-all cursor-pointer shadow-2xs"
-              title="Bấm để đổi bộ lọc thể chia động từ mục tiêu"
-            >
-              <Sliders className="h-3 w-3 text-rose-500" />
-              <span>{filters.selectedForms.length === 0 ? "50 Thể" : `${filters.selectedForms.length} Thể`}</span>
-            </button>
-          )}
-
-          {/* HUD Q&A Topic Filter */}
-          {(subMode === "reflex_qna" || (activeExercise as any)?.exercise_type === "reflex_qna") && (
-            <button
-              type="button"
-              onClick={() => {
-                soundFX.playFurin();
-                filters.setShowQnaTopicFilterModal(true);
-              }}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition-all cursor-pointer shadow-2xs"
-              title="Bấm để đổi chủ đề câu hỏi Speed Q&A"
-            >
-              <MessageSquare className="h-3 w-3 text-emerald-500" />
-              <span>
-                {filters.customKeywords.trim()
-                  ? `💡 "${filters.customKeywords.trim()}"`
-                  : filters.selectedQnaTopics.length === 0
-                  ? "Ngẫu nhiên vô tận"
-                  : `${filters.selectedQnaTopics.length} Chủ đề`}
-              </span>
-            </button>
-          )}
-
-          {/* HUD Transformation Category Filter */}
-          {(subMode === "reflex_transformation" || (activeExercise as any)?.exercise_type === "reflex_transformation") && (
-            <button
-              type="button"
-              onClick={() => {
-                soundFX.playFurin();
-                filters.setShowTransformFilterModal(true);
-              }}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-indigo-500/30 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20 transition-all cursor-pointer shadow-2xs"
-              title="Bấm để đổi nhóm cấu trúc biến đổi câu mục tiêu"
-            >
-              <Repeat className="h-3 w-3 text-indigo-500" />
-              <span>
-                {filters.selectedTransformCategories.length === 0
-                  ? "Ngẫu nhiên 75+ dạng"
-                  : `${filters.selectedTransformCategories.length} Nhóm ngữ pháp`}
-              </span>
-            </button>
-          )}
-
-          {/* HUD Context Category Filter */}
-          {(subMode === "reflex_context" || (activeExercise as any)?.exercise_type === "reflex_context") && (
-            <button
-              type="button"
-              onClick={() => {
-                soundFX.playFurin();
-                filters.setShowContextFilterModal(true);
-              }}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer shadow-2xs"
-              title="Bấm để đổi nhóm bối cảnh giao tiếp mục tiêu"
-            >
-              <Compass className="h-3 w-3 text-amber-500" />
-              <span>
-                {filters.selectedContextCategories.length === 0
-                  ? "Ngẫu nhiên 60+ tình huống"
-                  : `${filters.selectedContextCategories.length} Nhóm bối cảnh`}
-              </span>
-            </button>
-          )}
-
-          {/* HUD Vocabulary Category Filter */}
-          {(subMode === "reflex_vocabulary" || (activeExercise as any)?.exercise_type === "reflex_vocabulary") && (
-            <button
-              type="button"
-              onClick={() => {
-                soundFX.playFurin();
-                filters.setShowVocabFilterModal(true);
-              }}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300 hover:bg-violet-500/20 transition-all cursor-pointer shadow-2xs"
-              title="Bấm để đổi nhóm từ vựng mục tiêu"
-            >
-              <BookText className="h-3 w-3 text-violet-500" />
-              <span>
-                {filters.customVocabKeywords.trim()
-                  ? `Từ khóa: "${filters.customVocabKeywords.trim()}"`
-                  : filters.selectedVocabCategories.length === 0
-                  ? "Ngẫu nhiên 500+ từ"
-                  : `${filters.selectedVocabCategories.length} Nhóm từ`}
-              </span>
-            </button>
-          )}
-
-          {/* HUD Keigo Category Filter */}
-          {(subMode === "reflex_keigo_vocab" || (activeExercise as any)?.exercise_type === "reflex_keigo_vocab") && (
-            <button
-              type="button"
-              onClick={() => {
-                soundFX.playFurin();
-                filters.setShowKeigoFilterModal(true);
-              }}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold border border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer shadow-2xs"
-              title="Bấm để đổi chuyên đề kính ngữ mục tiêu"
-            >
-              <Crown className="h-3 w-3 text-amber-500" />
-              <span>
-                {filters.customKeigoKeywords.trim()
-                  ? `Kính ngữ: "${filters.customKeigoKeywords.trim()}"`
-                  : filters.selectedKeigoCategories.length === 0
-                  ? "Ngẫu nhiên 80+ cặp"
-                  : `${filters.selectedKeigoCategories.length} Nhóm kính ngữ`}
-              </span>
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 text-xs rounded-xl"
-            onClick={onOpenHelp}
-            title="Trợ giúp phím tắt (?)"
-          >
-            <HelpCircle className="h-4 w-4" />
-          </Button>
-
-          <Button
-            variant="akane"
-            size="sm"
-            className="h-8 px-3 text-xs font-bold rounded-xl gap-1.5 shadow-2xs cursor-pointer"
-            onClick={() => {
-              stopWebSpeech();
-              session.recorder.releaseMicrophone();
-              session.speech.stopListening();
-              setShowSummary(true);
-              session.setPhase("summary" as any);
-              soundFX.playVictory();
-            }}
-            title="Nộp bài và xem bảng điểm tổng kết (kết thúc phiên)"
-          >
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            <span>Nộp bài</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 text-xs rounded-xl text-muted-foreground hover:text-foreground"
-            onClick={() => {
-              stopWebSpeech();
-              session.recorder.releaseMicrophone();
-              session.speech.stopListening();
-              session.setPhase("idle" as any);
-              setShowSummary(false);
-            }}
-            title="Thoát phòng (Esc)"
-          >
-            Thoát
-          </Button>
-        </div>
-      </div>
-
-      {/* 2. Main Center Stage */}
-      <div className="flex-1 flex flex-col justify-center py-1 md:py-2 space-y-2.5 min-h-0">
+      {/* 2. Middle Arena Stage */}
+      <div className="flex-1 min-h-0 w-full overflow-hidden">
         {showSummary ? (
-          <div className="overflow-y-auto max-h-full">
+          <div className="h-full overflow-y-auto rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 shadow-xl">
             <ReflexSessionSummary
               results={session.results as any}
               onRestart={() => {
@@ -432,7 +195,7 @@ export function ReflexArenaView({
             />
           </div>
         ) : session.phase === "loading" || (!activeExercise && !isResult) ? (
-          <div className="py-6 animate-in fade-in duration-150">
+          <div className="h-full flex items-center justify-center rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl shadow-xl p-6">
             <ZenLoadingState
               variant="studio"
               title="AI Đang Chuẩn Bị Câu Hỏi Phản Xạ..."
@@ -440,275 +203,247 @@ export function ReflexArenaView({
               description="AI đang tinh chỉnh câu hỏi ngữ pháp, từ vựng và bối cảnh phù hợp với tốc độ phản xạ của bạn..."
             />
           </div>
-        ) : isResult && session.result ? (
-          /* Result Card Stage */
-          <div className="animate-in fade-in zoom-in-95 duration-200">
-            <ReflexResultCard
-              key={`${session.result.exerciseId || (activeExercise as any)?.id || "res"}_${session.stats.total}`}
-              result={session.result}
-              exercise={activeExercise as any}
-              onNext={() => session.startNext()}
-              onRetry={() => session.retry()}
-              onSlowMode={() => setPressure("relaxed")}
-              onCancelAutoNext={session.cancelAutoNext}
-            />
-          </div>
         ) : (
-          /* Active Question Stage — Unified Center Stage */
-          <div className="rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#121722]/85 backdrop-blur-2xl shadow-xl p-5 sm:p-7 flex flex-col items-center text-center space-y-5 relative overflow-hidden">
-            {/* Ambient Top Glow */}
-            <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[480px] h-[240px] bg-primary/10 blur-3xl rounded-full pointer-events-none -z-10" />
+          /* 2-COLUMN VERTICAL SPLIT ARENA */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full min-h-0">
+            {/* LEFT COLUMN: Mission Deck (5 cols ~ 42%) */}
+            <div className="lg:col-span-5 h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
+              {/* Ambient Top Glow */}
+              <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-72 h-36 bg-primary/10 blur-3xl rounded-full pointer-events-none -z-10" />
 
-            {session.error && (
-              <div className="w-full p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center justify-between gap-2 animate-in fade-in duration-200">
-                <span>⚠️ {session.error}</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs border-rose-500/40 hover:bg-rose-500/10"
-                  onClick={() => session.setError(null)}
-                >
-                  Đóng
-                </Button>
+              {/* Prompt Card (Always stays visible so learner never loses context) */}
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                <ReflexPromptCard
+                  exercise={activeExercise as any}
+                  subtitleMode={subtitleMode}
+                  phase={session.phase}
+                  onPlayAudio={playPromptAudio}
+                  compact={true}
+                />
               </div>
-            )}
 
-            {/* Prompt Header & Content */}
-            <div className="w-full">
-              <ReflexPromptCard
-                exercise={activeExercise as any}
-                subtitleMode={subtitleMode}
-                phase={session.phase}
-                onPlayAudio={playPromptAudio}
-              />
+              {/* Bottom: Countdown Laser Bar Timer */}
+              <div className="pt-2 shrink-0 border-t border-border/60 dark:border-white/10 space-y-1.5">
+                <ReflexTimer
+                  variant="laser-bar"
+                  remainingMs={session.timer.remainingMs}
+                  timerLimitMs={session.timer.totalLimitMs || timerMs}
+                  progress={session.timer.progress}
+                  state={session.timer.state}
+                  isActive={session.timer.isActive}
+                  isPaused={session.isPaused}
+                />
+              </div>
             </div>
 
-            {/* Divider Line */}
-            <div className="w-full h-px bg-gradient-to-r from-transparent via-border/80 dark:via-white/10 to-transparent my-1" />
-
-            {/* Live Web Speech Recognition Box & Countdown Timer Cockpit */}
-            <div className="w-full flex flex-col items-center justify-center space-y-4">
-              {/* Dynamic Countdown Ring (Minimal Orbit) */}
-              <ReflexTimer
-                variant="minimal"
-                remainingMs={session.timer.remainingMs}
-                timerLimitMs={session.timer.totalLimitMs || timerMs}
-                progress={session.timer.progress}
-                state={session.timer.state}
-                isActive={session.timer.isActive}
-                isPaused={session.isPaused}
-              />
-
-              {/* Status Message (High contrast on both Light and Dark) */}
-              <div className="text-center space-y-1">
-                {session.isPaused ? (
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-black animate-pulse">
-                    <Clock className="h-4 w-4" />
-                    <span>⏸️ ĐANG TẠM DỪNG SUY NGHĨ — Bấm Tiếp Tục khi đã sẵn sàng!</span>
-                  </div>
-                ) : isPromptPlaying ? (
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/25 text-primary text-xs sm:text-sm font-bold animate-pulse">
-                    <Volume2 className="h-4 w-4" />
-                    <span>🔊 Đang đọc câu hỏi đề bài... (Bấm [Space] để trả lời ngay)</span>
-                  </div>
-                ) : isReady ? (
-                  <div className="flex flex-col items-center justify-center gap-1.5 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/25 text-primary text-xs sm:text-sm font-extrabold shadow-2xs">
-                      <Sparkles className="h-4 w-4" />
-                      <span>🎯 ĐÃ SẴN SÀNG! Hãy suy nghĩ câu trả lời và bắt đầu khi sẵn sàng</span>
-                    </div>
-                    <span className="text-[11.5px] text-muted-foreground font-medium">
-                      Bấm phím <kbd className="px-1.5 py-0.5 rounded-lg bg-muted border border-border font-bold text-foreground font-mono">{formatKeyDisplay(keybindings.reflexStartVoice || keybindings.drillStartQuestion)}</kbd> hoặc click nút bên dưới để bật mic & tính giờ
-                    </span>
-                  </div>
-                ) : isWaiting ? (
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-black animate-bounce">
-                    <Zap className="h-4 w-4" />
-                    <span>NÓI NGAY! Hãy bật câu trả lời bằng tiếng Nhật tức thì!</span>
-                  </div>
-                ) : isRecording ? (
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs sm:text-sm font-black animate-pulse">
-                    <Activity className="h-4 w-4 animate-spin" />
-                    <span>Đang ghi nhận giọng nói tiếng Nhật của bạn...</span>
-                  </div>
-                ) : isEvaluating ? (
-                  <ZenLoadingState
-                    variant="inline"
-                    title={session.isWhisperRescuing ? "🤖 Whisper AI đang giải mã giọng nói nhỏ..." : "Đang phân tích phản xạ 7 chiều & chấm điểm..."}
-                    ja={session.isWhisperRescuing ? "Whisper音声解析中..." : "反射速度・文法分析中..."}
+            {/* RIGHT COLUMN: Combat Action Deck or Result Card (7 cols ~ 58%) */}
+            <div className="lg:col-span-7 h-full min-h-0 relative">
+              {isResult && session.result ? (
+                <div className="h-full animate-in fade-in zoom-in-95 duration-200">
+                  <ReflexResultCard
+                    key={`${session.result.exerciseId || (activeExercise as any)?.id || "res"}_${session.stats.total}`}
+                    result={session.result}
+                    exercise={activeExercise as any}
+                    onNext={() => session.startNext()}
+                    onRetry={() => session.retry()}
+                    onSlowMode={() => setPressure("relaxed")}
+                    onCancelAutoNext={session.cancelAutoNext}
                   />
-                ) : null}
-              </div>
+                </div>
+              ) : (
+                <div className="h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
+                  {/* Status header */}
+                  <div className="flex items-center justify-between gap-2 shrink-0 pb-2 border-b border-border/60 dark:border-white/10">
+                    <span className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      {isWaiting ? (
+                        <>
+                          <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
+                          <span className="text-amber-500">NÓI NGAY TIẾNG NHẬT!</span>
+                        </>
+                      ) : isRecording ? (
+                        <>
+                          <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                          <span className="text-rose-500">ĐANG THU ÂM GIỌNG NÓI...</span>
+                        </>
+                      ) : isPromptPlaying ? (
+                        <>
+                          <Volume2 className="h-3.5 w-3.5 text-primary animate-pulse" />
+                          <span className="text-primary">ĐANG ĐỌC ĐỀ BÀI...</span>
+                        </>
+                      ) : isReady ? (
+                        <>
+                          <Sparkles className="h-3.5 w-3.5 text-primary" />
+                          <span className="text-primary">ĐÃ SẴN SÀNG TRẢ LỜI</span>
+                        </>
+                      ) : isEvaluating ? (
+                        <>
+                          <Activity className="h-3.5 w-3.5 text-primary animate-spin" />
+                          <span className="text-primary">AI ĐANG CHẤM ĐIỂM...</span>
+                        </>
+                      ) : (
+                        <span>PHẢN XẠ THỰC CHIẾN</span>
+                      )}
+                    </span>
 
-              {/* Quick Action Buttons (Start / Pause / Resume) */}
-              <div className="flex items-center gap-2.5 pt-1">
-                {isReady && (
-                  <Button
-                    size="lg"
-                    className="font-extrabold text-sm md:text-base h-13 min-w-[270px] px-8 rounded-2xl shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-all gap-2.5 ring-2 ring-primary/40 cursor-pointer bg-gradient-to-r from-blue-600 via-primary to-indigo-600 text-white"
-                    onClick={() => {
-                      session.startQuestionNow();
-                    }}
-                  >
-                    <Mic className="h-5 w-5" />
-                    <span>🎙️ Bắt Đầu Nói ({formatKeyDisplay(keybindings.drillStartQuestion)})</span>
-                  </Button>
-                )}
+                    <Badge variant="outline" size="sm" className="text-[10px] font-mono border-white/15 bg-white/5 text-primary rounded-full">
+                      Whisper AI + WebSpeech
+                    </Badge>
+                  </div>
 
-                {isPromptPlaying && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="font-bold text-xs h-8 px-4 rounded-xl shadow-xs gap-1.5 border-primary/40 text-primary hover:bg-primary/10 cursor-pointer"
-                    onClick={() => {
-                      stopWebSpeech();
-                      session.startQuestionNow();
-                    }}
-                  >
-                    <Play className="h-3.5 w-3.5 fill-current" />
-                    <span>Bắt Đầu Trả Lời Ngay ({formatKeyDisplay(keybindings.drillStartQuestion)})</span>
-                  </Button>
-                )}
-
-                {session.isPaused ? (
-                  <Button
-                    size="sm"
-                    variant="kintsugi"
-                    className="font-bold text-xs h-8 px-4 rounded-xl shadow-xs gap-1.5 animate-pulse cursor-pointer"
-                    onClick={() => session.togglePause()}
-                  >
-                    <Play className="h-3.5 w-3.5 fill-current" />
-                    <span>Tiếp Tục Suy Nghĩ ({formatKeyDisplay(keybindings.drillPauseOrResume)})</span>
-                  </Button>
-                ) : (isWaiting || isRecording) ? (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="akane"
-                      className="font-bold text-xs h-8 px-3.5 rounded-xl shadow-xs gap-1.5 cursor-pointer bg-primary text-white"
-                      onClick={() => handleDirectSubmit(true)}
-                      title="Nộp câu trả lời ngay để AI chấm điểm"
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>Nộp câu này</span>
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="font-bold text-xs h-8 px-3 rounded-xl border-amber-500/40 text-amber-500 hover:bg-amber-500/10 gap-1.5 cursor-pointer"
-                      onClick={() => session.togglePause()}
-                      title="Tạm dừng đồng hồ để suy nghĩ"
-                    >
-                      <Clock className="h-3.5 w-3.5 text-amber-500" />
-                      <span>Tạm Dừng ({formatKeyDisplay(keybindings.drillPauseOrResume)})</span>
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="font-bold text-xs h-8 px-2.5 rounded-xl text-muted-foreground hover:text-foreground gap-1 cursor-pointer"
-                      onClick={() => session.skip()}
-                      title="Bỏ qua câu này để sang câu tiếp theo"
-                    >
-                      <SkipForward className="h-3.5 w-3.5" />
-                      <span>Bỏ qua</span>
-                    </Button>
-                  </>
-                ) : null}
-              </div>
-
-              {/* LIVE SPEECH PREVIEW BUBBLE */}
-              {(isWaiting || isRecording || session.speech.interimTranscript || session.speech.transcript) && (
-                <div className="w-full max-w-xl mx-auto p-3 px-4 rounded-2xl bg-white/5 dark:bg-white/5 border border-white/10 backdrop-blur-xl shadow-lg flex items-center justify-between gap-3 animate-in fade-in zoom-in-95 duration-200">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="flex items-center gap-1 shrink-0 h-6 px-2 py-0.5 bg-primary/10 rounded-xl border border-primary/20">
-                      {[0.7, 1.2, 0.6, 1.4, 0.9].map((scale, i) => {
-                        const height = Math.max(4, Math.min(18, ((session.volumeLevel || 0.05) * 50 * scale) + 4));
+                  {/* Reactive Soundwave & Live Speech Preview */}
+                  <div className="flex-1 min-h-0 flex flex-col items-center justify-center py-2 space-y-4">
+                    {/* Dynamic Soundwaves */}
+                    <div className="flex items-center gap-1.5 h-14">
+                      {[0.4, 0.9, 1.4, 0.7, 1.6, 1.1, 0.5, 1.3, 0.8].map((scale, i) => {
+                        const activeMultiplier = isRecording || isWaiting ? (session.volumeLevel || 0.08) * 60 : 6;
+                        const height = Math.max(6, Math.min(52, activeMultiplier * scale + 6));
                         return (
                           <span
                             key={i}
-                            className="w-1 bg-gradient-to-t from-primary to-emerald-400 rounded-full transition-all duration-75 shadow-xs"
+                            className={cn(
+                              "w-1.5 rounded-full transition-all duration-75",
+                              isRecording
+                                ? "bg-gradient-to-t from-rose-500 to-amber-400 shadow-sm shadow-rose-500/30"
+                                : isWaiting
+                                ? "bg-gradient-to-t from-amber-500 to-yellow-300 shadow-sm shadow-amber-500/30"
+                                : "bg-gradient-to-t from-blue-600 to-primary/60"
+                            )}
                             style={{ height: `${height}px` }}
                           />
                         );
                       })}
                     </div>
 
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary/80 flex items-center gap-1.5">
-                        <span>🎙️ Live Speech Preview</span>
+                    {/* Live Speech Recognition Bubble */}
+                    <div className="w-full max-w-md p-3 rounded-2xl bg-muted/40 dark:bg-black/30 border border-border/80 dark:border-white/10 backdrop-blur-md text-center space-y-1 shadow-inner">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-center gap-1.5">
+                        <Mic className="h-3 w-3 text-primary" />
+                        <span>Giọng bạn đang nói:</span>
                         {session.speech.interimTranscript && (
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
                         )}
-                      </span>
-                      <span className="text-xs md:text-sm font-bold font-jp text-foreground truncate">
-                        “{session.speech.interimTranscript || session.speech.transcript || "Đang lắng nghe âm thanh tiếng Nhật..."}”
-                      </span>
+                      </div>
+                      <div className="text-sm sm:text-base font-black font-jp text-foreground min-h-[1.75rem] flex items-center justify-center px-2">
+                        {session.speech.interimTranscript || session.speech.transcript ? (
+                          <span>“{session.speech.interimTranscript || session.speech.transcript}”</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground font-sans font-normal italic">
+                            {isWaiting
+                              ? "Hãy bật mic và nói to câu trả lời tiếng Nhật..."
+                              : isReady
+                              ? "Bấm [Space] hoặc click nút bên dưới để bắt đầu tính giờ"
+                              : "Đang chờ sẵn sàng..."}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Trigger Action Buttons */}
+                    <div className="flex items-center gap-2">
+                      {isReady && (
+                        <Button
+                          size="lg"
+                          className="font-extrabold text-sm h-11 px-6 rounded-2xl shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all gap-2 bg-gradient-to-r from-blue-600 via-primary to-indigo-600 text-white cursor-pointer ring-2 ring-primary/40"
+                          onClick={() => session.startQuestionNow()}
+                        >
+                          <Mic className="h-4 w-4" />
+                          <span>🎙️ Bắt Đầu Nói ({formatKeyDisplay(keybindings.drillStartQuestion)})</span>
+                        </Button>
+                      )}
+
+                      {isPromptPlaying && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="font-bold text-xs h-9 px-4 rounded-xl border-primary/40 text-primary hover:bg-primary/10 cursor-pointer gap-1.5"
+                          onClick={() => {
+                            stopWebSpeech();
+                            session.startQuestionNow();
+                          }}
+                        >
+                          <Play className="h-3.5 w-3.5 fill-current" />
+                          <span>Bắt Đầu Ngay ({formatKeyDisplay(keybindings.drillStartQuestion)})</span>
+                        </Button>
+                      )}
+
+                      {(isWaiting || isRecording) && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="akane"
+                            className="font-bold text-xs h-9 px-4 rounded-xl shadow-xs gap-1.5 cursor-pointer bg-gradient-to-r from-blue-600 to-primary text-white"
+                            onClick={() => handleDirectSubmit(true)}
+                            title="Nộp câu trả lời ngay để AI chấm điểm"
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <span>Nộp câu này</span>
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="font-bold text-xs h-9 px-3 rounded-xl border-amber-500/40 text-amber-500 hover:bg-amber-500/10 gap-1.5 cursor-pointer"
+                            onClick={() => session.togglePause()}
+                            title="Tạm dừng đồng hồ để suy nghĩ"
+                          >
+                            <Clock className="h-3.5 w-3.5 text-amber-500" />
+                            <span>{session.isPaused ? "Tiếp Tục" : "Tạm Dừng"} ({formatKeyDisplay(keybindings.drillPauseOrResume)})</span>
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="font-bold text-xs h-9 px-2.5 rounded-xl text-muted-foreground hover:text-foreground gap-1 cursor-pointer"
+                            onClick={() => session.skip()}
+                            title="Bỏ qua câu này để sang câu tiếp theo"
+                          >
+                            <SkipForward className="h-3.5 w-3.5" />
+                            <span>Bỏ qua</span>
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        soundFX.playTaiko();
-                        const gains = [1.0, 1.5, 2.0, 3.0, 4.0];
-                        const cur = session.micGain ?? 2.0;
-                        const curIdx = gains.findIndex((g) => Math.abs(g - cur) < 0.1);
-                        const next = gains[(curIdx + 1) % gains.length];
-                        session.setMicGain(next);
-                      }}
-                      className="px-2 py-1 rounded-xl text-[10px] font-bold border border-amber-500/30 bg-amber-500/15 text-amber-500 hover:bg-amber-500/25 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
-                      title="Bấm để tăng giảm khuếch đại micro"
-                    >
-                      <Zap className="h-2.5 w-2.5 text-amber-500" />
-                      <span>Boost x{session.micGain ?? 2.0}</span>
-                    </button>
-                    <Badge variant="outline" size="sm" className="text-[10px] font-mono border-white/15 bg-white/5 text-primary hidden sm:inline-flex rounded-full">
-                      Hybrid: WebSpeech + Whisper AI
-                    </Badge>
+                  {/* UNIFIED KEYBOARD & VOICE INPUT BAR */}
+                  <div className="shrink-0 pt-2 border-t border-border/60 dark:border-white/10">
+                    <ZenUnifiedInputBar
+                      value={transcriptInput || session.speech.transcript || session.speech.interimTranscript}
+                      onChange={setTranscriptInput}
+                      onSubmit={() => handleDirectSubmit(true)}
+                      placeholder={
+                        session.isPaused
+                          ? "Đang tạm dừng — Bấm [P] để tiếp tục..."
+                          : isWaiting
+                          ? "Nói vào mic hoặc gõ câu trả lời tiếng Nhật (Enter)..."
+                          : activeExercise?.exercise_type === "reflex_conjugation"
+                          ? "Gõ câu chia thể (ví dụ: 書かせられた)..."
+                          : "Gõ câu phản xạ tiếng Nhật..."
+                      }
+                      submitButtonText="Nộp"
+                      isEvaluating={isEvaluating}
+                      showOfficeBadge={false}
+                      hintText={isRecording ? "Đang thu âm mic hoặc gõ phím" : undefined}
+                    />
                   </div>
                 </div>
               )}
-
-              {/* UNIFIED VOICE & KEYBOARD REFLEX INPUT BAR */}
-              <div className="w-full max-w-xl mx-auto space-y-1">
-                <ZenUnifiedInputBar
-                  value={transcriptInput || session.speech.transcript || session.speech.interimTranscript}
-                  onChange={setTranscriptInput}
-                  onSubmit={() => handleDirectSubmit(true)}
-                  placeholder={
-                    session.isPaused
-                      ? "Đang tạm dừng — Bấm [P] để tiếp tục..."
-                      : isWaiting
-                      ? "Nói vào mic hoặc gõ câu trả lời tiếng Nhật (Enter)..."
-                      : activeExercise?.exercise_type === "reflex_conjugation"
-                      ? "Gõ câu chia thể (ví dụ: 書かせられた)..."
-                      : "Gõ câu phản xạ tiếng Nhật..."
-                  }
-                  submitButtonText="Nộp"
-                  isEvaluating={isEvaluating}
-                  showOfficeBadge={false}
-                  hintText={isRecording ? "Đang thu âm mic hoặc gõ phím" : undefined}
-                />
-              </div>
             </div>
           </div>
         )}
       </div>
 
       {/* 3. Bottom Minimal Shortcuts Strip */}
-      <div className="shrink-0 pt-2 pb-1 border-t border-border/60 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground mt-2">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span><kbd className="px-1 py-0.5 rounded bg-muted border font-bold">{formatKeyDisplay(keybindings.reflexStartVoice)} / {formatKeyDisplay(keybindings.reflexSubmitOrNext)}</kbd> Bắt đầu / Câu tiếp</span>
-          <span><kbd className="px-1 py-0.5 rounded bg-muted border font-bold">{formatKeyDisplay(keybindings.reflexRetry)}</kbd> Làm lại</span>
-          <span><kbd className="px-1 py-0.5 rounded bg-muted border font-bold">{formatKeyDisplay(keybindings.reflexReplayModel)}</kbd> Nghe lại mẫu</span>
-          <span><kbd className="px-1 py-0.5 rounded bg-muted border font-bold">{formatKeyDisplay(keybindings.reflexPauseOrResume)}</kbd> Tạm dừng</span>
+      <div className="h-7 shrink-0 border-t border-border/60 dark:border-white/10 flex items-center justify-between text-[11px] text-muted-foreground px-1">
+        <div className="flex items-center gap-3">
+          <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.reflexStartVoice)} / {formatKeyDisplay(keybindings.reflexSubmitOrNext)}</kbd> Bắt đầu / Nộp</span>
+          <span className="hidden sm:inline"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.reflexRetry)}</kbd> Làm lại</span>
+          <span className="hidden md:inline"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.reflexReplayModel)}</kbd> Nghe mẫu</span>
+          <span className="hidden sm:inline"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.reflexPauseOrResume)}</kbd> Tạm dừng</span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span><kbd className="px-1 py-0.5 rounded bg-muted border font-bold">{formatKeyDisplay(keybindings.reflexToggleHelp)}</kbd> Phím tắt</span>
-          <span><kbd className="px-1 py-0.5 rounded bg-muted border font-bold">Esc</kbd> Thoát</span>
+        <div className="flex items-center gap-2">
+          <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.reflexToggleHelp)}</kbd> Phím tắt</span>
+          <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">Esc</kbd> Thoát</span>
         </div>
       </div>
     </div>

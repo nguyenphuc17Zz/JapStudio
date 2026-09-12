@@ -14,6 +14,8 @@ interface Props {
   subtitleMode?: "hidden" | "japanese" | "japanese_reading" | "vietnamese";
   onPlayAudio?: () => void;
   phase: string;
+  className?: string;
+  compact?: boolean;
 }
 
 export interface ConjugationTargetDetail {
@@ -524,7 +526,14 @@ export function formatJapaneseConjugationTarget(target: string): string {
   return target;
 }
 
-export function ReflexPromptCard({ exercise, subtitleMode = "japanese", onPlayAudio, phase }: Props) {
+export function ReflexPromptCard({
+  exercise,
+  subtitleMode = "japanese",
+  onPlayAudio,
+  phase,
+  className,
+  compact = false,
+}: Props) {
   const [liveTranslation, setLiveTranslation] = useState<string>("");
 
   const rc = exercise?.extra_metadata?.reflex_config || {};
@@ -641,7 +650,7 @@ export function ReflexPromptCard({ exercise, subtitleMode = "japanese", onPlayAu
   const modeInfo = subModeMap[exercise.exercise_type] || { label: "Reflex Blitz", ja: "瞬発", color: "jlpt" };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border/70 dark:border-white/10 bg-card/60 dark:bg-white/[0.02] shadow-xs transition-all duration-300 w-full">
+    <div className={cn("relative overflow-hidden rounded-2xl border border-border/70 dark:border-white/10 bg-card/60 dark:bg-white/[0.02] shadow-xs transition-all duration-300 w-full", className)}>
       {/* Top Header Strip */}
       <div className="bg-muted/40 border-b border-border/60 px-5 py-2.5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">

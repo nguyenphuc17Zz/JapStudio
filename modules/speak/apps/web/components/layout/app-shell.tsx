@@ -257,24 +257,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <TopNav onOpenCommand={() => setCmdOpen(true)} onOpenCoach={() => setCoachOpen(true)} />
-        <main className="flex-1 overflow-y-auto bg-background">
-          <div
-            className={cn(
-              "mx-auto",
-              pathname?.startsWith("/shadowing/video")
-                ? "max-w-[1920px] w-full p-2 sm:p-3 md:p-4 pb-6 space-y-3"
-                : pathname?.startsWith("/reflex") ||
-                  pathname?.startsWith("/keigo") ||
-                  pathname?.startsWith("/pitch") ||
-                  pathname?.startsWith("/situations") ||
-                  pathname?.startsWith("/speaking")
-                ? "max-w-5xl p-2 sm:p-3 md:p-4 pb-4 space-y-3"
-                : "max-w-[1280px] p-3 sm:p-4 md:p-6 pb-8 space-y-4"
-            )}
-          >
-            {children}
-          </div>
-        </main>
+        {(() => {
+          const isCombatArena =
+            pathname?.startsWith("/reflex") ||
+            pathname?.startsWith("/keigo") ||
+            pathname?.startsWith("/pitch") ||
+            pathname?.startsWith("/situations");
+
+          return (
+            <main
+              className={cn(
+                "flex-1 bg-background",
+                isCombatArena ? "h-[calc(100vh-3.5rem)] overflow-hidden" : "overflow-y-auto"
+              )}
+            >
+              <div
+                className={cn(
+                  "mx-auto",
+                  pathname?.startsWith("/shadowing/video")
+                    ? "max-w-[1920px] w-full p-2 sm:p-3 md:p-4 pb-6 space-y-3"
+                    : isCombatArena
+                    ? "max-w-6xl w-full h-full p-2 sm:p-3 flex flex-col min-h-0"
+                    : pathname?.startsWith("/speaking")
+                    ? "max-w-5xl p-2 sm:p-3 md:p-4 pb-4 space-y-3"
+                    : "max-w-[1280px] p-3 sm:p-4 md:p-6 pb-8 space-y-4"
+                )}
+              >
+                {children}
+              </div>
+            </main>
+          );
+        })()}
       </div>
 
       <MobileDrawer open={mobileOpen} onClose={() => setMobileOpen(false)} />
