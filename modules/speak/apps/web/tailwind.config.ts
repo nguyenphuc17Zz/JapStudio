@@ -150,6 +150,12 @@ const config: Config = {
         mono: ["'JetBrains Mono'", "'Fira Code'", "monospace"],
       },
       boxShadow: {
+        "glass-sm": "0 2px 8px rgba(15, 23, 42, 0.04)",
+        "glass-card": "0 10px 30px -4px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(226, 232, 240, 0.8)",
+        "glass-card-dark": "0 12px 35px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08)",
+        "glass-hover": "0 20px 40px -8px rgba(37, 99, 235, 0.16), 0 0 0 1px rgba(37, 99, 235, 0.3)",
+        "aizome-glow": "0 0 25px rgba(59, 130, 246, 0.35)",
+        "sakura-glow": "0 0 25px rgba(236, 72, 153, 0.3)",
         washi: "0 4px 20px -4px rgba(30, 58, 95, 0.07), 0 1px 3px rgba(0,0,0,0.03)",
         "washi-lg": "0 12px 36px -8px rgba(30, 58, 95, 0.1), 0 4px 12px rgba(0,0,0,0.04)",
         sumi: "0 4px 24px -2px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0,0,0,0.3)",

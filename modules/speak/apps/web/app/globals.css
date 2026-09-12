@@ -6,32 +6,32 @@
 
 @layer base {
   /* ==========================================================================
-     Light Mode: Crisp Neutral Porcelain & Emerald
+     Light Mode: Kyoto Clean Porcelain & Royal Aizome
      ========================================================================== */
   :root,
   .theme-haru {
-    --background: 0 0% 98%;         /* #fafafa crisp neutral porcelain */
-    --foreground: 240 10% 4%;        /* #09090b deep slate ink */
-    --card: 0 0% 100%;              /* #ffffff crisp pure white card */
-    --card-foreground: 240 10% 4%;
-    --primary: 160 84% 39%;         /* #10b981 clean jade emerald */
+    --background: 210 40% 98%;         /* #f8fafc clean crisp porcelain */
+    --foreground: 222 47% 11%;        /* #0f172a deep slate ink */
+    --card: 0 0% 100%;               /* #ffffff clean white glass card */
+    --card-foreground: 222 47% 11%;
+    --primary: 221 83% 53%;          /* #2563eb royal aizome blue */
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 5% 96%;        /* #f4f4f5 zinc-100 */
-    --secondary-foreground: 240 6% 10%;
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%; /* #71717a zinc-500 */
-    --accent: 240 5% 96%;
-    --accent-foreground: 240 6% 10%;
+    --secondary: 210 40% 96%;        /* #f1f5f9 */
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%; /* #64748b */
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 6% 90%;           /* #e4e4e7 clean zinc-200 border */
-    --input: 240 6% 90%;
-    --ring: 160 84% 39%;
-    --radius: 0.75rem;
+    --border: 214 32% 91%;           /* #e2e8f0 clean soft border */
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
+    --radius: 1rem;
   }
 
   /* ==========================================================================
-     Dark Mode: Deep Slate Dimmed (Dịu mắt, chống mỏi, chuẩn Linear/GitHub)
+     Dark Mode: Kyoto Clean Glass Obsidian & Electric Aizome (Apple Studio Pro)
      ========================================================================== */
   .dark,
   .theme-matcha,
@@ -39,23 +39,24 @@
   .theme-tokyo,
   .theme-aizome,
   .theme-kohaku {
-    --background: 215 28% 7%;        /* #0d1117 deep slate charcoal, êm mắt không chói */
-    --foreground: 210 25% 93%;       /* #e6edf3 soft off-white text, chống mỏi mắt */
-    --card: 217 21% 11%;             /* #161b22 elevated slate card surface */
-    --card-foreground: 210 25% 93%;
-    --primary: 160 84% 39%;          /* #10b981 refined jade emerald */
+    --background: 228 36% 4.5%;      /* #07090e deep obsidian sapphire */
+    --foreground: 210 40% 98%;        /* #f8fafc soft luminous white */
+    --card: 222 30% 9.5%;            /* #111622 frosted obsidian card */
+    --card-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;          /* #3b82f6 electric aizome blue */
     --primary-foreground: 0 0% 100%;
-    --secondary: 215 14% 17%;        /* #1c2128 neutral dark slate */
-    --secondary-foreground: 210 25% 93%;
-    --muted: 215 14% 15%;            /* #171b21 */
-    --muted-foreground: 215 14% 58%; /* #8b949e soft slate gray for secondary labels */
-    --accent: 215 14% 19%;           /* #21262d */
-    --accent-foreground: 210 25% 93%;
+    --secondary: 224 25% 15%;        /* #1c2233 */
+    --secondary-foreground: 210 40% 98%;
+    --muted: 224 25% 13%;            /* #161b29 */
+    --muted-foreground: 217 19% 62%; /* #909bb0 */
+    --accent: 224 25% 16%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 75% 58%;
     --destructive-foreground: 0 0% 98%;
-    --border: 215 14% 19%;           /* #21262d subtle soft divider, không lóa */
-    --input: 215 14% 19%;
-    --ring: 160 84% 39%;
+    --border: 220 20% 18%;           /* subtle specular rim divider */
+    --input: 220 20% 18%;
+    --ring: 217 91% 60%;
+    --radius: 1rem;
   }
 }
 
@@ -74,15 +75,21 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Clean solid backgrounds without speckled dot patterns */
+  /* Kyoto Clean Glass ambient refractions */
   html:not(.dark) body {
-    background-color: #fafafa;
-    background-image: none;
+    background-color: #F8FAFC;
+    background-image: 
+      radial-gradient(circle at 12% 15%, rgba(37, 99, 235, 0.05), transparent 40%),
+      radial-gradient(circle at 88% 80%, rgba(236, 72, 153, 0.04), transparent 45%);
+    background-attachment: fixed;
   }
 
   .dark body {
-    background-color: #0d1117;
-    background-image: none;
+    background-color: #07090E;
+    background-image: 
+      radial-gradient(circle at 15% 15%, rgba(59, 130, 246, 0.08), transparent 45%),
+      radial-gradient(circle at 85% 85%, rgba(236, 72, 153, 0.06), transparent 45%);
+    background-attachment: fixed;
   }
 }
 
@@ -134,6 +141,54 @@
   /* Hanko Stamp - hidden for clean modern aesthetic */
   .hanko-badge {
     display: none !important;
+  }
+
+  /* Kyoto Clean Glass & VisionOS Utilities */
+  .glass-card {
+    background: hsl(var(--card) / 0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--border) / 0.75);
+    box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-card-hover {
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .glass-card-hover:hover {
+    transform: translateY(-2px);
+    border-color: hsl(var(--primary) / 0.4);
+    box-shadow: 0 16px 36px -6px rgba(37, 99, 235, 0.18), 0 0 0 1px hsl(var(--primary) / 0.25);
+  }
+
+  .glass-pill {
+    background: hsl(var(--card) / 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--border) / 0.8);
+    border-radius: 9999px;
+  }
+
+  .glass-dock {
+    background: hsl(var(--card) / 0.88);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  }
+
+  .dynamic-island {
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  .text-gradient-kyoto {
+    background: linear-gradient(135deg, hsl(var(--primary)), #EC4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   /* Japanese Vertical Text (Tategaki 縦書き) */

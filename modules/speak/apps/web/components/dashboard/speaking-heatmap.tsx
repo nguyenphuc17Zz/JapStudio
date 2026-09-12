@@ -55,7 +55,7 @@ export function SpeakingHeatmap({
   };
 
   return (
-    <div className={cn("p-6 rounded-3xl border border-border bg-card washi-texture shadow-sm space-y-4 relative overflow-hidden", className)}>
+    <div className={cn("p-6 rounded-[24px] border border-border/70 bg-card/65 backdrop-blur-xl shadow-glass-card hover:shadow-glass-hover transition-all duration-300 space-y-4 relative overflow-hidden", className)}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/60 pb-3.5">
         <div className="flex items-center gap-2.5">
           <span className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-2xs">

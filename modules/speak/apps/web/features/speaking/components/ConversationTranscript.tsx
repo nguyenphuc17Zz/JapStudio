@@ -40,14 +40,14 @@ export function ConversationTranscript({
   return (
     <div className="space-y-4 p-4 overflow-y-auto max-h-[380px] scrollbar-thin">
       {turns.length === 0 && !isUserSpeaking && state === "listening" && (
-        <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground space-y-2">
-          <div className="h-10 w-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground">
+        <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground space-y-2.5">
+          <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xl shadow-lg shadow-primary/10 animate-pulse">
             🎙️
           </div>
-          <p className="text-xs font-medium text-muted-foreground">
+          <p className="text-xs font-semibold text-foreground">
             Start speaking in Japanese or type a message below.
           </p>
-          <p className="text-[11px] text-slate-600">
+          <p className="text-[11px] text-muted-foreground font-jp">
             音声で話しかけると、AIが自然な日本語で返答します。
           </p>
         </div>
@@ -72,7 +72,7 @@ export function ConversationTranscript({
                 {isUser ? "You (あなた)" : personaName}
               </span>
               {isUser && (
-                <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[9px]">
+                <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[9px]">
                   Faster-Whisper ({turn.stt_model || sttModel}) ✓
                 </span>
               )}
@@ -83,7 +83,7 @@ export function ConversationTranscript({
                 </span>
               )}
               {isUser && analysis && (
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-muted text-rose-300 font-mono">
+                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-white/10 text-sakura-300 font-mono border border-sakura-500/20">
                   Score: {analysis.overall_quality_score}/100
                 </span>
               )}
@@ -91,10 +91,10 @@ export function ConversationTranscript({
 
             {/* Turn Bubble */}
             <div
-              className={`relative max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl text-xs leading-relaxed ${
+              className={`relative max-w-[85%] sm:max-w-[75%] p-4 rounded-3xl text-xs leading-relaxed transition-all ${
                 isUser
-                  ? "bg-muted/90 text-foreground border border-border/80 rounded-tr-none shadow-md shadow-slate-900/30"
-                  : "bg-gradient-to-br from-slate-900/95 to-slate-950/95 text-foreground border border-primary/20 rounded-tl-none shadow-lg shadow-primary/5"
+                  ? "bg-primary/20 text-foreground border border-primary/30 rounded-tr-xs shadow-lg shadow-primary/10 backdrop-blur-md"
+                  : "glass-card text-foreground border border-white/10 dark:border-white/10 rounded-tl-xs shadow-xl backdrop-blur-2xl"
               }`}
             >
               <div className="whitespace-pre-wrap font-jp text-xs sm:text-sm leading-relaxed">

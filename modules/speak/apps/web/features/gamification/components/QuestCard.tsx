@@ -29,10 +29,10 @@ export const QuestCard: React.FC<QuestCardProps> = ({ quest }) => {
 
   return (
     <div
-      className={`relative overflow-hidden p-4 rounded-2xl border transition-all duration-200 ${
+      className={`relative overflow-hidden p-4 rounded-[22px] border backdrop-blur-xl transition-all duration-300 ${
         quest.is_completed
-          ? "bg-card/60 border-emerald-500/40 shadow-sm shadow-emerald-500/10"
-          : "bg-card/80 border-border/80 hover:border-border shadow-md"
+          ? "bg-card/75 border-emerald-500/40 shadow-sm shadow-emerald-500/10"
+          : "bg-card/65 border-border/70 hover:border-primary/40 hover:shadow-glass-hover hover:-translate-y-0.5 shadow-glass-sm"
       }`}
     >
       <div className="flex items-start justify-between gap-3">

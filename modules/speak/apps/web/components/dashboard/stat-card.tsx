@@ -86,7 +86,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "relative rounded-[22px] border border-border/80 bg-card/95 washi-texture p-5 sm:p-5.5 min-h-[132px] flex flex-col justify-between transition-all duration-200 hover:border-border hover:shadow-sumi hover:-translate-y-0.5 group overflow-hidden",
+        "relative rounded-[22px] border border-border/70 bg-card/65 backdrop-blur-xl p-5 sm:p-5.5 min-h-[132px] flex flex-col justify-between transition-all duration-300 hover:border-primary/40 hover:shadow-glass-hover hover:-translate-y-1 group overflow-hidden shadow-glass-sm",
         className
       )}
     >
@@ -112,7 +112,7 @@ export function StatCard({
         {/* Icon Emblem Box */}
         <div
           className={cn(
-            "h-10 w-10 sm:h-11 sm:w-11 rounded-2xl border flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-110 shadow-sm",
+            "h-10 w-10 sm:h-11 sm:w-11 rounded-2xl border flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-105 shadow-sm",
             style.iconBg
           )}
         >
@@ -122,7 +122,7 @@ export function StatCard({
 
       {/* Main Value & Subtext Area */}
       <div className="space-y-1 relative z-10 mt-3">
-        <div className="text-2xl sm:text-3xl font-black tracking-tight font-sans text-foreground leading-none">
+        <div className="text-2xl sm:text-3xl font-extrabold tracking-tight font-sans text-foreground leading-none">
           {value}
         </div>
 

@@ -313,14 +313,14 @@ export default function SpeakingPage() {
       ) : (
         <div className="space-y-6">
           {/* Header */}
-          <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="rounded-[24px] border border-border/70 bg-card/65 backdrop-blur-2xl p-6 md:p-7 shadow-glass-card hover:shadow-glass-hover transition-all duration-300">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2.5">
-                  <span className="h-9 w-9 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary">
+                  <span className="h-9 w-9 rounded-2xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
                     <Mic className="h-5 w-5" />
                   </span>
-                  <h1 className="text-xl font-bold tracking-tight text-foreground">
+                  <h1 className="text-xl font-extrabold tracking-tight text-foreground">
                     Phòng hội thoại
                   </h1>
                 </div>
@@ -331,7 +331,7 @@ export default function SpeakingPage() {
                   <Link
                     href="/ramp"
                     prefetch={true}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 border border-border text-foreground text-xs font-semibold transition-all"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/60 hover:bg-muted border border-border text-foreground text-xs font-semibold transition-all"
                   >
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
                     <span>Mode 6: Phục hồi phát ngôn (Speaking Ramp) — Rèn từ 1 câu đến 60s độc lập</span>
@@ -346,7 +346,7 @@ export default function SpeakingPage() {
                   size="sm"
                   onClick={handleRestoreDefaults}
                   isLoading={actionLoading}
-                  className="text-xs text-muted-foreground hover:text-foreground border-border"
+                  className="text-xs text-muted-foreground hover:text-foreground border-border/80 rounded-full"
                   title="Khôi phục lại các đối tác mẫu mặc định"
                 >
                   <RotateCcw className="h-3.5 w-3.5 mr-1" />
@@ -358,37 +358,38 @@ export default function SpeakingPage() {
                   size="sm"
                   onClick={handleGenerateAI}
                   isLoading={generating}
-                  className="text-xs border-border text-foreground hover:bg-muted"
+                  className="text-xs border-border/80 rounded-full"
                 >
-                  <Wand2 className="h-3.5 w-3.5 text-primary mr-1" />
-                  Sinh ngẫu nhiên
+                  <Wand2 className="h-3.5 w-3.5 mr-1 text-primary" />
+                  Sinh bằng AI
                 </Button>
 
                 <Button
+                  variant="primary"
                   size="sm"
                   onClick={handleOpenCreateModal}
-                  className="text-xs"
+                  className="text-xs rounded-full font-bold shadow-md shadow-primary/25"
                 >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Thêm đối tác
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Tạo đối tác
                 </Button>
               </div>
             </div>
 
-            {/* Difficulty Filter Bar */}
-            <div className="mt-5 pt-4 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* Filter by Difficulty Bar */}
+            <div className="mt-6 pt-4 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 mr-1">
+                <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mr-1">
                   <Users className="h-3.5 w-3.5" /> Trình độ:
                 </span>
-                <div className="flex items-center gap-1 p-1 rounded-lg bg-muted border border-border">
+                <div className="flex items-center gap-1 p-1 rounded-full bg-muted/50 border border-border/70 backdrop-blur-md">
                   {DIFFICULTIES.map((diff) => (
                     <button
                       key={diff}
                       onClick={() => setSelectedDifficulty(diff)}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+                      className={`px-3.5 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
                         selectedDifficulty === diff
-                          ? "bg-card text-foreground shadow-xs font-semibold"
+                          ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
@@ -398,7 +399,7 @@ export default function SpeakingPage() {
                 </div>
               </div>
 
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground font-medium">
                 {filteredPersonas.length} nhân vật khả dụng
               </div>
             </div>
@@ -411,7 +412,7 @@ export default function SpeakingPage() {
               <span>Đang tải danh sách đối tác hội thoại…</span>
             </div>
           ) : filteredPersonas.length === 0 ? (
-            <div className="p-12 text-center rounded-2xl border border-dashed border-border bg-card/50 space-y-4 max-w-lg mx-auto">
+            <div className="p-12 text-center rounded-[24px] border border-dashed border-border/80 bg-card/50 backdrop-blur-xl space-y-4 max-w-lg mx-auto">
               <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto text-xl">
                 👥
               </div>
@@ -424,13 +425,13 @@ export default function SpeakingPage() {
                 </p>
               </div>
               <div className="flex items-center justify-center gap-2.5 flex-wrap pt-1">
-                <Button variant="akane" size="sm" onClick={handleOpenCreateModal}>
+                <Button variant="akane" size="sm" onClick={handleOpenCreateModal} className="rounded-full">
                   <Plus className="h-4 w-4" /> Tạo đối tác mới
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleGenerateAI} isLoading={generating}>
+                <Button variant="outline" size="sm" onClick={handleGenerateAI} isLoading={generating} className="rounded-full">
                   <Wand2 className="h-4 w-4 text-primary" /> Sinh bằng AI
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleRestoreDefaults} isLoading={actionLoading}>
+                <Button variant="outline" size="sm" onClick={handleRestoreDefaults} isLoading={actionLoading} className="rounded-full">
                   <RotateCcw className="h-3.5 w-3.5" /> Khôi phục mẫu
                 </Button>
               </div>
@@ -440,7 +441,7 @@ export default function SpeakingPage() {
               {filteredPersonas.map((persona) => (
                 <div
                   key={persona.id}
-                  className="p-5 rounded-xl border border-border bg-card flex flex-col justify-between transition-all hover:border-foreground/20"
+                  className="p-5 sm:p-5.5 rounded-[22px] border border-border/70 bg-card/65 backdrop-blur-xl flex flex-col justify-between transition-all duration-300 hover:border-primary/40 hover:shadow-glass-hover hover:-translate-y-1 shadow-glass-sm group"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
@@ -481,10 +482,11 @@ export default function SpeakingPage() {
                     </div>
                   </div>
 
-                  <div className="pt-4 mt-4 border-t border-border flex items-center gap-2">
+                  <div className="pt-4 mt-4 border-t border-border/60 flex items-center gap-2">
                     <Button
+                      variant="primary"
                       size="md"
-                      className="flex-1"
+                      className="flex-1 rounded-full font-bold shadow-md shadow-primary/25"
                       onClick={() => handleOpenLobby(persona)}
                     >
                       <Mic className="h-4 w-4 mr-1.5" />
@@ -494,7 +496,7 @@ export default function SpeakingPage() {
                     <Button
                       variant="ghost"
                       size="md"
-                      className="px-2.5 text-muted-foreground hover:text-destructive shrink-0"
+                      className="px-2.5 rounded-full text-muted-foreground hover:text-destructive shrink-0"
                       title="Xóa đối tác này"
                       onClick={() => setDeleteTarget(persona)}
                     >

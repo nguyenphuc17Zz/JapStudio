@@ -44,46 +44,47 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4 max-w-6xl mx-auto pb-8 animate-in fade-in duration-200">
-      {/* 1. Hero chào mừng — Minimalist Studio */}
-      <div className="rounded-2xl border border-border/70 bg-card/70 p-5 md:p-6 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-black text-sm">
+      {/* 1. Hero chào mừng — Kyoto Clean Glass */}
+      <div className="rounded-[24px] border border-border/70 bg-card/65 backdrop-blur-2xl p-6 md:p-7 shadow-glass-card hover:shadow-glass-hover transition-all duration-300 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-primary/10 via-sakura-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="h-9 w-9 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-primary flex items-center justify-center text-white font-black text-sm shadow-md shadow-primary/25">
                 話
               </span>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-foreground">
                 Chào mừng trở lại!{" "}
-                <span className="font-jp font-normal text-muted-foreground text-base sm:text-lg">
+                <span className="font-jp font-bold text-muted-foreground text-base sm:text-lg">
                   おかえりなさい
                 </span>
               </h1>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground max-w-xl leading-relaxed">
-              Tiếp tục rèn luyện phản xạ và giọng nói tiếng Nhật chuẩn Tokyo hôm nay.
+              Hệ thống phản xạ âm thanh thời gian thực sẵn sàng. Luyện tập 10 phút hôm nay để giữ nhịp tự nhiên chuẩn Tokyo.
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          <div className="flex items-center gap-3 shrink-0 flex-wrap">
             <Link href="/learning">
-              <Button variant="outline" size="md" className="gap-2 font-medium rounded-xl border-border/80">
+              <Button variant="outline" size="md" className="gap-2 font-semibold rounded-full border-border/80 bg-muted/30 hover:bg-card">
                 <Compass className="h-4 w-4 text-muted-foreground" />
                 <span>Lộ trình học</span>
               </Button>
             </Link>
 
             <Link href="/speaking">
-              <Button variant="primary" size="md" className="gap-2 rounded-xl shadow-xs">
+              <Button variant="primary" size="md" className="gap-2.5 rounded-full shadow-md shadow-primary/25 font-bold px-5">
                 <Mic className="h-4 w-4" />
                 <span>Bắt đầu luyện nói</span>
-                <span className="text-xs font-jp opacity-80">会話</span>
+                <span className="text-xs font-jp opacity-90 font-normal">会話</span>
               </Button>
             </Link>
           </div>
         </div>
 
         {profile && (
-          <div className="mt-4 pt-4 border-t border-border/60">
+          <div className="mt-5 pt-4 border-t border-border/60 relative z-10">
             <XPBar levelProgress={profile.level_progress} />
           </div>
         )}

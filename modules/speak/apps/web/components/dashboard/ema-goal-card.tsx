@@ -69,7 +69,7 @@ export function EmaGoalCard({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "relative rounded-2xl border-2 border-kintsugi-400/40 bg-gradient-to-b from-[#f9f4ea]/95 via-[#f4ebd6]/85 to-[#ece0c3]/95 dark:from-[#211d17]/95 dark:via-[#1c1813]/95 dark:to-[#171410]/95 shadow-kintsugi p-5 text-foreground overflow-hidden washi-texture",
+        "relative rounded-[24px] border border-border/70 bg-card/65 backdrop-blur-xl shadow-glass-card hover:shadow-glass-hover transition-all duration-300 p-5 text-foreground overflow-hidden",
         className
       )}
     >

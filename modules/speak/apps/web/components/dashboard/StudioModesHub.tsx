@@ -97,31 +97,31 @@ export function StudioModesHub() {
         <span className="text-xs text-muted-foreground">5 chuyên đề</span>
       </div>
 
-      {/* 5 Cards Grid — Minimalist Studio */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+      {/* 5 Cards Grid — Kyoto Clean Glass */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-3.5">
         {STUDIO_MODES.map((mode) => (
           <Link
             key={mode.id}
             href={mode.url}
             prefetch={true}
             onClick={() => soundFX.playKatana()}
-            className="group p-4 rounded-2xl border border-border/70 bg-card/60 hover:bg-card hover:border-primary/40 hover:shadow-xs transition-all flex flex-col justify-between relative overflow-hidden"
+            className="group p-4.5 rounded-[22px] border border-border/70 bg-card/65 backdrop-blur-xl hover:bg-card/90 hover:border-primary/40 hover:shadow-glass-hover hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden shadow-glass-sm"
           >
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <div className="h-9 w-9 rounded-xl bg-muted/50 border border-border/60 flex items-center justify-center text-foreground group-hover:scale-105 transition-transform">
+                <div className="h-10 w-10 rounded-2xl bg-muted/60 border border-border/70 flex items-center justify-center text-foreground group-hover:scale-105 group-hover:border-primary/30 transition-all duration-300 shadow-xs">
                   {mode.icon}
                 </div>
-                <span className="text-[10px] font-medium text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-md border border-border/50">
+                <span className="text-[10px] font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
                   {mode.tag.split("—")[0].trim()}
                 </span>
               </div>
 
               <div>
-                <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                <h3 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
                   {mode.title.replace(/^\d+\.\s*/, "")}
                 </h3>
-                <p className="text-[10px] text-muted-foreground font-jp">
+                <p className="text-[11px] text-muted-foreground font-jp mt-0.5">
                   {mode.jaTitle}
                 </p>
               </div>
@@ -131,9 +131,9 @@ export function StudioModesHub() {
               </p>
             </div>
 
-            <div className="pt-3 mt-3 border-t border-border/50 flex items-center justify-between text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors">
+            <div className="pt-3 mt-3 border-t border-border/60 flex items-center justify-between text-xs font-semibold text-muted-foreground group-hover:text-primary transition-colors">
               <span>Bắt đầu luyện</span>
-              <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </Link>
         ))}

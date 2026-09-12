@@ -124,14 +124,18 @@ class InsightEngine:
         for ins in raw_insights:
             # Check recent insight with same type & metric
             cooldown_cutoff = now - timedelta(hours=48)
-            existing_stmt = select(InsightRecord).where(
-                InsightRecord.user_id == user_id,
-                InsightRecord.insight_type == ins.insight_type.value,
-                InsightRecord.metric_key == (ins.metric_key.value if ins.metric_key else None),
-                InsightRecord.created_at >= cooldown_cutoff,
+            existing_stmt = (
+                select(InsightRecord)
+                .where(
+                    InsightRecord.user_id == user_id,
+                    InsightRecord.insight_type == ins.insight_type.value,
+                    InsightRecord.metric_key == (ins.metric_key.value if ins.metric_key else None),
+                    InsightRecord.created_at >= cooldown_cutoff,
+                )
+                .order_by(InsightRecord.created_at.desc())
             )
             existing_res = await self.db.execute(existing_stmt)
-            existing = existing_res.scalar_one_or_none()
+            existing = existing_res.scalars().first()
 
             if not existing:
                 record = InsightRecord(

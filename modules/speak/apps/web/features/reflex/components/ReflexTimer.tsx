@@ -11,7 +11,7 @@ interface Props {
   state: "normal" | "warning" | "critical";
   isActive: boolean;
   isPaused?: boolean;
-  variant?: "ring" | "badge" | "bar";
+  variant?: "ring" | "badge" | "bar" | "minimal";
   className?: string;
 }
 
@@ -51,6 +51,65 @@ export function ReflexTimer({
     : "";
 
   const secs = isInfinite ? (remainingMs / 1000).toFixed(1) : (remainingMs / 1000).toFixed(1);
+
+  if (variant === "minimal") {
+    return (
+      <div
+        className={cn("relative flex flex-col items-center justify-center", className)}
+        role="progressbar"
+        aria-valuenow={Math.round(pct * 100)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`Timer ${secs}s`}
+      >
+        <div className="relative h-[115px] w-[115px]">
+          <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100" aria-hidden="true">
+            <circle
+              cx="50"
+              cy="50"
+              r="42"
+              fill="none"
+              strokeWidth="7"
+              className="stroke-muted/50 dark:stroke-white/10"
+            />
+            <circle
+              cx="50"
+              cy="50"
+              r="42"
+              fill="none"
+              strokeWidth="7"
+              strokeLinecap="round"
+              className={cn(strokeColor, "transition-all duration-100 ease-linear")}
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+            />
+          </svg>
+
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            {isInfinite ? (
+              <div className="flex flex-col items-center">
+                <span className="text-3xl font-black text-emerald-500 font-mono">∞</span>
+                <span className="text-[10px] font-mono text-muted-foreground">{secs}s</span>
+              </div>
+            ) : (
+              <span
+                className={cn(
+                  "font-mono font-black tracking-tight",
+                  secs.length > 3 ? "text-2xl" : "text-3xl",
+                  isPaused ? "text-amber-500" : state === "critical" ? "text-rose-500 animate-pulse" : state === "warning" ? "text-amber-500" : "text-foreground"
+                )}
+              >
+                {secs}
+              </span>
+            )}
+            <span className="text-[9.5px] uppercase font-bold tracking-wider text-muted-foreground">
+              {isPaused ? "Tạm dừng" : isInfinite ? "Không giới hạn" : isActive ? "Đang đếm" : "Sẵn sàng"}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (variant === "badge") {
     return (

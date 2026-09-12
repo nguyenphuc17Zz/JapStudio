@@ -641,9 +641,9 @@ export function ReflexPromptCard({ exercise, subtitleMode = "japanese", onPlayAu
   const modeInfo = subModeMap[exercise.exercise_type] || { label: "Reflex Blitz", ja: "瞬発", color: "jlpt" };
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border/90 bg-card shadow-sm washi-texture transition-all duration-300">
+    <div className="relative overflow-hidden rounded-2xl border border-border/70 dark:border-white/10 bg-card/60 dark:bg-white/[0.02] shadow-xs transition-all duration-300 w-full">
       {/* Top Header Strip */}
-      <div className="bg-muted/40 border-b border-border/70 px-5 py-2.5 flex items-center justify-between gap-3">
+      <div className="bg-muted/40 border-b border-border/60 px-5 py-2.5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Badge variant={modeInfo.color} size="sm" className="font-bold">
             {modeInfo.ja} • {modeInfo.label}
@@ -837,18 +837,18 @@ export function ReflexPromptCard({ exercise, subtitleMode = "japanese", onPlayAu
               <span className="inline-block text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
                 Động từ gốc
               </span>
-              <div className="text-2xl md:text-3xl font-black font-jp tracking-tight text-foreground flex justify-center">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black font-jp tracking-tight text-foreground flex justify-center py-1">
                 <UniversalFurigana text={verb || prompt} fontSize="xl" />
               </div>
 
               {displayTranslation && subtitleMode === "vietnamese" && (
-                <div className="text-xs md:text-sm font-bold text-primary animate-in fade-in duration-200">
+                <div className="text-sm md:text-base font-bold text-primary animate-in fade-in duration-200">
                   (Nghĩa: {displayTranslation})
                 </div>
               )}
 
               {targetDetail ? (
-                <div className="inline-flex flex-col items-center gap-1.5 p-3 px-5 rounded-2xl bg-primary/10 border border-primary/25 shadow-xs animate-in fade-in zoom-in duration-200 max-w-lg mx-auto">
+                <div className="inline-flex flex-col sm:flex-row items-center gap-2 p-3 px-5 rounded-2xl bg-primary/10 border border-primary/25 shadow-xs animate-in fade-in zoom-in duration-200 max-w-2xl mx-auto">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Yêu cầu chia sang:</span>
                     <Badge variant="sakura" size="sm" className="font-extrabold font-jp text-xs">

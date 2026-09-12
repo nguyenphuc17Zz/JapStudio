@@ -260,36 +260,36 @@ export function ActiveSessionRoom({
   return (
     <div className="space-y-4 max-w-4xl mx-auto animate-in fade-in duration-300">
       {/* Session Top Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-card/80 border border-border shadow-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl glass-card border border-white/10 dark:border-white/10 shadow-xl backdrop-blur-2xl">
         {/* Left: Persona & Mode Info */}
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-primary to-aizome-600 flex items-center justify-center text-primary-foreground font-extrabold text-sm shadow-md shadow-primary/10">
+          <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-primary via-aizome-500 to-indigo-600 flex items-center justify-center text-primary-foreground font-extrabold text-base shadow-lg shadow-primary/20 ring-2 ring-primary/20">
             {persona.name.charAt(0)}
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-foreground">{persona.name}</h2>
-              <Badge variant="jlpt" size="sm">
+              <h2 className="text-sm font-extrabold text-foreground tracking-tight">{persona.name}</h2>
+              <Badge variant="jlpt" size="sm" className="rounded-full shadow-2xs">
                 {persona.difficulty}
               </Badge>
-              <Badge variant="outline" size="sm" className="capitalize text-[10px]">
+              <Badge variant="outline" size="sm" className="capitalize text-[10px] rounded-full border-white/15 bg-white/5 backdrop-blur-md">
                 {session.mode} Mode
               </Badge>
             </div>
-            <p className="text-[11px] text-primary">
+            <p className="text-[11px] text-primary/90 font-medium">
               {persona.role} • {persona.speaking_style}
             </p>
           </div>
         </div>
 
         {/* Right: Timer & Turn Stats & Intelligence Drawer Trigger */}
-        <div className="flex items-center gap-3 text-xs font-mono text-muted-foreground self-end sm:self-center">
-          <div className="flex items-center gap-1.5 bg-background px-3 py-1.5 rounded-xl border border-border">
-            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+        <div className="flex items-center gap-2.5 text-xs font-mono text-muted-foreground self-end sm:self-center">
+          <div className="flex items-center gap-1.5 bg-white/5 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 backdrop-blur-md shadow-2xs">
+            <Clock className="h-3.5 w-3.5 text-primary" />
             <span className="text-foreground font-bold">{formattedElapsed}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-background px-3 py-1.5 rounded-xl border border-border text-[11px]">
+          <div className="flex items-center gap-1.5 bg-white/5 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 backdrop-blur-md text-[11px] shadow-2xs">
             <span className="text-muted-foreground">Speaking:</span>
             <span className="text-emerald-400 font-bold">{formattedSpeaking}</span>
           </div>
@@ -300,10 +300,10 @@ export function ActiveSessionRoom({
               variant="outline"
               size="sm"
               onClick={onToggleVoiceMute}
-              className={`text-xs gap-1.5 ${
+              className={`text-xs gap-1.5 rounded-xl backdrop-blur-md transition-all ${
                 isVoiceMuted
                   ? "border-amber-500/40 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
-                  : "border-border text-foreground hover:bg-muted"
+                  : "border-white/15 bg-white/5 text-foreground hover:bg-white/10"
               }`}
               title={isVoiceMuted ? "Bật âm thanh đối tác" : "Tắt tiếng đối tác (Tiết kiệm RAM / Nhẹ máy)"}
             >
@@ -326,10 +326,10 @@ export function ActiveSessionRoom({
             variant="outline"
             size="sm"
             onClick={() => setIsReviewOpen(true)}
-            className={`text-xs gap-1.5 ${
+            className={`text-xs gap-1.5 rounded-xl backdrop-blur-md transition-all ${
               totalCorrectionsCount > 0
-                ? "border-kintsugi-500/40 text-kintsugi-400 bg-kintsugi-500/5 hover:bg-kintsugi-500/15"
-                : "border-border text-foreground hover:bg-muted"
+                ? "border-kintsugi-500/40 text-kintsugi-400 bg-kintsugi-500/10 hover:bg-kintsugi-500/20 shadow-xs"
+                : "border-white/15 bg-white/5 text-foreground hover:bg-white/10"
             }`}
           >
             <Sparkles className="h-3.5 w-3.5 text-primary" />
@@ -341,18 +341,21 @@ export function ActiveSessionRoom({
       {/* Main Room Card */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left Column: Visualizer & Live Speaking Control Panel */}
-        <div className="lg:col-span-5 flex flex-col justify-between p-5 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-950 border border-border shadow-lg space-y-4">
+        <div className="lg:col-span-5 flex flex-col justify-between p-5 rounded-3xl glass-card border border-white/10 dark:border-white/10 shadow-2xl backdrop-blur-2xl space-y-4 relative overflow-hidden">
+          {/* Subtle Ambient Refraction */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-44 h-44 bg-primary/10 blur-3xl rounded-full pointer-events-none -z-10" />
+
           {/* Status Indicator Banner */}
-          <div className="flex items-center justify-between pb-2 border-b border-border/80">
+          <div className="flex items-center justify-between pb-2 border-b border-white/10">
             <div
-              className={`flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-semibold ${statusInfo.badgeBg} ${statusInfo.badgeText}`}
+              className={`flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-semibold backdrop-blur-md ${statusInfo.badgeBg} ${statusInfo.badgeText}`}
             >
               <div className={`h-2 w-2 rounded-full ${statusInfo.dotColor}`} />
               <span>{statusInfo.label}</span>
             </div>
 
             {session.mode === "coaching" && (
-              <span className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-md border border-primary/20">
+              <span className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 backdrop-blur-md">
                 ⚡ Realtime Coach
               </span>
             )}
@@ -368,7 +371,7 @@ export function ActiveSessionRoom({
 
             {/* Permission Denied Warning Banner */}
             {hasPermission === false && onRequestPermission && (
-              <div className="w-full p-2.5 rounded-xl bg-destructive/15 border border-destructive/40 text-destructive flex items-center justify-between gap-2 text-xs animate-bounce">
+              <div className="w-full p-2.5 rounded-2xl bg-destructive/15 border border-destructive/40 text-destructive flex items-center justify-between gap-2 text-xs animate-bounce">
                 <div className="flex items-center gap-1.5">
                   <AlertCircle className="h-4 w-4 shrink-0" />
                   <span>Chưa cấp quyền Micro</span>
@@ -377,7 +380,7 @@ export function ActiveSessionRoom({
                   size="sm"
                   variant="danger"
                   onClick={() => onRequestPermission()}
-                  className="text-[11px] h-7 px-2"
+                  className="text-[11px] h-7 px-2 rounded-xl"
                 >
                   Bật Micro
                 </Button>
@@ -395,15 +398,15 @@ export function ActiveSessionRoom({
 
             {/* Speaking Mode Selector Tabs */}
             {onToggleAutoEndOfSpeech && (
-              <div className="w-full flex items-center p-1 rounded-xl bg-card/70 border border-border text-xs">
+              <div className="w-full flex items-center p-1 rounded-2xl bg-white/5 dark:bg-white/5 border border-white/10 backdrop-blur-md text-xs">
                 <button
                   type="button"
                   onClick={() => {
                     if (!autoEndOfSpeech) onToggleAutoEndOfSpeech();
                   }}
-                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                  className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                     autoEndOfSpeech
-                      ? "bg-primary text-primary-foreground shadow-sm"
+                      ? "bg-primary text-primary-foreground shadow-sm font-bold"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                   title="Phím tắt: T"
@@ -415,9 +418,9 @@ export function ActiveSessionRoom({
                   onClick={() => {
                     if (autoEndOfSpeech) onToggleAutoEndOfSpeech();
                   }}
-                  className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                  className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
                     !autoEndOfSpeech
-                      ? "bg-primary text-primary-foreground shadow-sm"
+                      ? "bg-primary text-primary-foreground shadow-sm font-bold"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                   title="Phím tắt: T"
@@ -437,10 +440,10 @@ export function ActiveSessionRoom({
                     type="button"
                     onClick={onStartManualRecording}
                     disabled={state !== "listening"}
-                    className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-primary via-primary/95 to-aizome-600 hover:from-primary/90 hover:to-aizome-700 text-primary-foreground font-bold shadow-lg shadow-primary/20 flex items-center justify-between gap-3 transition-all transform active:scale-98 cursor-pointer disabled:opacity-40"
+                    className="w-full py-4 px-4 rounded-2xl bg-gradient-to-r from-primary via-primary/95 to-aizome-600 hover:from-primary/90 hover:to-aizome-700 text-primary-foreground font-bold shadow-xl shadow-primary/25 flex items-center justify-between gap-3 transition-all transform active:scale-98 cursor-pointer disabled:opacity-40 ring-1 ring-white/20"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center">
+                      <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center shadow-xs">
                         <Mic className="h-4 w-4 text-white" />
                       </div>
                       <div className="text-left">
@@ -452,7 +455,7 @@ export function ActiveSessionRoom({
                         </div>
                       </div>
                     </div>
-                    <span className="px-2 py-1 rounded-md bg-white/20 font-mono text-[10px] font-black tracking-wider uppercase border border-white/25">
+                    <span className="px-2 py-1 rounded-lg bg-white/20 font-mono text-[10px] font-black tracking-wider uppercase border border-white/25">
                       Space
                     </span>
                   </button>
@@ -460,10 +463,10 @@ export function ActiveSessionRoom({
                   <button
                     type="button"
                     onClick={onStopManualRecording}
-                    className="w-full py-3.5 px-4 rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold shadow-xl shadow-destructive/30 flex items-center justify-between gap-3 animate-pulse transition-all transform active:scale-98 cursor-pointer"
+                    className="w-full py-4 px-4 rounded-2xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold shadow-2xl shadow-destructive/40 flex items-center justify-between gap-3 animate-pulse transition-all transform active:scale-98 cursor-pointer ring-1 ring-white/20"
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="h-7 w-7 rounded-full bg-white/25 flex items-center justify-center">
+                      <div className="h-8 w-8 rounded-full bg-white/25 flex items-center justify-center shadow-xs">
                         <Square className="h-3.5 w-3.5 fill-white text-white" />
                       </div>
                       <div className="text-left">
@@ -476,7 +479,7 @@ export function ActiveSessionRoom({
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="px-1.5 py-0.5 rounded bg-black/40 font-mono text-[10px] font-black border border-white/20">
+                      <span className="px-1.5 py-0.5 rounded-md bg-black/40 font-mono text-[10px] font-black border border-white/20">
                         Space
                       </span>
                       <span className="font-mono text-xs font-black bg-black/40 px-2 py-1 rounded-md">
@@ -489,23 +492,23 @@ export function ActiveSessionRoom({
               ) : (
                 /* Mode 1: Auto VAD */
                 <div
-                  className={`w-full p-3 rounded-xl border flex items-center justify-between transition-all ${
+                  className={`w-full p-3.5 rounded-2xl border transition-all backdrop-blur-md flex items-center justify-between ${
                     isUserSpeaking
-                      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-sm"
+                      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-md shadow-emerald-500/10"
                       : state === "listening"
-                      ? "bg-card/70 border-border text-foreground"
-                      : "bg-card/40 border-border/50 text-muted-foreground"
+                      ? "bg-white/5 border-white/10 text-foreground"
+                      : "bg-white/5 border-white/5 text-muted-foreground"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <div
-                      className={`h-7 w-7 rounded-full flex items-center justify-center ${
+                      className={`h-8 w-8 rounded-full flex items-center justify-center shadow-xs ${
                         isUserSpeaking
                           ? "bg-emerald-500/25 text-emerald-400"
-                          : "bg-primary/10 text-primary"
+                          : "bg-primary/15 text-primary"
                       }`}
                     >
-                      <Mic className="h-3.5 w-3.5" />
+                      <Mic className="h-4 w-4" />
                     </div>
                     <div>
                       <div className="text-xs font-bold">
@@ -535,11 +538,11 @@ export function ActiveSessionRoom({
               )}
 
               {/* Live Volume Meter Bar */}
-              <div className="flex items-center justify-between px-3 py-1.5 bg-card/40 rounded-xl border border-border/60 text-[10px]">
+              <div className="flex items-center justify-between px-3.5 py-2 bg-white/5 dark:bg-white/5 rounded-2xl border border-white/10 text-[10px] backdrop-blur-md">
                 <span className="text-muted-foreground font-medium flex items-center gap-1">
                   <span>Âm lượng Mic:</span>
                 </span>
-                <div className="flex items-center gap-0.5">
+                <div className="flex items-center gap-1">
                   {Array.from({ length: 14 }).map((_, i) => {
                     const isActive = volumeLevel * 14 > i;
                     return (
@@ -548,11 +551,11 @@ export function ActiveSessionRoom({
                         className={`h-2.5 w-1.5 rounded-xs transition-all duration-75 ${
                           isActive
                             ? i > 10
-                              ? "bg-destructive"
+                              ? "bg-destructive shadow-xs shadow-destructive"
                               : i > 7
-                              ? "bg-amber-400"
-                              : "bg-emerald-400"
-                            : "bg-muted/40"
+                              ? "bg-amber-400 shadow-xs shadow-amber-400"
+                              : "bg-emerald-400 shadow-xs shadow-emerald-400"
+                            : "bg-white/10 dark:bg-white/10"
                         }`}
                       />
                     );
@@ -563,7 +566,7 @@ export function ActiveSessionRoom({
 
             {/* Faster-Whisper Live Output Card */}
             {(latestUserTranscript || state === "processing_stt" || isUserSpeaking) && (
-              <div className="w-full p-3 rounded-xl bg-card/90 border border-border shadow-sm space-y-1.5 animate-in fade-in duration-200 text-left">
+              <div className="w-full p-3.5 rounded-2xl bg-white/5 dark:bg-white/5 border border-white/10 backdrop-blur-xl shadow-md space-y-2 text-left animate-in fade-in duration-200">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
                     <Mic className="h-3.5 w-3.5 text-emerald-400" />
@@ -591,7 +594,7 @@ export function ActiveSessionRoom({
                         <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
                         <span>🎙️ Đang nghe giọng bạn (Live Preview):</span>
                       </div>
-                      <p className="text-xs font-jp text-foreground bg-emerald-500/10 border border-emerald-500/25 p-2 rounded-lg leading-relaxed animate-pulse">
+                      <p className="text-xs font-jp text-foreground bg-emerald-500/10 border border-emerald-500/25 p-2 rounded-xl leading-relaxed animate-pulse">
                         {interimTranscript}
                       </p>
                     </div>
@@ -602,7 +605,7 @@ export function ActiveSessionRoom({
                     </div>
                   )
                 ) : (
-                  <p className="text-xs font-jp text-foreground bg-muted/50 p-2 rounded-lg border border-border/60 leading-relaxed">
+                  <p className="text-xs font-jp text-foreground bg-white/5 p-2 rounded-xl border border-white/10 leading-relaxed">
                     {latestUserTranscript}
                   </p>
                 )}
@@ -620,13 +623,13 @@ export function ActiveSessionRoom({
           )}
 
           {/* Footer Controls Bar */}
-          <div className="flex items-center justify-between gap-2 pt-3 border-t border-border/80">
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-white/10">
             {state === "paused" ? (
               <Button
                 variant="primary"
                 size="sm"
                 onClick={onResume}
-                className="gap-1 shadow-sm"
+                className="gap-1 shadow-sm rounded-xl"
               >
                 <Play className="h-3.5 w-3.5 mr-1 fill-current" />
                 Resume (再開)
@@ -637,6 +640,7 @@ export function ActiveSessionRoom({
                 size="sm"
                 onClick={onPause}
                 disabled={state === "ai_thinking" || state === "processing_stt"}
+                className="rounded-xl border-white/10 hover:bg-white/10"
               >
                 <Pause className="h-3.5 w-3.5 mr-1" />
                 Pause (一時停止)
@@ -647,7 +651,7 @@ export function ActiveSessionRoom({
               variant="outline"
               size="sm"
               onClick={onEndSession}
-              className="text-destructive hover:text-destructive/90 hover:border-destructive/50"
+              className="text-destructive hover:text-destructive/90 hover:border-destructive/50 rounded-xl border-white/10"
             >
               <Square className="h-3.5 w-3.5 mr-1 text-destructive" />
               End Session (終了)
@@ -656,12 +660,15 @@ export function ActiveSessionRoom({
         </div>
 
         {/* Right Column: Live Transcript Stream & Fallback Text Input */}
-        <div className="lg:col-span-7 flex flex-col justify-between rounded-2xl bg-background/80 border border-border shadow-lg overflow-hidden min-h-[460px]">
+        <div className="lg:col-span-7 flex flex-col justify-between rounded-3xl glass-card border border-white/10 dark:border-white/10 shadow-2xl backdrop-blur-2xl overflow-hidden min-h-[480px]">
           {/* Transcript Area */}
           <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="p-3 border-b border-border bg-card/60 flex items-center justify-between text-xs font-semibold text-foreground">
-              <span>Live Dialogue (会話履歴)</span>
-              <span className="text-[11px] font-normal text-muted-foreground">
+            <div className="p-3.5 px-4 border-b border-white/10 bg-white/5 dark:bg-white/5 flex items-center justify-between text-xs font-semibold text-foreground backdrop-blur-md">
+              <span className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span>Live Dialogue (会話履歴)</span>
+              </span>
+              <span className="text-[11px] font-normal text-muted-foreground font-mono">
                 {turns.length} turns recorded
               </span>
             </div>
@@ -680,7 +687,7 @@ export function ActiveSessionRoom({
           </div>
 
           {/* Universal Text Input Bar (Office Mode / Broken Mic) */}
-          <div className="p-2.5 border-t border-border bg-card/60">
+          <div className="p-3 border-t border-white/10 bg-white/5 dark:bg-white/5 backdrop-blur-md">
             <ZenUnifiedInputBar
               value={inputText}
               onChange={setInputText}

@@ -134,17 +134,17 @@ export function CrossStudioBanner() {
             return (
               <div
                 key={mode.id}
-                className={`relative flex flex-col justify-between rounded-xl border p-4 sm:p-5 shadow-xs transition-all hover:shadow-md group ${
+                className={`relative flex flex-col justify-between rounded-[22px] border p-4 sm:p-5 shadow-glass-sm backdrop-blur-xl transition-all duration-300 hover:shadow-glass-hover hover:-translate-y-1 group ${
                   isRose
-                    ? "border-rose-300/80 bg-gradient-to-br from-rose-50/80 via-card to-rose-100/30 dark:border-rose-500/30 dark:from-rose-950/25 dark:via-card/90 dark:to-rose-900/15 hover:border-rose-500"
-                    : "border-purple-300/80 bg-gradient-to-br from-purple-50/80 via-card to-purple-100/30 dark:border-purple-500/30 dark:from-purple-950/25 dark:via-card/90 dark:to-purple-900/15 hover:border-purple-500"
+                    ? "border-rose-300/60 bg-card/65 dark:border-rose-500/30 dark:bg-card/65 hover:border-rose-400"
+                    : "border-purple-300/60 bg-card/65 dark:border-purple-500/30 dark:bg-card/65 hover:border-purple-400"
                 }`}
               >
                 <div>
                   {/* Top Bar */}
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <div
-                      className={`h-10 w-10 rounded-xl border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${
+                      className={`h-10 w-10 rounded-2xl border flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform ${
                         isRose
                           ? "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800/50"
                           : "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800/50"
@@ -154,7 +154,7 @@ export function CrossStudioBanner() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span
-                        className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                        className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border ${
                           isRose
                             ? "bg-rose-100 text-rose-900 border-rose-200 dark:bg-rose-950/70 dark:text-rose-300 dark:border-rose-700/40"
                             : "bg-purple-100 text-purple-900 border-purple-200 dark:bg-purple-950/70 dark:text-purple-300 dark:border-purple-700/40"
@@ -202,7 +202,7 @@ export function CrossStudioBanner() {
                   <button
                     type="button"
                     onClick={() => handleOpenMode(mode)}
-                    className={`w-full inline-flex items-center justify-between px-3.5 py-2 rounded-lg text-white font-semibold text-xs transition-all shadow-xs active:scale-[0.98] cursor-pointer ${
+                    className={`w-full inline-flex items-center justify-between px-4 py-2.5 rounded-full text-white font-semibold text-xs transition-all shadow-xs active:scale-[0.98] cursor-pointer ${
                       isRose ? "bg-rose-600 hover:bg-rose-700" : "bg-purple-600 hover:bg-purple-700"
                     }`}
                   >

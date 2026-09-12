@@ -309,14 +309,14 @@ export function RecommendedPersonasSection({
                 setSelectedCategory(tab.id as TopicCategory);
               }}
               className={cn(
-                "px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 border",
+                "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 border",
                 isSelected
-                  ? "bg-primary/15 text-primary border-primary/40 shadow-sm"
-                  : "bg-card/70 border-border/80 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/25"
+                  : "bg-card/70 border-border/70 text-muted-foreground hover:bg-muted hover:text-foreground backdrop-blur-md"
               )}
             >
               <span>{tab.label}</span>
-              <span className="text-[10px] font-jp opacity-70">({tab.ja})</span>
+              <span className="text-[10px] font-jp opacity-80">({tab.ja})</span>
             </button>
           );
         })}
@@ -340,7 +340,7 @@ export function RecommendedPersonasSection({
             return (
               <div
                 key={persona.id}
-                className="relative rounded-[22px] border border-border/80 bg-card/95 washi-texture p-5 flex flex-col justify-between transition-all duration-200 hover:border-border hover:shadow-sumi hover:-translate-y-1 group overflow-hidden min-h-[310px]"
+                className="relative rounded-[24px] border border-border/70 bg-card/65 backdrop-blur-xl p-5 sm:p-5.5 flex flex-col justify-between transition-all duration-300 hover:border-primary/40 hover:shadow-glass-hover hover:-translate-y-1 group overflow-hidden min-h-[310px] shadow-glass-sm"
               >
                 {/* Top Ambient Highlight Gradient */}
                 <div className={cn("absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r opacity-90", visual.topAccent)} />
@@ -422,7 +422,7 @@ export function RecommendedPersonasSection({
                       type="button"
                       onClick={() => soundFX.playTaiko()}
                       className={cn(
-                        "w-full h-9 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 shadow-sm active:scale-98",
+                        "w-full h-9 rounded-full border text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 shadow-sm active:scale-98",
                         visual.buttonClass
                       )}
                     >

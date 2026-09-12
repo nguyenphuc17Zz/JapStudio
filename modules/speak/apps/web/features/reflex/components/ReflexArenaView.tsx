@@ -100,9 +100,9 @@ export function ReflexArenaView({
   return (
     <div className="max-w-5xl mx-auto min-h-[calc(100vh-5.5rem)] flex flex-col justify-between animate-in fade-in duration-200 px-2 sm:px-4 space-y-3 pb-4">
       {/* 1. Top HUD Bar */}
-      <div className="p-2.5 px-3 sm:px-4 rounded-2xl border border-border bg-card shadow-xs flex flex-wrap items-center justify-between gap-2.5 washi-texture shrink-0">
+      <div className="p-3 px-4 rounded-2xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#121722]/90 backdrop-blur-2xl shadow-md flex flex-wrap items-center justify-between gap-2.5 shrink-0">
         <div className="flex items-center gap-2 shrink-0">
-          <Badge variant="kintsugi" size="sm" className="font-bold">
+          <Badge variant="kintsugi" size="sm" className="font-bold rounded-full shadow-2xs">
             Câu {session.stats.total + (isResult ? 0 : 1)}
           </Badge>
           <span className="text-xs font-bold text-foreground hidden md:inline font-jp">
@@ -114,7 +114,7 @@ export function ReflexArenaView({
         <div className="flex items-center gap-2 flex-wrap justify-center">
           {/* Live Session Countdown Clock / Elapsed Clock */}
           <div
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-mono font-bold shadow-2xs"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-mono font-bold shadow-xs backdrop-blur-md"
             title={duration === 0 ? "Chế độ luyện tập không giới hạn thời gian (Endless)" : `Thời lượng phiên: ${duration} phút`}
           >
             <Clock className="h-3.5 w-3.5" />
@@ -128,7 +128,7 @@ export function ReflexArenaView({
           </div>
 
           {/* Quick Subtitle Mode Segmented Switcher */}
-          <div className="hidden sm:flex items-center rounded-xl bg-muted/60 p-0.5 border border-border text-[11px] font-bold">
+          <div className="hidden sm:flex items-center rounded-2xl bg-white/5 dark:bg-white/5 p-1 border border-white/10 text-[11px] font-bold backdrop-blur-md">
             <button
               type="button"
               onClick={() => {
@@ -136,9 +136,9 @@ export function ReflexArenaView({
                 setSubtitleMode("japanese");
               }}
               className={cn(
-                "px-2 py-0.5 rounded-lg transition-all",
+                "px-2.5 py-1 rounded-xl transition-all",
                 subtitleMode === "japanese"
-                  ? "bg-card text-foreground shadow-2xs font-extrabold"
+                  ? "bg-primary text-white shadow-xs font-extrabold"
                   : "text-muted-foreground hover:text-foreground"
               )}
               title="Chỉ hiển thị tiếng Nhật"
@@ -152,9 +152,9 @@ export function ReflexArenaView({
                 setSubtitleMode("vietnamese");
               }}
               className={cn(
-                "px-2 py-0.5 rounded-lg transition-all",
+                "px-2.5 py-1 rounded-xl transition-all",
                 subtitleMode === "vietnamese"
-                  ? "bg-card text-primary shadow-2xs font-extrabold"
+                  ? "bg-primary text-white shadow-xs font-extrabold"
                   : "text-muted-foreground hover:text-foreground"
               )}
               title="Tiếng Nhật kèm dịch nghĩa tiếng Việt"
@@ -168,9 +168,9 @@ export function ReflexArenaView({
                 setSubtitleMode("hidden");
               }}
               className={cn(
-                "px-2 py-0.5 rounded-lg transition-all",
+                "px-2.5 py-1 rounded-xl transition-all",
                 subtitleMode === "hidden"
-                  ? "bg-card text-rose-500 shadow-2xs font-extrabold"
+                  ? "bg-rose-500 text-white shadow-xs font-extrabold"
                   : "text-muted-foreground hover:text-foreground"
               )}
               title="Ẩn phụ đề (Audio-Only)"
@@ -180,7 +180,7 @@ export function ReflexArenaView({
           </div>
 
           {currentStreak > 1 && (
-            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold animate-pulse">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-500 text-xs font-bold shadow-xs animate-pulse">
               <Flame className="h-3.5 w-3.5 fill-current" />
               <span>{currentStreak} Streak</span>
             </div>
@@ -454,10 +454,13 @@ export function ReflexArenaView({
             />
           </div>
         ) : (
-          /* Active Question Stage */
-          <div className="space-y-3 flex flex-col justify-center">
+          /* Active Question Stage — Unified Center Stage */
+          <div className="rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#121722]/85 backdrop-blur-2xl shadow-xl p-5 sm:p-7 flex flex-col items-center text-center space-y-5 relative overflow-hidden">
+            {/* Ambient Top Glow */}
+            <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[480px] h-[240px] bg-primary/10 blur-3xl rounded-full pointer-events-none -z-10" />
+
             {session.error && (
-              <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center justify-between gap-2 animate-in fade-in duration-200">
+              <div className="w-full p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center justify-between gap-2 animate-in fade-in duration-200">
                 <span>⚠️ {session.error}</span>
                 <Button
                   size="sm"
@@ -470,18 +473,24 @@ export function ReflexArenaView({
               </div>
             )}
 
-            {/* Prompt Card */}
-            <ReflexPromptCard
-              exercise={activeExercise as any}
-              subtitleMode={subtitleMode}
-              phase={session.phase}
-              onPlayAudio={playPromptAudio}
-            />
+            {/* Prompt Header & Content */}
+            <div className="w-full">
+              <ReflexPromptCard
+                exercise={activeExercise as any}
+                subtitleMode={subtitleMode}
+                phase={session.phase}
+                onPlayAudio={playPromptAudio}
+              />
+            </div>
 
-            {/* Live Web Speech Recognition Box & Countdown Timer */}
-            <div className="p-3 sm:p-4 rounded-3xl border border-border bg-card washi-texture shadow-sm flex flex-col items-center justify-center space-y-2.5">
-              {/* Dynamic Countdown Ring */}
+            {/* Divider Line */}
+            <div className="w-full h-px bg-gradient-to-r from-transparent via-border/80 dark:via-white/10 to-transparent my-1" />
+
+            {/* Live Web Speech Recognition Box & Countdown Timer Cockpit */}
+            <div className="w-full flex flex-col items-center justify-center space-y-4">
+              {/* Dynamic Countdown Ring (Minimal Orbit) */}
               <ReflexTimer
+                variant="minimal"
                 remainingMs={session.timer.remainingMs}
                 timerLimitMs={session.timer.totalLimitMs || timerMs}
                 progress={session.timer.progress}
@@ -490,35 +499,35 @@ export function ReflexArenaView({
                 isPaused={session.isPaused}
               />
 
-              {/* Status Message */}
+              {/* Status Message (High contrast on both Light and Dark) */}
               <div className="text-center space-y-1">
                 {session.isPaused ? (
-                  <div className="flex items-center justify-center gap-2 text-sm md:text-base font-black text-amber-600 dark:text-amber-400 animate-pulse">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-black animate-pulse">
                     <Clock className="h-4 w-4" />
                     <span>⏸️ ĐANG TẠM DỪNG SUY NGHĨ — Bấm Tiếp Tục khi đã sẵn sàng!</span>
                   </div>
                 ) : isPromptPlaying ? (
-                  <div className="flex items-center justify-center gap-2 text-xs md:text-sm font-bold text-primary animate-pulse">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/25 text-primary text-xs sm:text-sm font-bold animate-pulse">
                     <Volume2 className="h-4 w-4" />
                     <span>🔊 Đang đọc câu hỏi đề bài... (Bấm [Space] để trả lời ngay)</span>
                   </div>
                 ) : isReady ? (
-                  <div className="flex flex-col items-center justify-center gap-1 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="flex items-center gap-2 text-sm md:text-base font-black text-primary animate-pulse">
+                  <div className="flex flex-col items-center justify-center gap-1.5 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/25 text-primary text-xs sm:text-sm font-extrabold shadow-2xs">
                       <Sparkles className="h-4 w-4" />
                       <span>🎯 ĐÃ SẴN SÀNG! Hãy suy nghĩ câu trả lời và bắt đầu khi sẵn sàng</span>
                     </div>
-                    <span className="text-[11px] text-muted-foreground font-medium">
-                      Bấm phím <kbd className="px-1.5 py-0.5 rounded bg-muted border font-bold text-foreground">{formatKeyDisplay(keybindings.reflexStartVoice || keybindings.drillStartQuestion)}</kbd> hoặc click nút bên dưới để bật mic & tính giờ
+                    <span className="text-[11.5px] text-muted-foreground font-medium">
+                      Bấm phím <kbd className="px-1.5 py-0.5 rounded-lg bg-muted border border-border font-bold text-foreground font-mono">{formatKeyDisplay(keybindings.reflexStartVoice || keybindings.drillStartQuestion)}</kbd> hoặc click nút bên dưới để bật mic & tính giờ
                     </span>
                   </div>
                 ) : isWaiting ? (
-                  <div className="flex items-center justify-center gap-2 text-sm md:text-base font-black text-amber-600 dark:text-amber-400 animate-bounce">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs sm:text-sm font-black animate-bounce">
                     <Zap className="h-4 w-4" />
                     <span>NÓI NGAY! Hãy bật câu trả lời bằng tiếng Nhật tức thì!</span>
                   </div>
                 ) : isRecording ? (
-                  <div className="flex items-center justify-center gap-2 text-sm md:text-base font-black text-rose-600 dark:text-rose-400">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs sm:text-sm font-black animate-pulse">
                     <Activity className="h-4 w-4 animate-spin" />
                     <span>Đang ghi nhận giọng nói tiếng Nhật của bạn...</span>
                   </div>
@@ -532,12 +541,11 @@ export function ReflexArenaView({
               </div>
 
               {/* Quick Action Buttons (Start / Pause / Resume) */}
-              <div className="flex items-center gap-2 pt-0.5">
+              <div className="flex items-center gap-2.5 pt-1">
                 {isReady && (
                   <Button
                     size="lg"
-                    variant="akane"
-                    className="font-black text-sm md:text-base h-11 px-6 rounded-2xl shadow-md hover:shadow-lg transition-all gap-2 animate-bounce ring-2 ring-primary/30 cursor-pointer"
+                    className="font-extrabold text-sm md:text-base h-13 min-w-[270px] px-8 rounded-2xl shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-all gap-2.5 ring-2 ring-primary/40 cursor-pointer bg-gradient-to-r from-blue-600 via-primary to-indigo-600 text-white"
                     onClick={() => {
                       session.startQuestionNow();
                     }}
@@ -577,7 +585,7 @@ export function ReflexArenaView({
                     <Button
                       size="sm"
                       variant="akane"
-                      className="font-bold text-xs h-8 px-3.5 rounded-xl shadow-xs gap-1.5 cursor-pointer"
+                      className="font-bold text-xs h-8 px-3.5 rounded-xl shadow-xs gap-1.5 cursor-pointer bg-primary text-white"
                       onClick={() => handleDirectSubmit(true)}
                       title="Nộp câu trả lời ngay để AI chấm điểm"
                     >
@@ -588,7 +596,7 @@ export function ReflexArenaView({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="font-bold text-xs h-8 px-3 rounded-xl border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 gap-1.5 cursor-pointer"
+                      className="font-bold text-xs h-8 px-3 rounded-xl border-amber-500/40 text-amber-500 hover:bg-amber-500/10 gap-1.5 cursor-pointer"
                       onClick={() => session.togglePause()}
                       title="Tạm dừng đồng hồ để suy nghĩ"
                     >
@@ -612,15 +620,15 @@ export function ReflexArenaView({
 
               {/* LIVE SPEECH PREVIEW BUBBLE */}
               {(isWaiting || isRecording || session.speech.interimTranscript || session.speech.transcript) && (
-                <div className="w-full max-w-xl mx-auto p-2.5 px-4 rounded-2xl bg-primary/5 border border-primary/25 shadow-xs flex items-center justify-between gap-3 animate-in fade-in zoom-in-95 duration-200">
+                <div className="w-full max-w-xl mx-auto p-3 px-4 rounded-2xl bg-white/5 dark:bg-white/5 border border-white/10 backdrop-blur-xl shadow-lg flex items-center justify-between gap-3 animate-in fade-in zoom-in-95 duration-200">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="flex items-center gap-0.5 shrink-0 h-5 px-1.5 py-0.5 bg-primary/10 rounded-lg">
+                    <div className="flex items-center gap-1 shrink-0 h-6 px-2 py-0.5 bg-primary/10 rounded-xl border border-primary/20">
                       {[0.7, 1.2, 0.6, 1.4, 0.9].map((scale, i) => {
                         const height = Math.max(4, Math.min(18, ((session.volumeLevel || 0.05) * 50 * scale) + 4));
                         return (
                           <span
                             key={i}
-                            className="w-1 bg-primary rounded-full transition-all duration-75"
+                            className="w-1 bg-gradient-to-t from-primary to-emerald-400 rounded-full transition-all duration-75 shadow-xs"
                             style={{ height: `${height}px` }}
                           />
                         );
@@ -651,13 +659,13 @@ export function ReflexArenaView({
                         const next = gains[(curIdx + 1) % gains.length];
                         session.setMicGain(next);
                       }}
-                      className="px-2 py-0.5 rounded-lg text-[10px] font-bold border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                      className="px-2 py-1 rounded-xl text-[10px] font-bold border border-amber-500/30 bg-amber-500/15 text-amber-500 hover:bg-amber-500/25 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
                       title="Bấm để tăng giảm khuếch đại micro"
                     >
                       <Zap className="h-2.5 w-2.5 text-amber-500" />
                       <span>Boost x{session.micGain ?? 2.0}</span>
                     </button>
-                    <Badge variant="outline" size="sm" className="text-[10px] font-mono border-primary/30 text-primary hidden sm:inline-flex">
+                    <Badge variant="outline" size="sm" className="text-[10px] font-mono border-white/15 bg-white/5 text-primary hidden sm:inline-flex rounded-full">
                       Hybrid: WebSpeech + Whisper AI
                     </Badge>
                   </div>

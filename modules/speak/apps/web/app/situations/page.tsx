@@ -293,9 +293,9 @@ export default function SituationsPage() {
 
       {/* 2. Active Session View */}
       {session.phase !== "idle" && session.phase !== "summary" && (
-        <div className="max-w-5xl mx-auto space-y-3 animate-in fade-in duration-200">
+        <div className="max-w-5xl mx-auto space-y-4 animate-in fade-in duration-200">
           {/* Top Session Navigation Header */}
-          <div className="p-3 rounded-2xl border border-border bg-card washi-texture flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+          <div className="px-4 py-2.5 rounded-2xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#121722]/80 backdrop-blur-xl shadow-xs flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
               <Button
                 variant="ghost"
@@ -304,22 +304,22 @@ export default function SituationsPage() {
                   soundFX.playFurin();
                   session.setPhase("idle");
                 }}
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground rounded-lg"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground rounded-xl"
                 title="Về Sảnh chính (Esc)"
               >
-                <Home className="h-3.5 w-3.5" />
+                <Home className="h-4 w-4" />
               </Button>
 
-              <Badge variant="matcha" size="sm" className="font-bold text-[10px]">
+              <Badge variant="matcha" size="sm" className="font-bold text-[10px] tracking-wide">
                 TÌNH HUỐNG THỰC CHIẾN
               </Badge>
 
-              <span className="text-[11px] font-bold text-muted-foreground">
+              <span className="text-xs font-bold text-muted-foreground">
                 Câu #{session.results.length + 1}
               </span>
 
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-muted/60 text-foreground border border-border shadow-2xs">
-                <Clock className="h-3 w-3 text-primary" />
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-muted/80 text-foreground border border-border/80 shadow-2xs">
+                <Clock className="h-3 w-3 text-emerald-500" />
                 <span>
                   {duration === 0
                     ? `Phiên: ${Math.floor(elapsedSec / 60)}:${String(elapsedSec % 60).padStart(2, "0")} / ∞`
@@ -336,9 +336,9 @@ export default function SituationsPage() {
                   soundFX.playFurin();
                   setIsCheatsheetOpen(true);
                 }}
-                className="h-7 gap-1 text-[11px] font-bold shadow-2xs"
+                className="h-8 gap-1.5 text-xs font-bold shadow-2xs rounded-xl"
               >
-                <BookOpen className="h-3 w-3" />
+                <BookOpen className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Sổ tay (C)</span>
               </Button>
 
@@ -352,10 +352,10 @@ export default function SituationsPage() {
                   session.setPhase("summary");
                   soundFX.playVictory();
                 }}
-                className="h-7 gap-1 px-2.5 text-[11px] font-bold shadow-2xs cursor-pointer"
+                className="h-8 gap-1.5 px-3 text-xs font-bold shadow-2xs cursor-pointer rounded-xl bg-primary text-white"
                 title="Nộp bài và xem bảng điểm tổng kết (kết thúc phiên)"
               >
-                <CheckCircle2 className="h-3 w-3" />
+                <CheckCircle2 className="h-3.5 w-3.5" />
                 <span>Nộp bài</span>
               </Button>
             </div>
@@ -371,15 +371,31 @@ export default function SituationsPage() {
             />
           )}
 
-          {/* Active Workout Cockpit (2-Column No-Scroll Layout) */}
+          {/* Result State */}
+          {session.phase === "result" && session.result && (
+            <div className="max-w-4xl mx-auto animate-in fade-in zoom-in-95 duration-200">
+              <SituationsResultCard
+                result={session.result}
+                exercise={activeExercise}
+                onNext={session.startNext}
+                onRetry={session.retry}
+                onAskCoach={(prompt) => setCoachHint(prompt)}
+                onCancelAutoNext={session.cancelAutoNext}
+              />
+            </div>
+          )}
+
+          {/* Active Workout Cockpit (Unified Center Stage) */}
           {(session.phase === "prompt_playing" ||
             session.phase === "ready" ||
             session.phase === "waiting_for_speech" ||
             session.phase === "recording" ||
             session.phase === "evaluating") && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5 items-start">
-              {/* Left Column: Context & Dialogue (2 cols) */}
-              <div className="lg:col-span-2 space-y-3">
+            <div className="max-w-4xl mx-auto rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#121722]/85 backdrop-blur-2xl shadow-xl p-5 sm:p-7 flex flex-col items-center text-center space-y-5 relative overflow-hidden">
+              <div className="absolute top-[-60px] left-1/2 -translate-x-1/2 w-[480px] h-[240px] bg-emerald-500/10 blur-3xl rounded-full pointer-events-none -z-10" />
+
+              {/* Prompt Card */}
+              <div className="w-full">
                 <SituationsPromptCard
                   exercise={activeExercise}
                   subtitleMode={subtitleMode}
@@ -390,142 +406,102 @@ export default function SituationsPage() {
                 />
               </div>
 
-              {/* Right Column: Interaction Cockpit (1 col) */}
-              <div className="space-y-3">
-                {/* Reflex Timer Bar */}
-                <div className="p-3.5 rounded-2xl bg-card border border-border/80 washi-texture shadow-xs space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground">
-                    <span>Áp Lực Phản Xạ</span>
-                    <span>{session.timer.isInfinite ? "∞ Vô hạn" : `${(session.timer.remainingMs / 1000).toFixed(1)}s`}</span>
-                  </div>
-                  <SituationsTimerBar
-                    remainingMs={session.timer.remainingMs}
-                    timerLimitMs={session.timer.totalLimitMs}
-                    progress={session.timer.progress}
-                    state={session.timer.state}
-                    isActive={session.timer.isActive}
-                    isPaused={session.timer.isPaused}
-                    variant="bar"
+              <div className="w-full h-px bg-gradient-to-r from-transparent via-border/80 dark:via-white/10 to-transparent my-1" />
+
+              {/* Cockpit: Timer, Status Alert, Action Button */}
+              <div className="w-full flex flex-col items-center justify-center space-y-4">
+                <SituationsTimerBar
+                  variant="minimal"
+                  remainingMs={session.timer.remainingMs}
+                  timerLimitMs={session.timer.totalLimitMs}
+                  progress={session.timer.progress}
+                  state={session.timer.state}
+                  isActive={session.timer.isActive}
+                  isPaused={session.timer.isPaused}
+                />
+
+                {/* Status Alert Message */}
+                <div className="text-center">
+                  {session.phase === "prompt_playing" ? (
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-extrabold animate-pulse">
+                      <Volume2 className="h-4 w-4" />
+                      <span>NPC đang nói câu mở đầu... Hãy lắng nghe kỹ để đối đáp phù hợp</span>
+                    </div>
+                  ) : session.phase === "ready" ? (
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm font-extrabold shadow-2xs">
+                      <Sparkles className="h-4 w-4" />
+                      <span>🎯 NPC đã dứt lời! Bấm bắt đầu hoặc phím tắt để trả lời</span>
+                    </div>
+                  ) : (session.phase === "waiting_for_speech" || session.phase === "recording") ? (
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-400 text-xs sm:text-sm font-black animate-pulse">
+                      <Mic className="h-4 w-4" />
+                      <span>{session.isUserSpeaking ? "ĐANG GHI NHẬN GIỌNG NÓI CỦA BẠN..." : "MỜI BẠN NÓI HOẶC GÕ CÂU ĐỐI ĐÁP..."}</span>
+                    </div>
+                  ) : session.phase === "evaluating" ? (
+                    <ZenLoadingState
+                      variant="inline"
+                      title="AI Đang Đánh Giá Ngữ Dụng & Mục Tiêu Giao Tiếp..."
+                      ja="語用論・会話目標分析中..."
+                    />
+                  ) : null}
+                </div>
+
+                {/* Big Action Button */}
+                {session.phase === "ready" && (
+                  <Button
+                    size="lg"
+                    className="font-extrabold text-sm md:text-base h-13 min-w-[270px] px-8 rounded-2xl shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 transition-all gap-2.5 ring-2 ring-emerald-500/30 cursor-pointer bg-gradient-to-r from-emerald-500 via-teal-600 to-primary text-white"
+                    onClick={() => {
+                      soundFX.playFurin();
+                      session.startVoiceRecording();
+                    }}
+                  >
+                    <Mic className="h-5 w-5" />
+                    <span>🎙️ Bắt Đầu Trả Lời ({formatKeyDisplay(keybindings.situationsStartVoice)})</span>
+                  </Button>
+                )}
+
+                {/* Unified Input Bar for Voice or Typing */}
+                <div className="w-full max-w-xl mx-auto space-y-1">
+                  <ZenUnifiedInputBar
+                    value={transcriptInput}
+                    onChange={setTranscriptInput}
+                    onSubmit={() => handleDirectSubmit(true)}
+                    speechTranscript={session.speech.transcript}
+                    isRecording={session.phase === "recording" || session.isUserSpeaking}
+                    isEvaluating={session.phase === "evaluating"}
+                    placeholder="Nói vào mic hoặc gõ câu đối đáp tiếng Nhật... (VD: すみません、...)"
+                    submitButtonText={`Gửi (${formatKeyDisplay(keybindings.situationsSubmitOrNext)})`}
+                    autoFocus={true}
+                    hintText="Gõ phím thoải mái khi ở văn phòng"
                   />
                 </div>
 
-                {/* Speech Capture Controller Box */}
-                <div className="p-4 rounded-2xl border border-border bg-card washi-texture shadow-xs space-y-3 text-center">
-                  {session.phase === "prompt_playing" && (
-                    <div className="py-4 space-y-2">
-                      <div className="h-9 w-9 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 mx-auto animate-pulse">
-                        <Volume2 className="h-4 w-4" />
-                      </div>
-                      <p className="text-xs font-bold text-foreground">NPC đang nói câu mở đầu...</p>
-                      <span className="text-[11px] text-muted-foreground">Hãy lắng nghe kỹ để đối đáp phù hợp</span>
-                    </div>
-                  )}
+                {/* Quick action buttons */}
+                <div className="flex items-center gap-2.5 pt-0.5">
+                  <Button
+                    size="sm"
+                    variant="akane"
+                    className="font-bold text-xs h-8 px-4 rounded-xl shadow-xs gap-1.5 cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => handleDirectSubmit(true)}
+                    disabled={session.phase === "evaluating"}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Nộp câu đối đáp</span>
+                  </Button>
 
-                  {session.phase === "ready" && (
-                    <div className="space-y-3 py-1">
-                      <p className="text-[11px] text-muted-foreground font-semibold">
-                        NPC đã dứt lời. Nhấn nút bên dưới hoặc phím{" "}
-                        <kbd className="px-1.5 py-0.5 rounded bg-muted border text-[10px] font-bold">
-                          {formatKeyDisplay(keybindings.situationsStartVoice)}
-                        </kbd>{" "}
-                        để bắt đầu nói.
-                      </p>
-                      <Button
-                        variant="akane"
-                        size="lg"
-                        onClick={() => {
-                          soundFX.playFurin();
-                          session.startVoiceRecording();
-                        }}
-                        className="w-full gap-2 font-bold text-xs h-10 rounded-xl shadow-md"
-                      >
-                        <Mic className="h-4 w-4" />
-                        <span>Bắt Đầu Trả Lời (Space)</span>
-                      </Button>
-                    </div>
-                  )}
-
-                  {(session.phase === "waiting_for_speech" || session.phase === "recording") && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-center gap-2">
-                        <span className={cn(
-                          "h-2.5 w-2.5 rounded-full animate-ping",
-                          session.isUserSpeaking ? "bg-emerald-500" : "bg-rose-500"
-                        )} />
-                        <span className="text-xs font-bold text-foreground">
-                          {session.isUserSpeaking ? "🗣️ Đang nhận diện giọng nói..." : "🎤 Nói vào mic hoặc gõ phím bên dưới..."}
-                        </span>
-                      </div>
-
-                      {/* Unified Voice & Keyboard Input Bar */}
-                      <ZenUnifiedInputBar
-                        value={transcriptInput}
-                        onChange={setTranscriptInput}
-                        onSubmit={() => handleDirectSubmit(true)}
-                        speechTranscript={session.speech.transcript}
-                        isRecording={session.phase === "recording" || session.isUserSpeaking}
-                        isEvaluating={false}
-                        placeholder="Nói vào mic hoặc gõ câu đối đáp tiếng Nhật... (Enter để gửi)"
-                        submitButtonText="Gửi"
-                        autoFocus={true}
-                        hintText="Gõ phím thoải mái khi ở văn phòng"
-                      />
-
-                      <div className="pt-1 flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="akane"
-                          className="flex-1 font-bold text-xs gap-1.5 shadow-2xs cursor-pointer"
-                          onClick={() => handleDirectSubmit(true)}
-                          title="Nộp câu đối đáp để AI đánh giá"
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          <span>Nộp câu đối đáp</span>
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 font-bold text-xs"
-                          onClick={() => session.startNext()}
-                        >
-                          Bỏ qua câu
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {session.phase === "evaluating" && (
-                    <ZenLoadingState
-                      variant="ai"
-                      title="AI Đang Đánh Giá Ngữ Dụng & Mục Tiêu Giao Tiếp..."
-                      ja="語用論・会話目標分析中..."
-                      description="Kiểm tra mức độ hoàn thành mục tiêu tình huống, phong cách giao tiếp và tính tự nhiên..."
-                    />
-                  )}
-                </div>
-
-                {/* Keyboard Shortcuts Helper */}
-                <div className="p-2.5 rounded-xl bg-muted/40 border border-border/60 text-[10px] text-muted-foreground flex flex-wrap items-center justify-between gap-1.5">
-                  <span><kbd className="px-1 py-0.2 rounded bg-muted border font-bold">Space</kbd> Nói</span>
-                  <span><kbd className="px-1 py-0.2 rounded bg-muted border font-bold">H</kbd> Gợi ý</span>
-                  <span><kbd className="px-1 py-0.2 rounded bg-muted border font-bold">L</kbd> Nghe</span>
-                  <span><kbd className="px-1 py-0.2 rounded bg-muted border font-bold">Esc</kbd> Sảnh</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="font-bold text-xs h-8 px-3 rounded-xl border-border/80 text-muted-foreground hover:text-foreground"
+                    onClick={() => session.startNext()}
+                    disabled={session.phase === "evaluating"}
+                  >
+                    Bỏ qua câu ({formatKeyDisplay(keybindings.situationsSkip)})
+                  </Button>
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Result State */}
-          {session.phase === "result" && session.result && (
-            <SituationsResultCard
-              result={session.result}
-              exercise={activeExercise}
-              onNext={session.startNext}
-              onRetry={session.retry}
-              onAskCoach={(prompt) => setCoachHint(prompt)}
-              onCancelAutoNext={session.cancelAutoNext}
-            />
           )}
         </div>
       )}
