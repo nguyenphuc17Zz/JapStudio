@@ -213,14 +213,19 @@ export function SessionLobby({
           setVoicesList(VOICEVOX_FALLBACK_CATALOG);
         }
 
-        // Apply Defaults from Settings if user hasn't customized in localStorage
-        if (userSettings && initialPrefs.ai_provider === "auto") {
+        // Apply Defaults from Global Settings
+        if (userSettings) {
           if (userSettings.default_ai_provider) {
             setAiProvider(userSettings.default_ai_provider);
           }
           if (userSettings.default_ai_model) {
             setAiModel(userSettings.default_ai_model);
           }
+        } else if (typeof window !== "undefined") {
+          const gp = localStorage.getItem("speaking_global_ai_provider");
+          const gm = localStorage.getItem("speaking_global_ai_model");
+          if (gp) setAiProvider(gp);
+          if (gm) setAiModel(gm);
         }
 
         if (audioSettings && initialPrefs.tts_voice === "1") {
@@ -235,8 +240,21 @@ export function SessionLobby({
 
     loadLobbyConfigs();
 
+    const handleGlobalAIRoutingChanged = (e: any) => {
+      if (e.detail) {
+        if (e.detail.preferred_provider) {
+          setAiProvider(e.detail.preferred_provider);
+        }
+        if (e.detail.default_model) {
+          setAiModel(e.detail.default_model);
+        }
+      }
+    };
+    window.addEventListener("speaking_ai_routing_changed", handleGlobalAIRoutingChanged);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("speaking_ai_routing_changed", handleGlobalAIRoutingChanged);
       stopTestRecording();
       stopWebSpeech();
       if (testAudioElementRef.current) {

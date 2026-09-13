@@ -46,6 +46,9 @@ export interface KeigoExercise {
   hints?: KeigoHints;
   anatomy?: KeigoAnatomy;
   persona?: KeigoPersona;
+  frequencyRank?: number;
+  frequencyTier?: number;
+  vocabCategory?: string;
   extra_metadata?: any;
 }
 
@@ -119,6 +122,9 @@ export interface GenerateOpts {
   pressureLevel?: PressureLevel;
   timerLimitMs?: number;
   difficulty?: string;
+  tier?: number;
+  category?: string;
+  formulas?: string[];
 }
 
 export async function generateExercise(opts: GenerateOpts): Promise<KeigoExercise> {
@@ -137,6 +143,11 @@ export async function generateExercise(opts: GenerateOpts): Promise<KeigoExercis
   if (opts.pressureLevel) params.set("pressure_level", opts.pressureLevel);
   if (opts.timerLimitMs !== undefined) params.set("timer_limit_ms", String(opts.timerLimitMs));
   if (opts.difficulty) params.set("difficulty", opts.difficulty);
+  if (opts.tier !== undefined && opts.tier !== 0) params.set("tier", String(opts.tier));
+  if (opts.category && opts.category !== "all") params.set("category", opts.category);
+  if (opts.formulas && opts.formulas.length > 0 && !opts.formulas.includes("__none__")) {
+    params.set("formulas", opts.formulas.join(","));
+  }
   const data = await apiClient.post(`/keigo/exercises/generate?${params.toString()}`);
   const ex = data as any;
   const rc = ex.extra_metadata?.keigo_config || {};
@@ -177,6 +188,9 @@ export async function generateExercise(opts: GenerateOpts): Promise<KeigoExercis
     hints,
     anatomy,
     persona,
+    frequencyRank: rc.frequency_rank || ex.frequency_rank,
+    frequencyTier: rc.frequency_tier || ex.frequency_tier || opts.tier,
+    vocabCategory: rc.vocab_category || ex.vocab_category || opts.category,
   };
 }
 

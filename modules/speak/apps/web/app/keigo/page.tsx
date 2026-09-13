@@ -22,6 +22,7 @@ import { KeigoPromptCard } from "@/features/keigo/components/KeigoPromptCard";
 import { KeigoResultCard } from "@/features/keigo/components/KeigoResultCard";
 import { KeigoSessionSummary } from "@/features/keigo/components/KeigoSessionSummary";
 import { KeigoCheatsheetModal } from "@/features/keigo/components/KeigoCheatsheetModal";
+import { KeigoFormulaFilterModal } from "@/features/keigo/components/KeigoFormulaFilterModal";
 import { KeigoLobby, KEIGO_SUB_MODES, PRESSURE_LEVELS } from "@/features/keigo/components/KeigoLobby";
 import { GlobalKeybindingsModal } from "@/components/layout/global-keybindings-modal";
 import { CoachPanel } from "@/features/coach";
@@ -50,6 +51,8 @@ export default function KeigoPage() {
   const [sessionRemainingSec, setSessionRemainingSec] = useState(duration * 60);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [autoNext, setAutoNext] = useState(false);
+  const [selectedFormulas, setSelectedFormulas] = useState<string[]>([]);
+  const [showFormulaFilter, setShowFormulaFilter] = useState(false);
 
   const sessionEndTimestampRef = useRef<number | null>(null);
   const sessionPausedRemainingMsRef = useRef<number>(duration * 60 * 1000);
@@ -71,6 +74,13 @@ export default function KeigoPage() {
       if (savedTrigger) setStartTrigger(savedTrigger as any);
       const savedAutoNext = localStorage.getItem("speaking_keigo_autonext");
       if (savedAutoNext !== null) setAutoNext(savedAutoNext === "true");
+      const savedFormulas = localStorage.getItem("speaking_keigo_formulas");
+      if (savedFormulas) {
+        try {
+          const parsed = JSON.parse(savedFormulas);
+          if (Array.isArray(parsed)) setSelectedFormulas(parsed);
+        } catch {}
+      }
     } catch (e) {}
   }, []);
 
@@ -83,14 +93,16 @@ export default function KeigoPage() {
       localStorage.setItem("speaking_keigo_subtitle", subtitleMode);
       localStorage.setItem("speaking_keigo_trigger", startTrigger);
       localStorage.setItem("speaking_keigo_autonext", String(autoNext));
+      localStorage.setItem("speaking_keigo_formulas", JSON.stringify(selectedFormulas));
     } catch (e) {}
-  }, [subMode, pressure, duration, subtitleMode, startTrigger, autoNext]);
+  }, [subMode, pressure, duration, subtitleMode, startTrigger, autoNext, selectedFormulas]);
 
   const session = useKeigoSession({
     subMode,
     pressureLevel: pressure as any,
     autoNext,
     startTrigger,
+    formulas: selectedFormulas,
   });
   const sessionRef = useRef(session);
   sessionRef.current = session;
@@ -365,6 +377,8 @@ export default function KeigoPage() {
           setAutoNext={setAutoNext}
           startTrigger={startTrigger}
           setStartTrigger={setStartTrigger}
+          selectedFormulas={selectedFormulas}
+          onOpenFormulaFilter={() => setShowFormulaFilter(true)}
           onStartSession={() => {
             soundFX.playKatana();
             session.startSession();
@@ -375,6 +389,12 @@ export default function KeigoPage() {
         />
 
         <KeigoCheatsheetModal isOpen={showCheatsheet} onClose={() => setShowCheatsheet(false)} />
+        <KeigoFormulaFilterModal
+          open={showFormulaFilter}
+          onClose={() => setShowFormulaFilter(false)}
+          selectedFormulas={selectedFormulas}
+          onChangeSelectedFormulas={setSelectedFormulas}
+        />
         <GlobalKeybindingsModal isOpen={showKeybindingsModal} onClose={() => setShowKeybindingsModal(false)} />
       </div>
     );
@@ -385,7 +405,7 @@ export default function KeigoPage() {
   const currentSubModeInfo = KEIGO_SUB_MODES.find((m) => m.id === subMode) || KEIGO_SUB_MODES[0];
 
   return (
-    <div className="w-full max-w-7xl mx-auto h-full flex flex-col justify-between px-2 sm:px-4 py-2 gap-2 overflow-hidden select-none animate-in fade-in duration-200">
+    <div className="w-full max-w-[1760px] mx-auto h-full flex flex-col justify-between px-2 sm:px-4 py-2 gap-2 overflow-hidden select-none animate-in fade-in duration-200">
       {/* 1. Combat Capsule HUD */}
       <CombatCapsuleHUD
         questionNumber={session.stats.total + (session.phase === "result" ? 0 : 1)}

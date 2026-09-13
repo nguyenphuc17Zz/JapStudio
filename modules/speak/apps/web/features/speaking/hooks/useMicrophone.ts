@@ -13,7 +13,10 @@ export interface UseMicrophoneResult {
   error: string | null;
   volumeLevel: number;
   micGain: number;
-  setMicGain: (gain: number) => void;
+  setMicGain: (newGain: number) => void;
+  isWhisperMode: boolean;
+  toggleWhisperMode: () => void;
+  setIsWhisperMode: (active: boolean) => void;
   stream: MediaStream | null;
   requestPermission: (deviceId?: string) => Promise<boolean>;
   releaseMicrophone: () => void;
@@ -29,18 +32,31 @@ export function useMicrophone(): UseMicrophoneResult {
   const [volumeLevel, setVolumeLevel] = useState(0);
 
   // Digital Pre-Amp Software Mic Gain (Default 2.0x for soft/whisper voices)
-  const [micGain, setMicGainState] = useState<number>(() => {
-    if (typeof window === "undefined") return 2.0;
-    try {
-      const saved = localStorage.getItem("speaking_training_mic_gain");
-      return saved ? parseFloat(saved) || 2.0 : 2.0;
-    } catch {
-      return 2.0;
-    }
-  });
-
+  const [micGain, setMicGainState] = useState<number>(2.0);
   const micGainRef = useRef<number>(micGain);
   micGainRef.current = micGain;
+
+  const [isWhisperMode, setIsWhisperModeState] = useState<boolean>(false);
+  const isWhisperModeRef = useRef<boolean>(isWhisperMode);
+  isWhisperModeRef.current = isWhisperMode;
+
+  useEffect(() => {
+    try {
+      const savedGain = localStorage.getItem("speaking_training_mic_gain");
+      if (savedGain) {
+        const val = parseFloat(savedGain);
+        if (val) {
+          setMicGainState(val);
+          micGainRef.current = val;
+        }
+      }
+      const savedWhisper = localStorage.getItem("speaking_training_whisper_mode");
+      if (savedWhisper === "1") {
+        setIsWhisperModeState(true);
+        isWhisperModeRef.current = true;
+      }
+    } catch {}
+  }, []);
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -72,29 +88,60 @@ export function useMicrophone(): UseMicrophoneResult {
     }
   }, []);
 
-  // Global event listener for real-time gain sync across components and header
+  const setIsWhisperMode = useCallback((active: boolean) => {
+    isWhisperModeRef.current = active;
+    setIsWhisperModeState(active);
+    try {
+      localStorage.setItem("speaking_training_whisper_mode", active ? "1" : "0");
+      window.dispatchEvent(
+        new CustomEvent("speaking_training_whisper_mode_changed", { detail: active })
+      );
+    } catch {}
+    if (active) {
+      setMicGain(3.5);
+    } else {
+      setMicGain(2.0);
+    }
+  }, [setMicGain]);
+
+  const toggleWhisperMode = useCallback(() => {
+    setIsWhisperMode(!isWhisperModeRef.current);
+  }, [setIsWhisperMode]);
+
+  // Global event listeners for real-time gain & whisper mode sync across components and header
   useEffect(() => {
-    const handleGainChanged = (e: any) => {
-      const val = e.detail ?? (e.newValue ? parseFloat(e.newValue) : null);
-      if (typeof val === "number" && !isNaN(val)) {
-        const clamped = Math.max(1.0, Math.min(5.0, val));
-        micGainRef.current = clamped;
-        setMicGainState(clamped);
+    const handleGainChange = (e: Event) => {
+      const customEvent = e as CustomEvent<number>;
+      if (typeof customEvent.detail === "number" && customEvent.detail !== micGainRef.current) {
+        micGainRef.current = customEvent.detail;
+        setMicGainState(customEvent.detail);
         if (gainNodeRef.current && audioContextRef.current) {
           try {
-            gainNodeRef.current.gain.setTargetAtTime(clamped, audioContextRef.current.currentTime, 0.05);
+            gainNodeRef.current.gain.setTargetAtTime(
+              customEvent.detail,
+              audioContextRef.current.currentTime,
+              0.05
+            );
           } catch {
-            gainNodeRef.current.gain.value = clamped;
+            gainNodeRef.current.gain.value = customEvent.detail;
           }
         }
       }
     };
 
-    window.addEventListener("speaking_training_mic_gain_changed", handleGainChanged);
-    window.addEventListener("storage", handleGainChanged);
+    const handleWhisperChange = (e: Event) => {
+      const customEvent = e as CustomEvent<boolean>;
+      if (typeof customEvent.detail === "boolean" && customEvent.detail !== isWhisperModeRef.current) {
+        isWhisperModeRef.current = customEvent.detail;
+        setIsWhisperModeState(customEvent.detail);
+      }
+    };
+
+    window.addEventListener("speaking_training_mic_gain_changed", handleGainChange);
+    window.addEventListener("speaking_training_whisper_mode_changed", handleWhisperChange);
     return () => {
-      window.removeEventListener("speaking_training_mic_gain_changed", handleGainChanged);
-      window.removeEventListener("storage", handleGainChanged);
+      window.removeEventListener("speaking_training_mic_gain_changed", handleGainChange);
+      window.removeEventListener("speaking_training_whisper_mode_changed", handleWhisperChange);
     };
   }, []);
 
@@ -149,7 +196,8 @@ export function useMicrophone(): UseMicrophoneResult {
         }
         const avg = sum / bufferLength;
         // Boosted sensitivity mapping: gives responsive visual feedback even for quiet voices
-        const normalized = Math.min(1.0, Math.max(0.0, avg / 75.0));
+        const boost = isWhisperModeRef.current ? 1.6 : 1.0;
+        const normalized = Math.min(1.0, Math.max(0.0, (avg / 60.0) * boost));
         setVolumeLevel(normalized);
         lastVolumeTimeRef.current = now;
       }
@@ -188,7 +236,8 @@ export function useMicrophone(): UseMicrophoneResult {
           audio: {
             deviceId: deviceId ? { exact: deviceId } : undefined,
             echoCancellation: true,
-            noiseSuppression: true,
+            // When in Whisper Mode, disable aggressive browser noise suppression so faint consonants aren't filtered out
+            noiseSuppression: !isWhisperModeRef.current,
             autoGainControl: true,
             channelCount: 1,
           },
@@ -203,18 +252,25 @@ export function useMicrophone(): UseMicrophoneResult {
 
         const source = ctx.createMediaStreamSource(stream);
 
-        // 1. Digital Pre-Amp Software Gain Node (x1.0 - x4.0)
+        // 0. 80Hz High-Pass Filter (HPF) to cut low desk vibration & fan rumble before pre-amp boost
+        const hpf = ctx.createBiquadFilter();
+        hpf.type = "highpass";
+        hpf.frequency.setValueAtTime(80, ctx.currentTime);
+        hpf.Q.setValueAtTime(0.7, ctx.currentTime);
+
+        // 1. Digital Pre-Amp Software Gain Node (x1.0 - x5.0)
         const gainNode = ctx.createGain();
-        gainNode.gain.setValueAtTime(micGainRef.current, ctx.currentTime);
+        const effectiveGain = isWhisperModeRef.current ? Math.max(3.5, micGainRef.current) : micGainRef.current;
+        gainNode.gain.setValueAtTime(effectiveGain, ctx.currentTime);
         gainNodeRef.current = gainNode;
 
         // 2. Dynamics Compressor: boosts low signals (whispers) while preventing clipping
         const compressor = ctx.createDynamicsCompressor();
-        compressor.threshold.setValueAtTime(-36, ctx.currentTime);
-        compressor.knee.setValueAtTime(20, ctx.currentTime);
-        compressor.ratio.setValueAtTime(4, ctx.currentTime);
-        compressor.attack.setValueAtTime(0.005, ctx.currentTime);
-        compressor.release.setValueAtTime(0.05, ctx.currentTime);
+        compressor.threshold.setValueAtTime(isWhisperModeRef.current ? -45 : -36, ctx.currentTime);
+        compressor.knee.setValueAtTime(24, ctx.currentTime);
+        compressor.ratio.setValueAtTime(isWhisperModeRef.current ? 6 : 4, ctx.currentTime);
+        compressor.attack.setValueAtTime(0.003, ctx.currentTime);
+        compressor.release.setValueAtTime(0.12, ctx.currentTime);
         compressorRef.current = compressor;
 
         // 3. Analyser Node for Volume Meter
@@ -227,9 +283,10 @@ export function useMicrophone(): UseMicrophoneResult {
         const destination = ctx.createMediaStreamDestination();
         destinationRef.current = destination;
 
-        // Audio Pipeline: source -> gainNode -> compressor -> analyser (UI)
-        //                                                   -> destination (MediaRecorder)
-        source.connect(gainNode);
+        // Audio Pipeline: source -> hpf (80Hz cut) -> gainNode (boost) -> compressor -> analyser (UI)
+        //                                                                            -> destination (MediaRecorder)
+        source.connect(hpf);
+        hpf.connect(gainNode);
         gainNode.connect(compressor);
         compressor.connect(analyser);
         compressor.connect(destination);
@@ -364,6 +421,9 @@ export function useMicrophone(): UseMicrophoneResult {
     volumeLevel,
     micGain,
     setMicGain,
+    isWhisperMode,
+    toggleWhisperMode,
+    setIsWhisperMode,
     stream: streamRef.current,
     requestPermission,
     releaseMicrophone,

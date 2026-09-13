@@ -277,9 +277,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   pathname?.startsWith("/shadowing/video")
                     ? "max-w-[1920px] w-full p-2 sm:p-3 md:p-4 pb-6 space-y-3"
                     : isCombatArena
-                    ? "max-w-6xl w-full h-full p-2 sm:p-3 flex flex-col min-h-0"
-                    : pathname?.startsWith("/speaking")
-                    ? "max-w-5xl p-2 sm:p-3 md:p-4 pb-4 space-y-3"
+                    ? "max-w-[1760px] w-full h-full px-2 sm:px-4 py-1 flex flex-col min-h-0"
+                    : pathname?.startsWith("/speaking") || pathname?.startsWith("/ramp")
+                    ? "max-w-[1600px] w-full p-2 sm:p-3 md:p-4 pb-6 space-y-3"
                     : "max-w-[1280px] p-3 sm:p-4 md:p-6 pb-8 space-y-4"
                 )}
               >

@@ -424,11 +424,12 @@ export function RampFeedbackCard({
           variant="outline"
           size="sm"
           onClick={onRetry}
-          className="gap-1.5 rounded-xl text-xs font-bold border-border"
+          className="gap-1.5 rounded-xl text-xs font-bold border-border cursor-pointer"
+          title="Luyện tập lại bước này (Phím R)"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           <span>Làm lại</span>
-          <span className="text-[10px] text-muted-foreground hidden sm:inline">(R)</span>
+          <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground font-bold hidden sm:inline-block">R</kbd>
         </Button>
 
         {feedback.next_action === "elaborate" && onElaborate && (
@@ -436,7 +437,7 @@ export function RampFeedbackCard({
             variant="secondary"
             size="sm"
             onClick={onElaborate}
-            className="gap-1.5 rounded-xl text-xs font-bold"
+            className="gap-1.5 rounded-xl text-xs font-bold cursor-pointer"
           >
             <Target className="h-3.5 w-3.5 text-amber-500" />
             <span>Mở rộng thêm</span>
@@ -447,10 +448,10 @@ export function RampFeedbackCard({
           variant={isSuccess ? "primary" : "outline"}
           size="sm"
           onClick={onNext}
-          className="gap-1.5 rounded-xl text-xs font-bold"
+          className="gap-1.5 rounded-xl text-xs font-bold cursor-pointer"
         >
           <span>Nấc thang tiếp theo</span>
-          <span className="text-[10px] opacity-80 hidden sm:inline">(Space/Enter)</span>
+          <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/20 text-white font-bold hidden sm:inline-block">Space / Enter</kbd>
           <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       </div>

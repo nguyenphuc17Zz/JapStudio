@@ -43,7 +43,7 @@ ping -n 2 127.0.0.1 >nul
 powershell -NoProfile -Command "$openCons = @(Get-Process OpenConsole -ErrorAction SilentlyContinue); if ($openCons.Count -gt 0) { $all = Get-CimInstance Win32_Process; $openCons | ForEach-Object { $id = $_.Id; $c = $all | Where-Object { $_.ParentProcessId -eq $id }; if ($null -eq $c -or $c.Count -eq 0) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue } } }"
 
 echo   [+] Khởi động JapWrite API (:8001)...
-start "JapWrite - Backend (Port 8001)" /D "%WRITE_DIR%\apps\api" cmd /c "title JapWrite API (8001) && color 09 && call .venv\Scripts\activate.bat && python -m alembic upgrade head >nul 2>&1 && python -m uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload || pause"
+start "JapWrite - Backend (Port 8001)" /D "%WRITE_DIR%\apps\api" cmd /c "title JapWrite API (8001) && color 09 && call .venv\Scripts\activate.bat && .venv\Scripts\python.exe -m alembic upgrade head >nul 2>&1 && .venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload || pause"
 
 echo   [+] Khởi động JapWrite Web (:5173)...
 start "JapWrite - Web (Port 5173)" /D "%WRITE_DIR%\apps\web" cmd /c "title JapWrite Web (5173) && color 0B && npm run dev || pause"
@@ -74,7 +74,7 @@ ping -n 2 127.0.0.1 >nul
 powershell -NoProfile -Command "$openCons = @(Get-Process OpenConsole -ErrorAction SilentlyContinue); if ($openCons.Count -gt 0) { $all = Get-CimInstance Win32_Process; $openCons | ForEach-Object { $id = $_.Id; $c = $all | Where-Object { $_.ParentProcessId -eq $id }; if ($null -eq $c -or $c.Count -eq 0) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue } } }"
 
 echo   [+] Khởi động JapSpeak API (:8000)...
-start "JapSpeak - Backend (Port 8000)" /D "%SPEAK_DIR%\apps\api" cmd /c "title JapSpeak API (8000) && color 0C && call .venv\Scripts\activate.bat && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload || pause"
+start "JapSpeak - Backend (Port 8000)" /D "%SPEAK_DIR%\apps\api" cmd /c "title JapSpeak API (8000) && color 0C && call .venv\Scripts\activate.bat && .venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload || pause"
 
 echo   [+] Khởi động JapSpeak Web (:3000)...
 start "JapSpeak - Web Hub (Port 3000)" /D "%SPEAK_DIR%\apps\web" cmd /c "title JapSpeak Web (3000) && color 0E && npm run dev || pause"
@@ -105,7 +105,7 @@ ping -n 2 127.0.0.1 >nul
 powershell -NoProfile -Command "$openCons = @(Get-Process OpenConsole -ErrorAction SilentlyContinue); if ($openCons.Count -gt 0) { $all = Get-CimInstance Win32_Process; $openCons | ForEach-Object { $id = $_.Id; $c = $all | Where-Object { $_.ParentProcessId -eq $id }; if ($null -eq $c -or $c.Count -eq 0) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue } } }"
 
 echo   [+] Khởi động JapImmersion API (:8002)...
-start "JapImmersion - Backend (Port 8002)" /D "%IMMERSION_DIR%\apps\api" cmd /c "title JapImmersion API (8002) && color 0D && call .venv\Scripts\activate.bat && python -m uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload || pause"
+start "JapImmersion - Backend (Port 8002)" /D "%IMMERSION_DIR%\apps\api" cmd /c "title JapImmersion API (8002) && color 0D && call .venv\Scripts\activate.bat && .venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload || pause"
 
 echo   [+] Khởi động JapImmersion Web (:3002)...
 start "JapImmersion - Web (Port 3002)" /D "%IMMERSION_DIR%\apps\web" cmd /c "title JapImmersion Web (3002) && color 0A && npm run dev || pause"

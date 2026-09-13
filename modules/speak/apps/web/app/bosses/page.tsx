@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useBosses, BossCard } from "@/features/gamification";
 import { DynamicBossGeneratorModal } from "@/features/gamification/components/DynamicBossGeneratorModal";
 import { DojoBossArenaModal } from "@/features/gamification/components/DojoBossArenaModal";
@@ -13,7 +14,10 @@ import { cn } from "@/lib/utils";
 
 export default function BossesPage() {
   const { bosses, loading, error, refetch } = useBosses();
-  const [selectedDifficulty, setSelectedDifficulty] = useState<"all" | "normal" | "hard" | "extreme">("all");
+  const [selectedDifficulty, setSelectedDifficulty] = usePersistedState<"all" | "normal" | "hard" | "extreme">(
+    "speaking_bosses_difficulty",
+    "all"
+  );
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
   const [activeArenaBoss, setActiveArenaBoss] = useState<BossDTO | null>(null);
 

@@ -52,12 +52,29 @@ async def generate_reflex_exercise_get(
     context_category: str | None = Query(default=None),
     vocab_category: str | None = Query(default=None),
     keigo_category: str | None = Query(default=None),
+    tier: int | None = Query(default=None, description="BCCWJ Frequency Tier (1: Top 1000, 2: Top 3000, 3: Top 5000)"),
     timer_limit_ms: int | None = Query(default=None, ge=0, le=10000),
     learning_item_key: str | None = Query(default=None),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    return await generate_reflex_exercise(sub_mode, pressure_level, difficulty, verb, conjugation_target, topic, transformation_category, context_category, vocab_category, keigo_category, timer_limit_ms, learning_item_key, user_id, db)
+    return await generate_reflex_exercise(
+        sub_mode=sub_mode,
+        pressure_level=pressure_level,
+        difficulty=difficulty,
+        verb=verb,
+        conjugation_target=conjugation_target,
+        topic=topic,
+        transformation_category=transformation_category,
+        context_category=context_category,
+        vocab_category=vocab_category,
+        keigo_category=keigo_category,
+        tier=tier,
+        timer_limit_ms=timer_limit_ms,
+        learning_item_key=learning_item_key,
+        user_id=user_id,
+        db=db,
+    )
 
 
 @router.post("/exercises/generate", response_model=ExerciseDTO)
@@ -72,6 +89,7 @@ async def generate_reflex_exercise(
     context_category: str | None = Query(default=None),
     vocab_category: str | None = Query(default=None),
     keigo_category: str | None = Query(default=None),
+    tier: int | None = Query(default=None, description="BCCWJ Frequency Tier (1: Top 1000, 2: Top 3000, 3: Top 5000)"),
     timer_limit_ms: int | None = Query(default=None, ge=0, le=10000),
     learning_item_key: str | None = Query(default=None),
     user_id: str = Depends(get_current_user_id),
@@ -102,6 +120,7 @@ async def generate_reflex_exercise(
         context_category=context_category,
         vocab_category=vocab_category,
         keigo_category=keigo_category,
+        tier=tier,
         user_id=user_id,
     )
 
@@ -236,6 +255,10 @@ async def generate_reflex_exercise(
                 "starters": data.get("starters", []),
                 "idea_sparks": data.get("idea_sparks", []),
                 "multi_answers": data.get("multi_answers", {}),
+                "tier": data.get("tier"),
+                "rank": data.get("rank"),
+                "frequency_score": data.get("frequency_score"),
+                "frequency_badge": data.get("frequency_badge"),
             },
             "priority_score": 0.7,
             "item_type": "reflex",

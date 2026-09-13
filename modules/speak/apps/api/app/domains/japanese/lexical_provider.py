@@ -29,10 +29,17 @@ KEIGO_IRREGULAR_OVERRIDES: dict[str, dict[str, str]] = {
     "あげる": {"sonkeigo": "—", "kenjougo": "差し上げる", "teineigo": "あげます"},
     "もらう": {"sonkeigo": "—", "kenjougo": "いただく", "teineigo": "もらいます"},
     "知る": {"sonkeigo": "ご存知だ", "kenjougo": "存じる", "teineigo": "しります"},
-    "会う": {"sonkeigo": "—", "kenjougo": "お目にかかる", "teineigo": "あいます"},
-    "聞く": {"sonkeigo": "—", "kenjougo": "伺う", "teineigo": "ききます"},
-    "訪ねる": {"sonkeigo": "—", "kenjougo": "伺う", "teineigo": "たずねます"},
-    "借りる": {"sonkeigo": "—", "kenjougo": "拝借する", "teineigo": "かりります"},
+    "会う": {"sonkeigo": "お会いになる", "kenjougo": "お目にかかる", "teineigo": "あいます"},
+    "聞く": {"sonkeigo": "お聞きになる", "kenjougo": "伺う", "teineigo": "ききます"},
+    "訪ねる": {"sonkeigo": "お訪ねになる", "kenjougo": "伺う", "teineigo": "たずねます"},
+    "借りる": {"sonkeigo": "お借りになる", "kenjougo": "拝借する", "teineigo": "かります"},
+    "寝る": {"sonkeigo": "お休みになる", "kenjougo": "休ませていただく", "teineigo": "ねます"},
+    "着る": {"sonkeigo": "お召しになる", "kenjougo": "着させていただく", "teineigo": "きます"},
+    "死ぬ": {"sonkeigo": "お亡くなりになる", "kenjougo": "亡くなる", "teineigo": "しにます"},
+    "亡くなる": {"sonkeigo": "お亡くなりになる", "kenjougo": "亡くなる", "teineigo": "なくなります"},
+    "読む": {"sonkeigo": "お読みになる", "kenjougo": "拝読する", "teineigo": "よみます"},
+    "伝える": {"sonkeigo": "お伝えになる", "kenjougo": "申し伝える", "teineigo": "つたえます"},
+    "思う": {"sonkeigo": "お思いになる", "kenjougo": "存じる", "teineigo": "おもいます"},
 }
 
 # Verify small size invariant

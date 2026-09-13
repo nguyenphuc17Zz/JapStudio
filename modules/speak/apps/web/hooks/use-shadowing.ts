@@ -49,84 +49,51 @@ export function useShadowing(videoId: string) {
     if (!video?.segments || video.segments.length === 0) return null;
     return findSegmentByTime(video.segments, currentPlaybackTime);
   }, [video?.segments, currentPlaybackTime]);
-  const [playbackSpeed, setPlaybackSpeed] = useState<number>(() => {
-    if (typeof window === "undefined") return 1.0;
-    try {
-      const saved = localStorage.getItem("speaking_shadowing_speed");
-      return saved ? parseFloat(saved) || 1.0 : 1.0;
-    } catch {
-      return 1.0;
-    }
-  });
-
-  const [shadowingMode, setShadowingMode] = useState<ShadowingMode>(() => {
-    if (typeof window === "undefined") return "repeat";
-    try {
-      const saved = localStorage.getItem("speaking_shadowing_mode");
-      return (saved as ShadowingMode) || "repeat";
-    } catch {
-      return "repeat";
-    }
-  });
-
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  const [shadowingMode, setShadowingMode] = useState<ShadowingMode>("repeat");
   const [displaySubtitleMode, setDisplaySubtitleMode] = useState<
     "bilingual" | "japanese" | "japanese_reading" | "hidden"
-  >(() => {
-    if (typeof window === "undefined") return "bilingual";
-    try {
-      const saved = localStorage.getItem("speaking_shadowing_sub_mode");
-      return (saved as any) || "bilingual";
-    } catch {
-      return "bilingual";
-    }
-  });
+  >("bilingual");
 
   const [isLooping, setIsLooping] = useState(false);
   const [loopRange, setLoopRange] = useState<{ start: number; end: number } | null>(null);
-  const [loopGap, setLoopGap] = useState<number>(() => {
-    if (typeof window === "undefined") return 0;
-    try {
-      const saved = localStorage.getItem("speaking_shadowing_loop_gap");
-      return saved ? parseInt(saved, 10) || 0 : 0;
-    } catch {
-      return 0;
-    }
-  });
+  const [loopGap, setLoopGap] = useState<number>(0);
+  const [autoPilot, setAutoPilot] = useState<boolean>(false);
+  const [bookmarkedSegmentIds, setBookmarkedSegmentIds] = useState<Set<string>>(new Set());
+  const [segmentScores, setSegmentScores] = useState<Record<string, number>>({});
 
-  // Auto-Pilot state
-  const [autoPilot, setAutoPilot] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return localStorage.getItem("speaking_shadowing_autopilot") === "true";
-    } catch {
-      return false;
-    }
-  });
+  const isHydratedRef = useRef(false);
 
-  // Bookmarked Segment IDs
-  const [bookmarkedSegmentIds, setBookmarkedSegmentIds] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
+  // Hydrate preferences from localStorage safely on mount
+  useEffect(() => {
     try {
-      const saved = localStorage.getItem(`speaking_shadowing_bookmarks_${videoId}`);
-      return saved ? new Set(JSON.parse(saved)) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
+      const savedSpeed = localStorage.getItem("speaking_shadowing_speed");
+      if (savedSpeed) setPlaybackSpeed(parseFloat(savedSpeed) || 1.0);
 
-  // Segment Highest Scores Map
-  const [segmentScores, setSegmentScores] = useState<Record<string, number>>(() => {
-    if (typeof window === "undefined") return {};
-    try {
-      const saved = localStorage.getItem(`speaking_shadowing_scores_${videoId}`);
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
+      const savedMode = localStorage.getItem("speaking_shadowing_mode");
+      if (savedMode) setShadowingMode(savedMode as ShadowingMode);
+
+      const savedSub = localStorage.getItem("speaking_shadowing_sub_mode");
+      if (savedSub) setDisplaySubtitleMode(savedSub as any);
+
+      const savedGap = localStorage.getItem("speaking_shadowing_loop_gap");
+      if (savedGap) setLoopGap(parseInt(savedGap, 10) || 0);
+
+      const savedAuto = localStorage.getItem("speaking_shadowing_autopilot");
+      if (savedAuto) setAutoPilot(savedAuto === "true");
+
+      const savedBm = localStorage.getItem(`speaking_shadowing_bookmarks_${videoId}`);
+      if (savedBm) setBookmarkedSegmentIds(new Set(JSON.parse(savedBm)));
+
+      const savedScores = localStorage.getItem(`speaking_shadowing_scores_${videoId}`);
+      if (savedScores) setSegmentScores(JSON.parse(savedScores));
+    } catch {}
+    isHydratedRef.current = true;
+  }, [videoId]);
 
   // Persist preferences
   useEffect(() => {
+    if (!isHydratedRef.current) return;
     try {
       localStorage.setItem("speaking_shadowing_speed", String(playbackSpeed));
       localStorage.setItem("speaking_shadowing_mode", shadowingMode);

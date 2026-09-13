@@ -6,7 +6,7 @@ import { GlobalKeybindingsModal } from "@/components/layout/global-keybindings-m
 import { CoachPanel } from "@/features/coach";
 import { useCoachCore } from "@/features/coach/hooks/useCoachCore";
 import { useSystemKeybindings } from "@/hooks/use-system-keybindings";
-import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
+import { speakJapaneseText, speakVietnameseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
 import { useReflexSession } from "@/features/reflex/hooks/useReflexSession";
 import { useReflexFilters } from "@/features/reflex/hooks/useReflexFilters";
 import {
@@ -16,77 +16,42 @@ import {
 import { ReflexArenaView } from "@/features/reflex/components/ReflexArenaView";
 import { ReflexFilterModals } from "@/features/reflex/components/ReflexFilterModals";
 
+import { usePersistedState } from "@/hooks/use-persisted-state";
+
 export default function ReflexPage() {
-  const [subMode, setSubMode] = useState("mixed");
-  const [pressure, setPressure] = useState<
+  const [subMode, setSubMode] = usePersistedState<string>("speaking_reflex_submode", "mixed");
+  const [pressure, setPressure] = usePersistedState<
     "infinite" | "relaxed" | "normal" | "fast" | "reflex" | "extreme"
-  >("normal");
-  const [subtitleMode, setSubtitleMode] = useState<
+  >("speaking_reflex_pressure", "normal");
+  const [subtitleMode, setSubtitleMode] = usePersistedState<
     "hidden" | "japanese" | "japanese_reading" | "vietnamese"
-  >("japanese");
-  const [startTrigger, setStartTrigger] = useState<"manual" | "auto">("manual");
+  >("speaking_reflex_subtitle", "japanese");
+  const [startTrigger, setStartTrigger] = usePersistedState<"manual" | "auto">(
+    "speaking_reflex_trigger",
+    "manual"
+  );
+  const [duration, setDuration] = usePersistedState<0 | 3 | 5 | 10 | 20>(
+    "speaking_reflex_duration",
+    5
+  );
+  const [autoNext, setAutoNext] = usePersistedState<boolean>("speaking_reflex_autonext", true);
+  const [isReflexAdvancedOpen, setIsReflexAdvancedOpen] = usePersistedState<boolean>(
+    "speaking_reflex_advanced_open",
+    false
+  );
+
   const [transcriptInput, setTranscriptInput] = useState("");
   const [showSummary, setShowSummary] = useState(false);
-  const [duration, setDuration] = useState<0 | 3 | 5 | 10 | 20>(5);
   const [sessionRemainingSec, setSessionRemainingSec] = useState(duration * 60);
   const [sessionElapsedSec, setSessionElapsedSec] = useState(0);
-  const [autoNext, setAutoNext] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const [isReflexAdvancedOpen, setIsReflexAdvancedOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
 
   const sessionEndTimestampRef = useRef<number | null>(null);
   const sessionPausedRemainingMsRef = useRef<number>(duration * 60 * 1000);
-  const isSettingsLoadedRef = useRef(false);
 
   // Extracted custom hook for all 6 filter categories
   const filters = useReflexFilters();
-
-  // 1. Load saved lobby preferences from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("speaking_training_reflex_settings_v1");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.subMode && typeof parsed.subMode === "string") setSubMode(parsed.subMode);
-        if (parsed.pressure && typeof parsed.pressure === "string") setPressure(parsed.pressure);
-        if (parsed.duration !== undefined && [0, 3, 5, 10, 20].includes(parsed.duration)) {
-          setDuration(parsed.duration);
-        }
-        if (parsed.subtitleMode && typeof parsed.subtitleMode === "string") {
-          setSubtitleMode(parsed.subtitleMode);
-        }
-        if (parsed.startTrigger && typeof parsed.startTrigger === "string") {
-          setStartTrigger(parsed.startTrigger);
-        }
-        if (parsed.autoNext !== undefined && typeof parsed.autoNext === "boolean") {
-          setAutoNext(parsed.autoNext);
-        }
-      }
-    } catch (e) {
-      console.warn("[ReflexPage] Failed to load settings:", e);
-    } finally {
-      isSettingsLoadedRef.current = true;
-    }
-  }, []);
-
-  // 2. Persist lobby preferences whenever changed
-  useEffect(() => {
-    if (!isSettingsLoadedRef.current) return;
-    try {
-      const settings = {
-        subMode,
-        pressure,
-        duration,
-        subtitleMode,
-        startTrigger,
-        autoNext,
-      };
-      localStorage.setItem("speaking_training_reflex_settings_v1", JSON.stringify(settings));
-    } catch (e) {
-      console.warn("[ReflexPage] Failed to save settings:", e);
-    }
-  }, [subMode, pressure, duration, subtitleMode, startTrigger, autoNext]);
 
   const { matchesAction, keybindings } = useSystemKeybindings();
 
@@ -102,6 +67,7 @@ export default function ReflexPage() {
     contextCategory: filters.contextCategory,
     vocabCategory: filters.vocabCategory,
     keigoCategory: filters.keigoCategory,
+    tier: filters.vocabTier,
   });
 
   const sessionRef = useRef(session);
@@ -187,7 +153,9 @@ export default function ReflexPage() {
           ? rc.verb
           : activeExercise.scenario || activeExercise.title);
       if (text) {
-        speakJapaneseText(text, {
+        const isVi = rc.direction === "vi_to_ja" || !/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(text);
+        const speakFn = isVi ? speakVietnameseText : speakJapaneseText;
+        speakFn(text, {
           rate: 1.0,
           onEnd: () => {
             if (autoTransition) {
@@ -290,25 +258,25 @@ export default function ReflexPage() {
           session.retry();
           return;
         }
+      }
 
-        if (matchesAction(e, "reflexReplayModel") || matchesAction(e, "drillReplayAudio")) {
-          e.preventDefault();
-          const res = session.result;
-          const rc = (activeExercise as any)?.extra_metadata?.reflex_config || {};
-          const answerText =
-            res?.canonicalAnswer ||
-            (activeExercise as any)?.canonical ||
-            rc.canonical ||
-            rc.expected ||
-            rc.target ||
-            (activeExercise as any)?.target_patterns?.[0] ||
-            "";
-          if (answerText) {
-            stopWebSpeech();
-            speakJapaneseText(answerText);
-          }
-          return;
+      if (matchesAction(e, "reflexReplayModel") || matchesAction(e, "drillReplayAudio")) {
+        e.preventDefault();
+        const res = session.result;
+        const rc = (activeExercise as any)?.extra_metadata?.reflex_config || {};
+        const answerText =
+          res?.canonicalAnswer ||
+          (activeExercise as any)?.canonical ||
+          rc.canonical ||
+          rc.expected ||
+          rc.target ||
+          (activeExercise as any)?.target_patterns?.[0] ||
+          "";
+        if (answerText) {
+          stopWebSpeech();
+          speakJapaneseText(answerText);
         }
+        return;
       }
 
       if (
@@ -340,23 +308,50 @@ export default function ReflexPage() {
         return;
       }
 
+      if (
+        e.key === "ArrowRight" ||
+        matchesAction(e, "reflexSkip") ||
+        matchesAction(e, "drillSkip")
+      ) {
+        e.preventDefault();
+        stopWebSpeech();
+        if (session.phase === "result") {
+          session.startNext();
+        } else if (session.phase !== "idle" && session.phase !== "summary") {
+          session.skip();
+        }
+        return;
+      }
+
       if (matchesAction(e, "reflexSubmitOrNext") || matchesAction(e, "drillSubmitOrNext")) {
         e.preventDefault();
         if (session.phase === "waiting_for_speech" || session.phase === "recording") {
           handleDirectSubmit(true);
+        } else if (session.phase === "result") {
+          session.startNext();
         }
         return;
       }
 
       if (e.key === "Escape") {
-        if (session.phase !== "idle") {
-          stopWebSpeech();
-          session.recorder.releaseMicrophone();
-          session.speech.stopListening();
-          session.setPhase("idle" as any);
-          setShowSummary(false);
-        } else {
+        if (showHelp) {
           setShowHelp(false);
+        } else if (coachOpen) {
+          setCoachOpen(false);
+        } else if (filters.showFormFilterModal) {
+          filters.setShowFormFilterModal(false);
+        } else if (filters.showQnaTopicFilterModal) {
+          filters.setShowQnaTopicFilterModal(false);
+        } else if (filters.showTransformFilterModal) {
+          filters.setShowTransformFilterModal(false);
+        } else if (filters.showContextFilterModal) {
+          filters.setShowContextFilterModal(false);
+        } else if (filters.showVocabFilterModal) {
+          filters.setShowVocabFilterModal(false);
+        } else if (filters.showKeigoFilterModal) {
+          filters.setShowKeigoFilterModal(false);
+        } else if (session.phase === "recording" || session.phase === "waiting_for_speech") {
+          session.togglePause();
         }
       }
     };

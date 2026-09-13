@@ -90,32 +90,46 @@ export function ZenHotkeyDock({ onOpenKeybindingsModal, className }: ZenHotkeyDo
 
     if (pathname.startsWith("/reflex")) {
       const kSubmit = keybindings.reflexSubmitOrNext || "space";
-      const kReplay = keybindings.reflexReplayModel || "p";
+      const kListen = keybindings.reflexListenPrompt || "l";
+      const kReveal = keybindings.reflexToggleReveal || "v";
+      const kReplay = keybindings.reflexReplayModel || "a";
       const kRetry = keybindings.reflexRetry || "r";
+      const kPause = keybindings.reflexPauseOrResume || "p";
       return {
         modeTitle: "Phản xạ (Reflex)",
         badges: [
           { keyDisplay: formatKeyDisplay(kSubmit), label: "Mic / Gửi bài", highlight: true, eventSpec: resolveEventSpec(kSubmit) },
+          { keyDisplay: "→", label: "Qua bài", eventSpec: { key: "ArrowRight", code: "ArrowRight" } },
+          { keyDisplay: formatKeyDisplay(kListen), label: "Nghe đề", eventSpec: resolveEventSpec(kListen) },
+          { keyDisplay: formatKeyDisplay(kReveal), label: "Xem đáp án", eventSpec: resolveEventSpec(kReveal) },
           { keyDisplay: formatKeyDisplay(kReplay), label: "Nghe mẫu", eventSpec: resolveEventSpec(kReplay) },
           { keyDisplay: formatKeyDisplay(kRetry), label: "Luyện lại", eventSpec: resolveEventSpec(kRetry) },
+          { keyDisplay: formatKeyDisplay(kPause), label: "Tạm dừng", eventSpec: resolveEventSpec(kPause) },
           { keyDisplay: "F", label: "Furigana", eventSpec: { key: "f", code: "KeyF" } },
-          { keyDisplay: "Esc", label: "Hủy / Thoát", eventSpec: { key: "Escape", code: "Escape" } },
+          { keyDisplay: "Esc", label: "Đóng / Pause", eventSpec: { key: "Escape", code: "Escape" } },
         ],
       };
     }
 
     if (pathname.startsWith("/keigo")) {
       const kSubmit = keybindings.keigoSubmitOrNext || "space";
-      const kReplay = keybindings.keigoReplayModel || "p";
+      const kListen = keybindings.keigoListenPrompt || "l";
+      const kReveal = keybindings.keigoToggleReveal || "v";
+      const kReplay = keybindings.keigoReplayModel || "a";
       const kHint = keybindings.keigoToggleHint || "h";
       const kCheat = keybindings.keigoOpenCheatsheet || "c";
+      const kRetry = keybindings.keigoRetry || "r";
       return {
         modeTitle: "Kính ngữ (Keigo)",
         badges: [
           { keyDisplay: formatKeyDisplay(kSubmit), label: "Nộp bài", highlight: true, eventSpec: resolveEventSpec(kSubmit) },
+          { keyDisplay: "→", label: "Qua bài", eventSpec: { key: "ArrowRight", code: "ArrowRight" } },
+          { keyDisplay: formatKeyDisplay(kListen), label: "Nghe đề", eventSpec: resolveEventSpec(kListen) },
+          { keyDisplay: formatKeyDisplay(kReveal), label: "Xem đáp án", eventSpec: resolveEventSpec(kReveal) },
           { keyDisplay: formatKeyDisplay(kReplay), label: "Nghe mẫu", eventSpec: resolveEventSpec(kReplay) },
           { keyDisplay: formatKeyDisplay(kHint), label: "Gợi ý", eventSpec: resolveEventSpec(kHint) },
           { keyDisplay: formatKeyDisplay(kCheat), label: "Bảng tra", eventSpec: resolveEventSpec(kCheat) },
+          { keyDisplay: formatKeyDisplay(kRetry), label: "Luyện lại", eventSpec: resolveEventSpec(kRetry) },
           { keyDisplay: "F", label: "Furigana", eventSpec: { key: "f", code: "KeyF" } },
         ],
       };
@@ -123,13 +137,18 @@ export function ZenHotkeyDock({ onOpenKeybindingsModal, className }: ZenHotkeyDo
 
     if (pathname.startsWith("/pitch")) {
       const kSubmit = keybindings.pitchSubmitOrNext || "space";
-      const kReplay = keybindings.pitchReplayModel || "p";
+      const kListen = keybindings.pitchListenPrompt || "l";
+      const kReveal = keybindings.pitchToggleReveal || "v";
+      const kReplay = keybindings.pitchReplayModel || "a";
       const kMetro = keybindings.pitchMetronome || "m";
       const kRetry = keybindings.pitchRetry || "r";
       return {
         modeTitle: "Pitch Accent",
         badges: [
           { keyDisplay: formatKeyDisplay(kSubmit), label: "Phát âm / Nộp", highlight: true, eventSpec: resolveEventSpec(kSubmit) },
+          { keyDisplay: "→", label: "Qua bài", eventSpec: { key: "ArrowRight", code: "ArrowRight" } },
+          { keyDisplay: formatKeyDisplay(kListen), label: "Nghe đề / Mẫu", eventSpec: resolveEventSpec(kListen) },
+          { keyDisplay: formatKeyDisplay(kReveal), label: "Xem đáp án", eventSpec: resolveEventSpec(kReveal) },
           { keyDisplay: formatKeyDisplay(kReplay), label: "Mẫu Tokyo", eventSpec: resolveEventSpec(kReplay) },
           { keyDisplay: formatKeyDisplay(kMetro), label: "Metronome", eventSpec: resolveEventSpec(kMetro) },
           { keyDisplay: formatKeyDisplay(kRetry), label: "Luyện lại", eventSpec: resolveEventSpec(kRetry) },
@@ -140,16 +159,42 @@ export function ZenHotkeyDock({ onOpenKeybindingsModal, className }: ZenHotkeyDo
 
     if (pathname.startsWith("/situations")) {
       const kSubmit = keybindings.situationsSubmitOrNext || "space";
-      const kReplay = keybindings.situationsReplayModel || "p";
+      const kListen = keybindings.situationsListenPrompt || "l";
+      const kReveal = keybindings.situationsToggleReveal || "v";
+      const kReplay = keybindings.situationsReplayModel || "a";
       const kHint = keybindings.situationsToggleHint || "h";
+      const kCheat = keybindings.situationsOpenCheatsheet || "c";
       const kRetry = keybindings.situationsRetry || "r";
       return {
         modeTitle: "Tình huống (Situations)",
         badges: [
           { keyDisplay: formatKeyDisplay(kSubmit), label: "Nói / Nộp bài", highlight: true, eventSpec: resolveEventSpec(kSubmit) },
+          { keyDisplay: "→", label: "Qua bài", eventSpec: { key: "ArrowRight", code: "ArrowRight" } },
+          { keyDisplay: formatKeyDisplay(kListen), label: "Nghe NPC", eventSpec: resolveEventSpec(kListen) },
+          { keyDisplay: formatKeyDisplay(kReveal), label: "Xem đáp án", eventSpec: resolveEventSpec(kReveal) },
           { keyDisplay: formatKeyDisplay(kReplay), label: "Nghe đối tác", eventSpec: resolveEventSpec(kReplay) },
           { keyDisplay: formatKeyDisplay(kHint), label: "Gợi ý", eventSpec: resolveEventSpec(kHint) },
+          { keyDisplay: formatKeyDisplay(kCheat), label: "Sổ tay", eventSpec: resolveEventSpec(kCheat) },
           { keyDisplay: formatKeyDisplay(kRetry), label: "Làm lại", eventSpec: resolveEventSpec(kRetry) },
+          { keyDisplay: "F", label: "Furigana", eventSpec: { key: "f", code: "KeyF" } },
+        ],
+      };
+    }
+
+    if (pathname.startsWith("/ramp")) {
+      const kSubmit = keybindings.rampStartOrSubmit || "space";
+      const kRetry = keybindings.rampRetry || "r";
+      const kNext = keybindings.rampNext || "n";
+      const kHint = keybindings.rampHint || "h";
+      const kCheat = keybindings.rampCheatsheet || "c";
+      return {
+        modeTitle: "Phục hồi nói (Ramp)",
+        badges: [
+          { keyDisplay: formatKeyDisplay(kSubmit), label: "Bắt đầu / Nộp", highlight: true, eventSpec: resolveEventSpec(kSubmit) },
+          { keyDisplay: formatKeyDisplay(kRetry), label: "Luyện lại", eventSpec: resolveEventSpec(kRetry) },
+          { keyDisplay: formatKeyDisplay(kNext), label: "Câu kế tiếp", eventSpec: resolveEventSpec(kNext) },
+          { keyDisplay: formatKeyDisplay(kHint), label: "Gợi ý", eventSpec: resolveEventSpec(kHint) },
+          { keyDisplay: formatKeyDisplay(kCheat), label: "Sổ tay", eventSpec: resolveEventSpec(kCheat) },
           { keyDisplay: "F", label: "Furigana", eventSpec: { key: "f", code: "KeyF" } },
         ],
       };
@@ -172,7 +217,7 @@ export function ZenHotkeyDock({ onOpenKeybindingsModal, className }: ZenHotkeyDo
       };
     }
 
-    if (pathname.startsWith("/speaking") || pathname.startsWith("/ramp")) {
+    if (pathname.startsWith("/speaking")) {
       const kMic = keybindings.speakingMic || "space";
       const kReplay = keybindings.speakingReplay || "p";
       const kHint = keybindings.speakingHint || "h";

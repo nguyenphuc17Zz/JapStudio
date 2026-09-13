@@ -6,6 +6,7 @@ import random
 from typing import Any
 
 from app.domains.pitch.resource_provider import get_pitch_provider
+from app.domains.vocabulary.frequency_service import get_frequency_vocabulary_service
 
 # Comprehensive pitch & phonetic pools (25+ real-world Japanese words/pairs)
 MINIMAL_PAIRS_EXAMPLE = [
@@ -137,11 +138,64 @@ def _get_next_pitch_contour() -> dict[str, Any]:
     return _PITCH_CONTOUR_QUEUE.pop(0)
 
 
+def compute_pitch_mora_helpers(
+    reading: str,
+    pitch_pattern: list[str],
+    downstep_index: int = 0,
+) -> tuple[list[dict[str, Any]], str]:
+    """Splits Hiragana reading into mora breakdown and produces visual pitch notation."""
+    moras: list[str] = []
+    i = 0
+    sokuon_small = set("ゃゅょぁぃぅぇぉゎャュョァィゥェォヮ")
+    while i < len(reading):
+        ch = reading[i]
+        if i + 1 < len(reading) and reading[i + 1] in sokuon_small:
+            moras.append(ch + reading[i + 1])
+            i += 2
+        else:
+            moras.append(ch)
+            i += 1
+
+    breakdown: list[dict[str, Any]] = []
+    notation_parts: list[str] = []
+    for idx, m in enumerate(moras):
+        level = pitch_pattern[idx] if idx < len(pitch_pattern) else ("H" if idx > 0 else "L")
+        is_downstep = (idx + 1 == downstep_index) if downstep_index > 0 else False
+        breakdown.append({
+            "mora": m,
+            "level": level,
+            "index": idx + 1,
+            "is_downstep": is_downstep,
+        })
+        if is_downstep:
+            notation_parts.append(f"[{m}]＼")
+        elif level == "H":
+            notation_parts.append(f"[{m}]")
+        else:
+            notation_parts.append(m)
+
+    return breakdown, "".join(notation_parts)
+
+
+def format_accent_label(accent_type: str | None, drop_location: int | None = 0) -> str:
+    acc = (accent_type or "").lower()
+    if acc == "heiban":
+        return "平板型 [0]"
+    elif acc == "atamadaka":
+        return "頭高型 [1]"
+    elif acc == "nakadaka":
+        return f"中高型 [{drop_location or 2}]"
+    elif acc == "odaka":
+        return f"尾高型 [{drop_location or 'N'}]"
+    return "平板型 [0]"
+
+
 class PitchExerciseFactory:
     def __init__(self):
         self.provider = get_pitch_provider()
+        self.freq_service = get_frequency_vocabulary_service()
 
-    def generate_minimal_pair(self, difficulty: str = "normal", pressure_level: str = "normal") -> dict[str, Any]:
+    def generate_minimal_pair(self, difficulty: str = "normal", pressure_level: str = "normal", **kwargs) -> dict[str, Any]:
         pair = _get_next_pitch_minimal()
         a_entry = self.provider.lookup(pair["a"])
         b_entry = self.provider.lookup(pair["b"])
@@ -161,14 +215,14 @@ class PitchExerciseFactory:
             "resource_source": a_entry.source if a_entry else "unknown",
             "timer_limit_ms": TIMER_DEFAULTS["pitch_minimal_pair"],
             "difficulty": difficulty,
+            "pressure_level": pressure_level,
             "constraints": ["Chú ý cao độ tương đối, không so Hz tuyệt đối"],
             "target_patterns": [pair["a"], pair["b"]],
             "estimated_minutes": 4,
         }
 
-    def generate_mora_length(self, difficulty: str = "normal", pressure_level: str = "normal") -> dict[str, Any]:
+    def generate_mora_length(self, difficulty: str = "normal", pressure_level: str = "normal", **kwargs) -> dict[str, Any]:
         pair = _get_next_pitch_mora()
-        # Try provider mora count
         prov = self.provider
         short_mora = prov.get_mora(pair["short"])
         long_mora = prov.get_mora(pair["long"])
@@ -186,64 +240,261 @@ class PitchExerciseFactory:
             "alternatives": [],
             "timer_limit_ms": TIMER_DEFAULTS["mora_length"],
             "difficulty": difficulty,
+            "pressure_level": pressure_level,
             "constraints": ["Chuẩn hóa theo speech rate, không so ms tuyệt đối"],
             "target_patterns": [pair["short"], pair["long"]],
             "estimated_minutes": 4,
         }
 
-    def generate_devoicing(self, difficulty: str = "normal", pressure_level: str = "normal") -> dict[str, Any]:
-        item = _get_next_pitch_devoicing()
-        word = item["word"]
-        self.provider.lookup(word)
+    def generate_devoicing(
+        self,
+        difficulty: str = "normal",
+        pressure_level: str = "normal",
+        tier: int | None = None,
+        category: str | None = None,
+        **kwargs,
+    ) -> dict[str, Any]:
+        dev_entry = None
+        try:
+            dev_entry = self.freq_service.get_next_devoicing_word(category=category, tier=tier)
+        except Exception:
+            pass
+
+        if dev_entry:
+            word = dev_entry["word"]
+            reading = dev_entry["reading"]
+            devoiced = dev_entry["devoiced_mora"]
+            meaning = dev_entry["meaning_vi"]
+            expl = dev_entry["explanation"]
+            rank = dev_entry.get("rank")
+            tier_num = dev_entry.get("tier")
+            vocab_cat = dev_entry.get("category")
+        else:
+            item = _get_next_pitch_devoicing()
+            word = item["word"]
+            reading = item.get("reading", word)
+            devoiced = item["devoiced"]
+            meaning = item.get("meaning", "Từ có nguyên âm vô thanh")
+            expl = f"Nguyên âm trong phách '{devoiced}' thả lỏng dây thanh để âm thoát tự nhiên."
+            rank = None
+            tier_num = None
+            vocab_cat = None
+
+        entry = self.provider.lookup(word)
+        pattern = entry.pattern if entry and entry.pattern else ["L"] + ["H"] * max(1, len(reading) - 1)
+        mora_breakdown, downstep_notation = compute_pitch_mora_helpers(reading, pattern, 0)
+
+        rank_badge = f" (Rank #{rank})" if rank else ""
         return {
-            "title": f"Devoicing: {word}",
-            "objective": f"Luyện vô thanh hóa nguyên âm trong {word}",
-            "scenario": f"Từ {word} có môi trường vô thanh hóa — nói tự nhiên.",
-            "instructions": "Nói tự nhiên, không gượng ép; devoicing là xu hướng, không bắt buộc 100% silence.",
+            "title": f"Devoicing: {word}{rank_badge}",
+            "objective": f"Luyện vô thanh hóa phách '{devoiced}' trong từ '{word}' ({meaning})",
+            "scenario": f"Từ {word} ({reading}) • {expl}",
+            "instructions": f"Nói tự nhiên, thả lỏng dây thanh ở âm '{devoiced}'. Nghĩa: {meaning}",
             "prompt": word,
+            "reading": reading,
             "canonical": word,
-            "accepted": [word],
-            "alternatives": [],
+            "accepted": [word, reading],
+            "acceptable_variants": [word, reading],
+            "translation": meaning,
             "devoicing_env": True,
+            "pitch_pattern": pattern,
+            "pattern": pattern,
+            "downstep_index": 0,
+            "downstep_notation": downstep_notation,
+            "mora_breakdown": mora_breakdown,
+            "devoicing_info": {
+                "devoiced_mora": devoiced,
+                "explanation": expl,
+                "meaning": meaning,
+                "rank": rank,
+                "tier": tier_num,
+            },
+            "pitfall_vi": f"Tránh phát âm rõ ràng nguyên âm ở âm '{devoiced}'. Hãy thả lỏng thanh quản để âm gió xì ra tự nhiên.",
+            "frequency_rank": rank,
+            "frequency_tier": tier_num,
+            "vocab_category": vocab_cat,
             "timer_limit_ms": TIMER_DEFAULTS["vowel_devoicing"],
             "difficulty": difficulty,
-            "constraints": ["Tập trung vào energy/voicing, không keyword matching"],
+            "pressure_level": pressure_level,
+            "constraints": ["Tập trung vào energy/voicing, không cố gượng ép"],
             "target_patterns": [word],
             "estimated_minutes": 4,
         }
 
-    def generate_contour(self, difficulty: str = "normal", pressure_level: str = "normal") -> dict[str, Any]:
-        item = _get_next_pitch_contour()
-        word = item["word"]
+    def generate_contour(
+        self,
+        difficulty: str = "normal",
+        pressure_level: str = "normal",
+        tier: int | None = None,
+        category: str | None = None,
+        **kwargs,
+    ) -> dict[str, Any]:
+        word_entry = None
+        try:
+            word_entry = self.freq_service.get_next_contour_word(category=category, tier=tier)
+        except Exception:
+            pass
+
+        if word_entry:
+            word = word_entry.word
+            reading = word_entry.reading
+            meaning = word_entry.meaning_vi
+            rank = word_entry.rank
+            tier_num = word_entry.tier
+            vocab_cat = word_entry.category
+            collocation = word_entry.collocation_ja
+            example = word_entry.example_ja
+        else:
+            item = _get_next_pitch_contour()
+            word = item["word"]
+            reading = item.get("reading", word)
+            meaning = item.get("meaning", "Từ vựng tiếng Nhật")
+            rank = None
+            tier_num = None
+            vocab_cat = None
+            collocation = ""
+            example = ""
+
         entry = self.provider.lookup(word)
-        pattern = entry.pattern if entry else ["L", "H"]
-        mora = entry.mora_count if entry else 2
+        if entry:
+            pattern = entry.pattern or ["L", "H"]
+            mora_count = entry.mora_count or max(1, len(reading))
+            acc_type_val = entry.accent_type.value if hasattr(entry.accent_type, "value") else str(entry.accent_type)
+            drop_loc = entry.drop_location
+            source = entry.source
+        else:
+            pattern = ["L", "H"]
+            mora_count = max(1, len(reading))
+            acc_type_val = "heiban"
+            drop_loc = None
+            source = "default"
+
+        acc_type_label = format_accent_label(acc_type_val, drop_loc)
+        mora_breakdown, downstep_notation = compute_pitch_mora_helpers(reading, pattern, drop_loc or 0)
+
+        rank_badge = f" (Rank #{rank})" if rank else ""
         return {
-            "title": f"Pitch Contour: {word}",
-            "objective": f"Tập đường cao độ cho {word} ({mora} mora, pattern {'-'.join(pattern)})",
-            "scenario": f"Xem pattern {'-'.join(pattern)} + mora boundaries, nói theo, so sánh contour.",
-            "instructions": "Giữ relative pitch, chú ý nơi hạ cao độ (downstep), không so Hz tuyệt đối.",
+            "title": f"Pitch Contour: {word}{rank_badge}",
+            "objective": f"Tập đường cao độ {acc_type_label} cho '{word}' ({mora_count} phách)",
+            "scenario": f"Từ vựng: {word} ({reading}) — {acc_type_label} ({meaning})",
+            "instructions": f"Theo dõi đường cao độ ({'-'.join(pattern)}) và phát âm chuẩn: '{word}'",
             "prompt": word,
-            "reading": entry.reading if entry else word,
-            "mora_count": mora,
-            "pattern": pattern,
-            "accent_type": entry.accent_type.value if entry else "unknown",
-            "drop_location": entry.drop_location if entry else None,
+            "reading": reading,
             "canonical": word,
-            "accepted": [word],
-            "alternatives": [],
-            "resource_source": entry.source if entry else "unknown",
+            "accepted": [word, reading],
+            "acceptable_variants": [word, reading],
+            "translation": meaning,
+            "mora_count": mora_count,
+            "pitch_pattern": pattern,
+            "pattern": pattern,
+            "accent_type": acc_type_label,
+            "drop_location": drop_loc,
+            "downstep_index": drop_loc or 0,
+            "downstep_notation": downstep_notation,
+            "mora_breakdown": mora_breakdown,
+            "pitfall_vi": f"Quy tắc cao độ Tokyo: Phách thứ 1 và thứ 2 luôn lệch cao độ (L-H hoặc H-L). Hãy chú ý nấc hạ giọng ở phách {drop_loc if drop_loc else 'không hạ (Heiban)'}.",
+            "contour_info": {
+                "accent_type": acc_type_label,
+                "pattern": pattern,
+                "drop_position": drop_loc or 0,
+                "meaning": meaning,
+                "rank": rank,
+                "tier": tier_num,
+                "collocation": collocation,
+                "example": example,
+            },
+            "frequency_rank": rank,
+            "frequency_tier": tier_num,
+            "vocab_category": vocab_cat,
+            "resource_source": source,
             "timer_limit_ms": TIMER_DEFAULTS["pitch_contour"],
             "difficulty": difficulty,
-            "constraints": ["So sánh pattern và timing ở mora level"],
+            "pressure_level": pressure_level,
+            "constraints": ["Lên xuống cao độ rõ ràng theo từng phách"],
             "target_patterns": [word],
-            "estimated_minutes": 5,
+            "estimated_minutes": 4,
         }
 
-    def generate_recognition(self, difficulty: str = "normal", pressure_level: str = "normal") -> dict[str, Any]:
+    def generate_recognition(
+        self,
+        difficulty: str = "normal",
+        pressure_level: str = "normal",
+        tier: int | None = None,
+        category: str | None = None,
+        **kwargs,
+    ) -> dict[str, Any]:
+        use_bccwj = (tier is not None or category is not None or random.random() < 0.5)
+        if use_bccwj:
+            try:
+                word_entry = self.freq_service.get_next_contour_word(category=category, tier=tier)
+                entry = self.provider.lookup(word_entry.word)
+                pattern = entry.pattern if entry else ["L", "H"]
+                acc_type_val = entry.accent_type.value if entry and hasattr(entry.accent_type, "value") else "heiban"
+                acc_type_label = format_accent_label(acc_type_val, entry.drop_location if entry else 0)
+                mora_breakdown, downstep_notation = compute_pitch_mora_helpers(word_entry.reading, pattern, entry.drop_location if entry else 0)
+
+                quiz_options = [
+                    {
+                        "option_id": "A",
+                        "key": "A",
+                        "word": word_entry.word,
+                        "meaning": word_entry.meaning_vi,
+                        "accent_type": acc_type_label,
+                        "is_correct": True,
+                    },
+                    {
+                        "option_id": "B",
+                        "key": "B",
+                        "word": f"{word_entry.word} (Đối lập)",
+                        "meaning": f"Kiểu cao độ đảo ngược: {'-'.join(['H' if p=='L' else 'L' for p in pattern])}",
+                        "accent_type": "頭高型 [1]" if "平板" in acc_type_label else "平板型 [0]",
+                        "is_correct": False,
+                    }
+                ]
+                return {
+                    "title": f"Recognition: {word_entry.reading}",
+                    "objective": f"Nghe và nhận biết cao độ chuẩn của '{word_entry.word}' ({acc_type_label})",
+                    "scenario": f"Từ vựng: {word_entry.word} ({word_entry.reading}) — {word_entry.meaning_vi}",
+                    "instructions": "Nghe phát âm và chọn đáp án có cao độ và nghĩa chính xác nhất.",
+                    "prompt": word_entry.word,
+                    "reading": word_entry.reading,
+                    "canonical": word_entry.word,
+                    "accepted": [word_entry.word],
+                    "acceptable_variants": [word_entry.word, word_entry.reading],
+                    "translation": word_entry.meaning_vi,
+                    "pitch_pattern": pattern,
+                    "mora_breakdown": mora_breakdown,
+                    "downstep_notation": downstep_notation,
+                    "quiz_options": quiz_options,
+                    "recognition_info": {
+                        "word": word_entry.word,
+                        "reading": word_entry.reading,
+                        "correct_accent": acc_type_label,
+                        "meaning": word_entry.meaning_vi,
+                        "rank": word_entry.rank,
+                        "tier": word_entry.tier,
+                    },
+                    "frequency_rank": word_entry.rank,
+                    "frequency_tier": word_entry.tier,
+                    "vocab_category": word_entry.category,
+                    "timer_limit_ms": TIMER_DEFAULTS["pitch_recognition"],
+                    "difficulty": difficulty,
+                    "pressure_level": pressure_level,
+                    "constraints": ["Chọn đúng cao độ"],
+                    "target_patterns": [word_entry.word],
+                    "estimated_minutes": 3,
+                }
+            except Exception:
+                pass
+
         pair = _get_next_pitch_minimal()
-        # Simulate A/B audio choice
         correct = random.choice([pair["a"], pair["b"]])
+        incorrect = pair["b"] if correct == pair["a"] else pair["a"]
+        corr_accent = pair["a_accent"] if correct == pair["a"] else pair["b_accent"]
+        incorr_accent = pair["b_accent"] if correct == pair["a"] else pair["a_accent"]
+        corr_meaning = pair["meaning_a"] if correct == pair["a"] else pair["meaning_b"]
+        incorr_meaning = pair["meaning_b"] if correct == pair["a"] else pair["meaning_a"]
+
         return {
             "title": f"Recognition: {pair['reading']}",
             "objective": f"Nghe và chọn đúng từ {pair['a']}/{pair['b']}",
@@ -254,9 +505,15 @@ class PitchExerciseFactory:
             "correct": correct,
             "canonical": correct,
             "accepted": [correct],
+            "acceptable_variants": [correct],
             "alternatives": [pair["a"], pair["b"]],
+            "quiz_options": [
+                {"option_id": "A", "key": "A", "word": correct, "meaning": corr_meaning, "accent_type": corr_accent, "is_correct": True},
+                {"option_id": "B", "key": "B", "word": incorrect, "meaning": incorr_meaning, "accent_type": incorr_accent, "is_correct": False},
+            ],
             "timer_limit_ms": TIMER_DEFAULTS["pitch_recognition"],
             "difficulty": difficulty,
+            "pressure_level": pressure_level,
             "constraints": ["Chọn đúng cao độ"],
             "target_patterns": [correct],
             "estimated_minutes": 3,

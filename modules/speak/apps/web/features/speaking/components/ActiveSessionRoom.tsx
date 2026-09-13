@@ -258,7 +258,7 @@ export function ActiveSessionRoom({
     null;
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto animate-in fade-in duration-300">
+    <div className="space-y-3.5 max-w-[1560px] w-full mx-auto animate-in fade-in duration-300">
       {/* Session Top Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl glass-card border border-white/10 dark:border-white/10 shadow-xl backdrop-blur-2xl">
         {/* Left: Persona & Mode Info */}
@@ -341,7 +341,7 @@ export function ActiveSessionRoom({
       {/* Main Room Card */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Left Column: Visualizer & Live Speaking Control Panel */}
-        <div className="lg:col-span-5 flex flex-col justify-between p-5 rounded-3xl glass-card border border-white/10 dark:border-white/10 shadow-2xl backdrop-blur-2xl space-y-4 relative overflow-hidden">
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col justify-between p-5 rounded-3xl glass-card border border-white/10 dark:border-white/10 shadow-2xl backdrop-blur-2xl space-y-4 relative overflow-hidden">
           {/* Subtle Ambient Refraction */}
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-44 h-44 bg-primary/10 blur-3xl rounded-full pointer-events-none -z-10" />
 
@@ -386,15 +386,6 @@ export function ActiveSessionRoom({
                 </Button>
               </div>
             )}
-
-            {/* Live Turn Scaffolding (Speech Starters, Angles & Key Vocab) */}
-            <LiveTurnScaffolding
-              scaffolding={activeScaffolding}
-              lastAiText={latestAssistantTurn?.transcript ?? null}
-              personaName={persona.name}
-              onSelectSuggestion={(txt) => setInputText(txt)}
-              disabled={state === "ai_thinking" || state === "processing_stt"}
-            />
 
             {/* Speaking Mode Selector Tabs */}
             {onToggleAutoEndOfSpeech && (
@@ -660,7 +651,7 @@ export function ActiveSessionRoom({
         </div>
 
         {/* Right Column: Live Transcript Stream & Fallback Text Input */}
-        <div className="lg:col-span-7 flex flex-col justify-between rounded-3xl glass-card border border-white/10 dark:border-white/10 shadow-2xl backdrop-blur-2xl overflow-hidden min-h-[480px]">
+        <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-between rounded-3xl glass-card border border-white/10 dark:border-white/10 shadow-2xl backdrop-blur-2xl overflow-hidden min-h-[480px]">
           {/* Transcript Area */}
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="p-3.5 px-4 border-b border-white/10 bg-white/5 dark:bg-white/5 flex items-center justify-between text-xs font-semibold text-foreground backdrop-blur-md">
@@ -685,6 +676,19 @@ export function ActiveSessionRoom({
               onReplayVoice={onReplayVoice}
             />
           </div>
+
+          {/* Live Turn Scaffolding (Speech Starters, Angles & Key Vocab) */}
+          {latestAssistantTurn && (
+            <div className="p-3 border-t border-white/10 bg-white/5 dark:bg-white/5 backdrop-blur-md">
+              <LiveTurnScaffolding
+                scaffolding={activeScaffolding}
+                lastAiText={latestAssistantTurn.transcript}
+                personaName={persona.name}
+                onSelectSuggestion={(txt) => setInputText(txt)}
+                disabled={state === "ai_thinking" || state === "processing_stt"}
+              />
+            </div>
+          )}
 
           {/* Universal Text Input Bar (Office Mode / Broken Mic) */}
           <div className="p-3 border-t border-white/10 bg-white/5 dark:bg-white/5 backdrop-blur-md">

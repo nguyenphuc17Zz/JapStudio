@@ -29,6 +29,7 @@ import {
   RotateCcw,
   Users,
 } from "lucide-react";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { Persona, PersonaCreateInput } from "@/types/persona";
 import {
   useVoiceSession,
@@ -62,7 +63,10 @@ export default function SpeakingPage() {
     restoreDefaults,
   } = usePersonas();
 
-  const [selectedDifficulty, setSelectedDifficulty] = useState("All");
+  const [selectedDifficulty, setSelectedDifficulty] = usePersistedState<string>(
+    "speaking_personas_difficulty",
+    "All"
+  );
   const [activePersona, setActivePersona] = useState<Persona | null>(null);
   const [isLobbyOpen, setIsLobbyOpen] = useState(false);
   const pathname = usePathname();
@@ -237,7 +241,7 @@ export default function SpeakingPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-3.5 sm:space-y-4 animate-in fade-in duration-200">
       {/* Coach proactive insight */}
       {insights.length > 0 && !isSessionActive && (
         <div className="space-y-2">
@@ -311,45 +315,45 @@ export default function SpeakingPage() {
           />
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3.5 sm:space-y-4">
           {/* Header */}
-          <div className="rounded-[24px] border border-border/70 bg-card/65 backdrop-blur-2xl p-6 md:p-7 shadow-glass-card hover:shadow-glass-hover transition-all duration-300">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-              <div className="space-y-1.5">
+          <div className="rounded-2xl border border-border/70 bg-card/65 backdrop-blur-2xl p-4 sm:p-5 shadow-glass-card hover:shadow-glass-hover transition-all duration-300">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-1">
                 <div className="flex items-center gap-2.5">
-                  <span className="h-9 w-9 rounded-2xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
-                    <Mic className="h-5 w-5" />
+                  <span className="h-8 w-8 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
+                    <Mic className="h-4 w-4" />
                   </span>
-                  <h1 className="text-xl font-extrabold tracking-tight text-foreground">
+                  <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-foreground">
                     Phòng hội thoại
                   </h1>
                 </div>
-                <p className="text-sm text-muted-foreground max-w-xl">
+                <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl">
                   Luyện nói trực tiếp với các nhân vật mô phỏng theo ngữ cảnh thực tế với độ trễ thấp và nhận diện giọng nói tự nhiên.
                 </p>
-                <div className="pt-1">
+                <div className="pt-0.5">
                   <Link
                     href="/ramp"
                     prefetch={true}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/60 hover:bg-muted border border-border text-foreground text-xs font-semibold transition-all"
+                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/60 hover:bg-muted border border-border text-foreground text-[11px] font-semibold transition-all"
                   >
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    <Sparkles className="h-3 w-3 text-primary" />
                     <span>Mode 6: Phục hồi phát ngôn (Speaking Ramp) — Rèn từ 1 câu đến 60s độc lập</span>
                   </Link>
                 </div>
               </div>
 
               {/* Partner Management Action Buttons */}
-              <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+              <div className="flex items-center gap-2 flex-wrap shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleRestoreDefaults}
                   isLoading={actionLoading}
-                  className="text-xs text-muted-foreground hover:text-foreground border-border/80 rounded-full"
+                  className="text-xs text-muted-foreground hover:text-foreground border-border/80 rounded-full h-8 px-3"
                   title="Khôi phục lại các đối tác mẫu mặc định"
                 >
-                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                  <RotateCcw className="h-3 w-3 mr-1" />
                   Mẫu mặc định
                 </Button>
 
@@ -358,9 +362,9 @@ export default function SpeakingPage() {
                   size="sm"
                   onClick={handleGenerateAI}
                   isLoading={generating}
-                  className="text-xs border-border/80 rounded-full"
+                  className="text-xs border-border/80 rounded-full h-8 px-3"
                 >
-                  <Wand2 className="h-3.5 w-3.5 mr-1 text-primary" />
+                  <Wand2 className="h-3 w-3 mr-1 text-primary" />
                   Sinh bằng AI
                 </Button>
 
@@ -368,7 +372,7 @@ export default function SpeakingPage() {
                   variant="primary"
                   size="sm"
                   onClick={handleOpenCreateModal}
-                  className="text-xs rounded-full font-bold shadow-md shadow-primary/25"
+                  className="text-xs rounded-full font-bold shadow-md shadow-primary/25 h-8 px-3.5"
                 >
                   <Plus className="h-3.5 w-3.5 mr-1" />
                   Tạo đối tác
@@ -377,17 +381,17 @@ export default function SpeakingPage() {
             </div>
 
             {/* Filter by Difficulty Bar */}
-            <div className="mt-6 pt-4 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+            <div className="mt-3.5 pt-3 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mr-1">
                   <Users className="h-3.5 w-3.5" /> Trình độ:
                 </span>
-                <div className="flex items-center gap-1 p-1 rounded-full bg-muted/50 border border-border/70 backdrop-blur-md">
+                <div className="flex items-center gap-1 p-0.5 rounded-full bg-muted/50 border border-border/70 backdrop-blur-md">
                   {DIFFICULTIES.map((diff) => (
                     <button
                       key={diff}
                       onClick={() => setSelectedDifficulty(diff)}
-                      className={`px-3.5 py-1 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
+                      className={`px-3 py-0.5 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
                         selectedDifficulty === diff
                           ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
                           : "text-muted-foreground hover:text-foreground"
@@ -405,14 +409,14 @@ export default function SpeakingPage() {
             </div>
           </div>
 
-          {/* Persona Grid */}
+          {/* Persona Grid (4 columns on xl desktop) */}
           {loading ? (
             <div className="p-16 text-center text-sm text-muted-foreground flex flex-col items-center justify-center gap-3">
               <RefreshCw className="h-6 w-6 animate-spin text-primary" />
               <span>Đang tải danh sách đối tác hội thoại…</span>
             </div>
           ) : filteredPersonas.length === 0 ? (
-            <div className="p-12 text-center rounded-[24px] border border-dashed border-border/80 bg-card/50 backdrop-blur-xl space-y-4 max-w-lg mx-auto">
+            <div className="p-12 text-center rounded-2xl border border-dashed border-border/80 bg-card/50 backdrop-blur-xl space-y-4 max-w-lg mx-auto">
               <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto text-xl">
                 👥
               </div>
@@ -437,70 +441,70 @@ export default function SpeakingPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-3.5">
               {filteredPersonas.map((persona) => (
                 <div
                   key={persona.id}
-                  className="p-5 sm:p-5.5 rounded-[22px] border border-border/70 bg-card/65 backdrop-blur-xl flex flex-col justify-between transition-all duration-300 hover:border-primary/40 hover:shadow-glass-hover hover:-translate-y-1 shadow-glass-sm group"
+                  className="p-4 sm:p-4.5 rounded-2xl border border-border/70 bg-card/65 backdrop-blur-xl flex flex-col justify-between transition-all duration-300 hover:border-primary/40 hover:shadow-glass-hover hover:-translate-y-0.5 shadow-glass-sm group h-full"
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded-xl bg-muted border border-border flex items-center justify-center text-foreground font-bold text-sm shrink-0">
+                  <div className="space-y-2.5">
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="h-9 w-9 rounded-xl bg-muted border border-border flex items-center justify-center text-foreground font-bold text-sm shrink-0 shadow-2xs">
                           {persona.name.charAt(0)}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-sm font-bold text-foreground block truncate">{persona.name}</span>
                             {persona.is_system && (
-                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border inline-flex items-center">
+                              <span className="text-[9.5px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border inline-flex items-center font-medium">
                                 <Lock className="h-2.5 w-2.5 mr-0.5" /> Mẫu
                               </span>
                             )}
                           </div>
-                          <span className="text-xs text-muted-foreground truncate block">{persona.role}</span>
+                          <span className="text-[11px] text-muted-foreground truncate block">{persona.role}</span>
                         </div>
                       </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border shrink-0">
+                      <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border shrink-0">
                         {persona.difficulty}
                       </span>
                     </div>
 
-                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{persona.description}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{persona.description}</p>
 
-                    <div className="space-y-1.5 pt-3 border-t border-border text-xs">
+                    <div className="space-y-1 pt-2.5 border-t border-border/60 text-[11px]">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-muted-foreground">Phong cách:</span>
-                        <span className="text-foreground font-medium truncate max-w-[170px]">{persona.speaking_style}</span>
+                        <span className="font-medium text-muted-foreground shrink-0">Phong cách:</span>
+                        <span className="text-foreground font-medium truncate max-w-[160px] text-right">{persona.speaking_style}</span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-muted-foreground">Tính cách:</span>
-                        <span className="text-foreground font-medium truncate max-w-[170px]">
+                        <span className="font-medium text-muted-foreground shrink-0">Tính cách:</span>
+                        <span className="text-foreground font-medium truncate max-w-[160px] text-right">
                           {persona.personality}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-4 mt-4 border-t border-border/60 flex items-center gap-2">
+                  <div className="pt-3 mt-3 border-t border-border/60 flex items-center gap-2">
                     <Button
                       variant="primary"
-                      size="md"
-                      className="flex-1 rounded-full font-bold shadow-md shadow-primary/25"
+                      size="sm"
+                      className="flex-1 rounded-full font-bold shadow-md shadow-primary/25 h-8 text-xs"
                       onClick={() => handleOpenLobby(persona)}
                     >
-                      <Mic className="h-4 w-4 mr-1.5" />
+                      <Mic className="h-3.5 w-3.5 mr-1" />
                       Luyện nói
                     </Button>
 
                     <Button
                       variant="ghost"
-                      size="md"
-                      className="px-2.5 rounded-full text-muted-foreground hover:text-destructive shrink-0"
+                      size="sm"
+                      className="h-8 w-8 px-0 rounded-full text-muted-foreground hover:text-destructive shrink-0"
                       title="Xóa đối tác này"
                       onClick={() => setDeleteTarget(persona)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>

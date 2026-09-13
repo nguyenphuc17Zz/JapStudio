@@ -38,7 +38,7 @@ export function ConversationTranscript({
   }, [turns, state, isUserSpeaking, interimTranscript]);
 
   return (
-    <div className="space-y-4 p-4 overflow-y-auto max-h-[380px] scrollbar-thin">
+    <div className="space-y-3.5 p-4 overflow-y-auto max-h-[520px] flex-1 scrollbar-thin">
       {turns.length === 0 && !isUserSpeaking && state === "listening" && (
         <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground space-y-2.5">
           <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xl shadow-lg shadow-primary/10 animate-pulse">

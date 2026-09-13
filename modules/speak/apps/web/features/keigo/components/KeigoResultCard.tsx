@@ -25,35 +25,75 @@ import {
   ShieldAlert,
   AlertCircle,
   Scale,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import type { KeigoResult, KeigoExercise } from "../services/keigo-api";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
 import { UniversalFurigana } from "@/components/japanese/UniversalFurigana";
+import { soundFX } from "@/lib/sound-fx";
 import { cn } from "@/lib/utils";
 
 interface Props {
   result: KeigoResult | null;
   exercise?: KeigoExercise | null;
+  isPending?: boolean;
+  liveTranscript?: string;
   onNext?: () => void;
   onRetry?: () => void;
   onAskCoach?: (prompt: string) => void;
   onCancelAutoNext?: () => void;
+  className?: string;
 }
 
 export function KeigoResultCard({
   result,
   exercise,
+  isPending = false,
+  liveTranscript = "",
   onNext,
   onRetry,
   onAskCoach,
   onCancelAutoNext,
+  className,
 }: Props) {
   const [isUserAudioPlaying, setIsUserAudioPlaying] = useState(false);
   const [userAudioCurrentTime, setUserAudioCurrentTime] = useState(0);
   const [userAudioDuration, setUserAudioDuration] = useState(0);
   const [isTTSPlaying, setIsTTSPlaying] = useState(false);
+  const [isRevealed, setIsRevealed] = useState(false);
 
   const userAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    setIsRevealed(false);
+  }, [exercise?.id]);
+
+  const handlePlayModelTTSRef = useRef<(() => void) | null>(null);
+
+  // Keyboard shortcut listener:
+  // - V: toggle reveal text (when isPending)
+  // - A: play model audio (works anytime, even before pressing V when answer is blurred)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea") return;
+
+      if (e.key.toLowerCase() === "v" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (isPending) {
+          e.preventDefault();
+          soundFX.playFurin();
+          setIsRevealed((prev) => !prev);
+        }
+      } else if (e.key.toLowerCase() === "a" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        handlePlayModelTTSRef.current?.();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isPending]);
 
   useEffect(() => {
     setIsUserAudioPlaying(false);
@@ -61,23 +101,24 @@ export function KeigoResultCard({
     setUserAudioDuration(0);
   }, [result]);
 
-  if (!result) return null;
+  if (!result && !exercise) return null;
 
-  const isPerfect = result.isPerfect;
-  const isTimeout = result.timedOut;
-  const isCorrect = result.success;
-  const latency = result.reactionLatencyMs;
-  const timerLimit = result.timerLimitMs || 5000;
+  const isPerfect = result?.isPerfect ?? false;
+  const isTimeout = result?.timedOut ?? false;
+  const isCorrect = result?.success ?? false;
+  const latency = result?.reactionLatencyMs;
+  const timerLimit = result?.timerLimitMs || 5000;
   const latencyRatio = latency != null ? Math.min(1, latency / timerLimit) : 1;
+  const isBlurred = isPending && !isRevealed;
 
   const canonical =
-    result.canonicalAnswer ||
+    result?.canonicalAnswer ||
     exercise?.canonical ||
     (exercise?.target_patterns && exercise.target_patterns.length > 0 ? exercise.target_patterns[0] : "") ||
     "";
 
   useEffect(() => {
-    if (!canonical) return;
+    if (isPending || !canonical || !result) return;
     setIsTTSPlaying(true);
     const timer = setTimeout(() => {
       speakJapaneseText(canonical, {
@@ -91,20 +132,20 @@ export function KeigoResultCard({
       clearTimeout(timer);
       stopWebSpeech();
     };
-  }, [result.exerciseId, canonical]);
+  }, [result?.exerciseId, canonical, isPending]);
 
   const variants =
-    result.acceptableVariants ||
+    result?.acceptableVariants ||
     exercise?.acceptableVariants ||
     (exercise?.extra_metadata?.keigo_config?.acceptable_variants as string[]) ||
     [];
 
-  const anatomy = result.anatomy || exercise?.anatomy || exercise?.extra_metadata?.keigo_config?.anatomy;
-  const hintLevel = result.hintLevel ?? 0;
+  const anatomy = result?.anatomy || exercise?.anatomy || exercise?.extra_metadata?.keigo_config?.anatomy;
+  const hintLevel = result?.hintLevel ?? 0;
 
   const togglePlayUserAudio = () => {
     onCancelAutoNext?.();
-    if (!userAudioRef.current || !result.userAudioUrl) return;
+    if (!userAudioRef.current || !result?.userAudioUrl) return;
 
     if (isUserAudioPlaying) {
       userAudioRef.current.pause();
@@ -141,6 +182,7 @@ export function KeigoResultCard({
       onError: () => setIsTTSPlaying(false),
     });
   };
+  handlePlayModelTTSRef.current = handlePlayModelTTS;
 
   const formatAudioTime = (seconds: number) => {
     const s = Math.floor(seconds % 60);
@@ -148,7 +190,15 @@ export function KeigoResultCard({
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  const statusConfig = isTimeout
+  const statusConfig = isPending
+    ? {
+        label: "ĐÁP ÁN MẪU & CHỈ TIÊU",
+        icon: <Sparkles className="h-4 w-4 text-primary animate-pulse" />,
+        badgeClass: "bg-primary/10 text-primary border-primary/20",
+        borderClass: "border-primary/30 bg-primary/5",
+        scoreColor: "text-primary",
+      }
+    : isTimeout
     ? {
         label: "HẾT GIỜ (TIME'S UP)",
         icon: <Clock className="h-4 w-4" />,
@@ -183,11 +233,12 @@ export function KeigoResultCard({
   return (
     <div
       className={cn(
-        "rounded-3xl border p-5 md:p-6 space-y-4 shadow-lg transition-all animate-in fade-in zoom-in-95 duration-200 washi-texture",
-        statusConfig.borderClass
+        "rounded-3xl border p-3.5 sm:p-4 space-y-2.5 shadow-lg transition-all animate-in fade-in zoom-in-95 duration-200 washi-texture",
+        statusConfig.borderClass,
+        className
       )}
     >
-      {result.userAudioUrl && (
+      {result?.userAudioUrl && (
         <audio
           ref={userAudioRef}
           src={result.userAudioUrl}
@@ -205,12 +256,12 @@ export function KeigoResultCard({
         />
       )}
 
-      {/* 1. Status, Latency & Hint Independence Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* 1. Status, Score, Latency & Hint Independence Header */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex items-center gap-2">
           <span
             className={cn(
-              "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold border shadow-2xs",
+              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-2xs whitespace-nowrap shrink-0",
               statusConfig.badgeClass
             )}
           >
@@ -218,24 +269,60 @@ export function KeigoResultCard({
             <span>{statusConfig.label}</span>
           </span>
 
-          {hintLevel === 0 ? (
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>Độc lập 100%</span>
+          {!isPending && result?.score != null && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono font-black border shadow-2xs whitespace-nowrap shrink-0",
+                statusConfig.badgeClass
+              )}
+            >
+              <span>{result.score.toFixed(0)}</span>
+              <span className="text-[10px] font-normal opacity-80">/100</span>
             </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
-              <Lightbulb className="h-3.5 w-3.5 fill-current" />
-              <span>Dùng gợi ý Cấp {hintLevel}</span>
+          )}
+
+          {result?.doubleKeigo && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 whitespace-nowrap shrink-0">
+              <AlertTriangle className="h-3 w-3" />
+              <span>Lặp Kính Ngữ</span>
             </span>
+          )}
+
+          {exercise?.frequencyRank && (
+            <Badge
+              variant="outline"
+              size="sm"
+              className="font-mono font-bold text-[9px] py-0.5 px-2 border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 whitespace-nowrap shrink-0"
+            >
+              BCCWJ #{exercise.frequencyRank} • Tier {exercise.frequencyTier || 1}
+            </Badge>
+          )}
+
+          {!isPending && (
+            hintLevel === 0 ? (
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 whitespace-nowrap shrink-0">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Độc lập 100%</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20 whitespace-nowrap shrink-0">
+                <Lightbulb className="h-3.5 w-3.5 fill-current" />
+                <span>Dùng gợi ý Cấp {hintLevel}</span>
+              </span>
+            )
           )}
         </div>
 
-        {latency != null && (
-          <div className="flex items-center gap-2 text-xs font-mono font-bold text-foreground">
+        {latency != null ? (
+          <div className="flex items-center gap-2 text-xs font-mono font-bold text-foreground whitespace-nowrap shrink-0">
             <Zap className="h-3.5 w-3.5 text-amber-500" />
             <span>Phản xạ: {Math.round(latency)}ms</span>
             <span className="text-muted-foreground font-normal">/ {timerLimit > 0 ? `${timerLimit / 1000}s` : "∞"}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground whitespace-nowrap shrink-0">
+            <Clock className="h-3.5 w-3.5" />
+            <span>Mục tiêu: ≤ {timerLimit > 0 ? `${timerLimit / 1000}s` : "5s"}</span>
           </div>
         )}
       </div>
@@ -257,132 +344,188 @@ export function KeigoResultCard({
         </div>
       )}
 
-      {/* 2. Feedback Banner */}
-      <div className="flex items-start gap-4 p-3.5 rounded-2xl bg-card border border-border/80 shadow-xs">
-        <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/60 border border-border shrink-0 min-w-[68px]">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Điểm</span>
-          <span className={cn("text-2xl font-black font-mono", statusConfig.scoreColor)}>
-            {result.score.toFixed(0)}
-          </span>
-        </div>
-
-        <div className="flex-1 min-w-0 space-y-1">
-          <p className="text-sm font-bold text-foreground leading-snug">{result.feedback}</p>
-          {result.doubleKeigo && (
-            <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-semibold">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              <span>Cảnh báo: Phát hiện dấu hiệu lặp kính ngữ (Double Keigo)</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 3. DUAL CORE COMPARISON */}
+      {/* 2. DUAL CORE COMPARISON */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
         {/* CARD A: Your Voice */}
         <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-xs space-y-3 flex flex-col justify-between">
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                <Mic className="h-3.5 w-3.5 text-primary" />
-                <span>Bạn đã nói (Your Voice)</span>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-border/60">
+              <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                <Mic className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span>{isPending ? "Giọng của bạn (Live)" : "Bạn đã nói"}</span>
               </span>
-              {result.transcript && (
-                <span className="text-[10px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-mono">
-                  ja-JP
+              {(result?.transcript || liveTranscript) && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-mono font-bold whitespace-nowrap shrink-0">
+                  STT ja-JP
                 </span>
               )}
             </div>
 
-            <div className="text-base font-black font-jp text-foreground min-h-[1.75rem] flex items-center">
-              {result.transcript ? (
-                <UniversalFurigana text={result.transcript} fontSize="lg" />
+            <div className="rounded-xl bg-muted/40 dark:bg-black/25 p-3 border border-border/60 min-h-[3.5rem] flex items-center justify-center text-center shadow-inner">
+              {result?.transcript ? (
+                <span className="text-base sm:text-lg font-black font-jp text-foreground tracking-wide leading-snug">
+                  <UniversalFurigana text={result.transcript} fontSize="normal" />
+                </span>
+              ) : isPending ? (
+                liveTranscript ? (
+                  <span className="text-base sm:text-lg font-black font-jp text-foreground tracking-wide leading-snug">
+                    <UniversalFurigana text={liveTranscript} fontSize="normal" />
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground italic font-sans font-medium flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-rose-500 animate-ping shrink-0" />
+                    Đang lắng nghe giọng của bạn...
+                  </span>
+                )
               ) : (
-                <span className="text-xs text-muted-foreground italic font-sans font-normal">
+                <span className="text-xs text-muted-foreground italic font-sans">
                   {isTimeout ? "Không nhận diện được giọng nói (Hết giờ)" : "Không có âm thanh thu âm"}
                 </span>
               )}
             </div>
           </div>
 
-          {result.userAudioUrl ? (
-            <div className="pt-2 border-t border-border/60 flex items-center gap-2.5">
-              <Button
-                size="sm"
-                variant={isUserAudioPlaying ? "sakura" : "outline"}
+          {result?.userAudioUrl ? (
+            <div className="p-2.5 px-3 rounded-xl bg-muted/50 border border-border/70 flex items-center justify-between gap-3 shadow-xs">
+              <button
+                type="button"
                 onClick={togglePlayUserAudio}
-                className="h-8 w-8 rounded-full p-0 shrink-0 shadow-2xs"
+                className={cn(
+                  "h-8 w-8 rounded-full flex items-center justify-center transition-all shadow-xs shrink-0 cursor-pointer",
+                  isUserAudioPlaying
+                    ? "bg-primary text-primary-foreground animate-pulse ring-2 ring-primary/30"
+                    : "bg-primary/10 text-primary hover:bg-primary/20"
+                )}
                 title="Nghe lại giọng của bạn"
               >
-                {isUserAudioPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
-              </Button>
+                {isUserAudioPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
+              </button>
               <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-                  <span>{formatAudioTime(userAudioCurrentTime)}</span>
-                  <span>{formatAudioTime(userAudioDuration || 0)}</span>
+                <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground font-bold">
+                  <span>{isUserAudioPlaying ? "Đang phát lại..." : "Bản thu âm của bạn"}</span>
+                  <span>
+                    {formatAudioTime(userAudioCurrentTime)} / {formatAudioTime(userAudioDuration || 0)}
+                  </span>
                 </div>
-                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary transition-all duration-100"
-                    style={{
-                      width: `${userAudioDuration ? (userAudioCurrentTime / userAudioDuration) * 100 : 0}%`,
-                    }}
-                  />
+                <div className="flex items-center gap-1 h-2">
+                  <div className="flex-1 h-1.5 bg-muted-foreground/20 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-100"
+                      style={{
+                        width: `${userAudioDuration ? (userAudioCurrentTime / userAudioDuration) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="pt-2 border-t border-border/60 text-[10px] text-muted-foreground italic">
-              Không có bản ghi âm
+            <div className="p-2 rounded-xl bg-muted/20 border border-dashed border-border/70 text-[11px] text-muted-foreground text-center italic">
+              {isPending ? "Mic đang kích hoạt ở bảng điều khiển" : "Không có bản ghi âm cho câu này"}
             </div>
           )}
         </div>
 
         {/* CARD B: Model Answer */}
-        <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-xs space-y-3 flex flex-col justify-between">
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                <Crown className="h-3.5 w-3.5 text-amber-500" />
+        <div className="p-4 rounded-2xl bg-primary/[0.03] dark:bg-primary/[0.06] border border-primary/25 shadow-xs space-y-3 flex flex-col justify-between relative overflow-hidden">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-primary/20">
+              <span className="text-[11px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                 <span>Đáp án Kính ngữ chuẩn</span>
               </span>
-              <Badge variant="matcha" size="sm" className="text-[10px]">Chuẩn công sở</Badge>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {isPending && (
+                  <button
+                    type="button"
+                    onClick={() => setIsRevealed(!isRevealed)}
+                    className="text-[10px] px-2.5 py-0.5 rounded-full bg-card/80 border border-primary/30 text-primary font-bold hover:bg-primary/10 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-2xs"
+                    title={isRevealed ? "Ẩn đáp án (Phím V)" : "Hiện đáp án (Phím V)"}
+                  >
+                    {isRevealed ? (
+                      <>
+                        <EyeOff className="h-3 w-3 shrink-0" />
+                        <span>Làm mờ</span>
+                        <kbd className="text-[9px] font-mono px-1 rounded bg-primary/10 border border-primary/25 font-bold">V</kbd>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-3 w-3 shrink-0" />
+                        <span>Xem trước</span>
+                        <kbd className="text-[9px] font-mono px-1 rounded bg-primary/10 border border-primary/25 font-bold">V</kbd>
+                      </>
+                    )}
+                  </button>
+                )}
+                {canonical && (
+                  <button
+                    type="button"
+                    onClick={handlePlayModelTTS}
+                    className="p-1 px-2.5 rounded-lg bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 shrink-0 shadow-2xs transition-colors flex items-center gap-1.5 text-[11px] font-bold cursor-pointer whitespace-nowrap"
+                    title="Nghe phát âm chuẩn của câu mẫu (Phím A)"
+                  >
+                    <Volume2 className={cn("h-3.5 w-3.5 shrink-0", isTTSPlaying && "animate-bounce")} />
+                    <span>{isTTSPlaying ? "Đang đọc..." : "Nghe mẫu"}</span>
+                    <kbd className="text-[9px] font-mono px-1 py-0.2 rounded bg-primary/15 border border-primary/25 text-primary font-bold ml-0.5">A</kbd>
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="text-base font-black font-jp text-primary min-h-[1.75rem] flex items-center">
-              {canonical ? (
-                <UniversalFurigana text={canonical} fontSize="lg" />
-              ) : (
-                <span className="text-xs text-muted-foreground italic font-sans font-normal">
-                  Chưa có đáp án mẫu
-                </span>
+            <div className="relative min-h-[3.5rem]">
+              <div
+                className={cn(
+                  "rounded-xl bg-card/70 dark:bg-black/25 p-3.5 border border-border/70 text-center shadow-xs flex flex-col items-center justify-center min-h-[3.5rem] transition-all duration-300",
+                  isBlurred && "filter blur-sm select-none pointer-events-none"
+                )}
+              >
+                {canonical ? (
+                  <div className="text-xl sm:text-2xl font-black font-jp text-primary tracking-tight leading-snug">
+                    <UniversalFurigana text={canonical} fontSize="xl" />
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground italic font-sans font-normal">
+                    Chưa có đáp án mẫu
+                  </span>
+                )}
+              </div>
+
+              {isBlurred && (
+                <div className="absolute inset-0 flex items-center justify-center bg-card/60 backdrop-blur-[2px] rounded-xl z-10">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-xs font-bold border-primary/40 bg-background/90 text-primary shadow-xs hover:bg-background cursor-pointer whitespace-nowrap"
+                    onClick={() => setIsRevealed(true)}
+                  >
+                    <Eye className="h-3.5 w-3.5 shrink-0" />
+                    <span>Xem trước đáp án</span>
+                    <kbd className="text-[10px] font-mono px-1 py-0.2 rounded bg-primary/10 border border-primary/25 ml-1 font-bold">V</kbd>
+                  </Button>
+                </div>
               )}
             </div>
           </div>
 
-          <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-2">
-            <Button
-              size="sm"
-              variant={isTTSPlaying ? "akane" : "outline"}
-              onClick={handlePlayModelTTS}
-              className="gap-1.5 text-xs font-bold shrink-0"
+          {variants.length > 1 && (
+            <div
+              className={cn(
+                "text-[10px] text-muted-foreground text-center pt-0.5 font-jp transition-all duration-300 whitespace-nowrap",
+                isBlurred && "filter blur-xs select-none"
+              )}
+              title={variants.join(" / ")}
             >
-              <Volume2 className={cn("h-3.5 w-3.5", isTTSPlaying && "animate-bounce")} />
-              <span>{isTTSPlaying ? "Đang phát..." : "Nghe mẫu (TTS)"}</span>
-            </Button>
-
-            {variants.length > 1 && (
-              <div className="text-[10px] text-muted-foreground truncate font-jp" title={variants.join(" / ")}>
-                +{variants.length - 1} cách nói khác
-              </div>
-            )}
-          </div>
+              +{variants.length - 1} cách nói khác
+            </div>
+          )}
         </div>
       </div>
 
-      {/* 4. KEIGO ANATOMY BREAKDOWN (Giải phẫu Kính ngữ) */}
-      {anatomy && (
-        <div className="p-4 rounded-2xl bg-muted/40 border border-border/80 space-y-2.5">
+      {/* 4. KEIGO ANATOMY BREAKDOWN (Giải phẫu Kính ngữ - Only Shown on Evaluation) */}
+      {!isPending && anatomy && (
+        <div
+          className="p-4 rounded-2xl bg-muted/40 border border-border/80 space-y-2.5 transition-all duration-300"
+        >
           <div className="flex items-center justify-between text-xs font-bold text-foreground">
             <span className="flex items-center gap-1.5">
               <BookOpen className="h-3.5 w-3.5 text-primary" />
@@ -421,9 +564,14 @@ export function KeigoResultCard({
         </div>
       )}
 
-      {/* 4.5 PRAGMATICS & SOCIAL POLITENESS MATRIX (Ma trận Lịch sự & Ngữ dụng Xã hội) */}
-      {result.pragmatics && (
-        <div className="p-4 rounded-2xl bg-muted/40 border border-border/80 space-y-3">
+      {/* 4.5 PRAGMATICS & SOCIAL POLITENESS MATRIX (Only Shown on Evaluation) */}
+      {!isPending && result?.pragmatics && (
+        <div
+          className={cn(
+            "p-4 rounded-2xl bg-muted/40 border border-border/80 space-y-3 transition-all duration-300",
+            isBlurred && "filter blur-xs select-none pointer-events-none"
+          )}
+        >
           <div className="flex items-center justify-between text-xs font-bold text-foreground">
             <span className="flex items-center gap-1.5">
               <Scale className="h-3.5 w-3.5 text-primary" />
@@ -526,32 +674,45 @@ export function KeigoResultCard({
 
       {/* 5. Bottom Action Controls */}
       <div className="pt-2 flex flex-wrap items-center gap-2">
-        {onNext && (
-          <Button size="sm" variant="akane" onClick={onNext} className="flex-1 gap-1.5 font-bold min-w-[130px]">
-            <span>Câu tiếp theo (Enter)</span>
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        )}
+        {isPending ? (
+          <div className="w-full flex items-center justify-between text-xs text-muted-foreground p-2 rounded-xl bg-muted/30 border border-border/50">
+            <span className="flex items-center gap-1.5 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+              <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span>Nói câu hoàn chỉnh bằng kính ngữ hoặc gõ phím ở Cột 3</span>
+            </span>
+          </div>
+        ) : (
+          <>
+            {onNext && (
+              <Button size="sm" variant="akane" onClick={onNext} className="flex-1 gap-1.5 font-bold min-w-[130px] whitespace-nowrap shrink-0">
+                <span>Câu tiếp theo</span>
+                <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/20 text-white font-bold ml-1">Enter</kbd>
+                <ArrowRight className="h-4 w-4 shrink-0" />
+              </Button>
+            )}
 
-        {onRetry && (
-          <Button size="sm" variant="outline" onClick={onRetry} className="gap-1.5 font-bold">
-            <RotateCcw className="h-3.5 w-3.5" />
-            <span>Thử lại (R)</span>
-          </Button>
-        )}
+            {onRetry && (
+              <Button size="sm" variant="outline" onClick={onRetry} className="gap-1.5 font-bold whitespace-nowrap shrink-0">
+                <RotateCcw className="h-3.5 w-3.5 shrink-0" />
+                <span>Thử lại</span>
+                <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground font-bold ml-1">R</kbd>
+              </Button>
+            )}
 
-        {onAskCoach && canonical && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() =>
-              onAskCoach(`Giải thích ngắn gọn sắc thái và cách dùng kính ngữ trong câu: "${canonical}"`)
-            }
-            className="gap-1.5 text-xs text-primary font-bold ml-auto"
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            <span>Hỏi Sensei</span>
-          </Button>
+            {onAskCoach && canonical && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  onAskCoach(`Giải thích ngắn gọn sắc thái và cách dùng kính ngữ trong câu: "${canonical}"`)
+                }
+                className="gap-1.5 text-xs text-primary font-bold ml-auto whitespace-nowrap shrink-0"
+              >
+                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                <span>Hỏi Sensei</span>
+              </Button>
+            )}
+          </>
         )}
       </div>
     </div>

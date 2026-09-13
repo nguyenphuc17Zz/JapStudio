@@ -19,6 +19,7 @@ export function useReflexFilters() {
   const [customContextKeywords, setCustomContextKeywords] = useState<string>("");
 
   const [selectedVocabCategories, setSelectedVocabCategories] = useState<string[]>([]);
+  const [selectedVocabTier, setSelectedVocabTier] = useState<number | null>(null);
   const [showVocabFilterModal, setShowVocabFilterModal] = useState(false);
   const [customVocabKeywords, setCustomVocabKeywords] = useState<string>("");
 
@@ -72,6 +73,12 @@ export function useReflexFilters() {
 
       const savedVocabKeywords = localStorage.getItem("speaking_training_reflex_vocab_custom_keywords");
       if (savedVocabKeywords) setCustomVocabKeywords(savedVocabKeywords);
+
+      const savedTier = localStorage.getItem("speaking_training_reflex_selected_vocab_tier");
+      if (savedTier !== null && savedTier !== "") {
+        const parsed = parseInt(savedTier, 10);
+        if (!isNaN(parsed)) setSelectedVocabTier(parsed);
+      }
 
       const savedKeigo = localStorage.getItem("speaking_training_reflex_selected_keigo_categories");
       if (savedKeigo) {
@@ -148,6 +155,17 @@ export function useReflexFilters() {
     setCustomVocabKeywords(val);
     try {
       localStorage.setItem("speaking_training_reflex_vocab_custom_keywords", val);
+    } catch {}
+  }, []);
+
+  const handleSelectedVocabTierChange = useCallback((tier: number | null) => {
+    setSelectedVocabTier(tier);
+    try {
+      if (tier === null) {
+        localStorage.removeItem("speaking_training_reflex_selected_vocab_tier");
+      } else {
+        localStorage.setItem("speaking_training_reflex_selected_vocab_tier", String(tier));
+      }
     } catch {}
   }, []);
 
@@ -248,6 +266,9 @@ export function useReflexFilters() {
     // Vocab
     selectedVocabCategories,
     setSelectedVocabCategories: handleSelectedVocabCategoriesChange,
+    selectedVocabTier,
+    setSelectedVocabTier: handleSelectedVocabTierChange,
+    vocabTier: selectedVocabTier ?? undefined,
     customVocabKeywords,
     setCustomVocabKeywords: handleCustomVocabKeywordsChange,
     showVocabFilterModal,

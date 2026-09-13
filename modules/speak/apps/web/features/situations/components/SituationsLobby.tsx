@@ -187,7 +187,7 @@ export function SituationsLobby({
   const selectedCatObj = SITUATIONAL_CATEGORIES.find((c) => c.id === selectedCategory);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 animate-in fade-in duration-300 pb-8">
+    <div className="max-w-[1600px] w-full mx-auto space-y-4 animate-in fade-in duration-300 pb-8 h-full overflow-y-auto pr-1">
       {/* Top Banner Haru Washi */}
       <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5 washi-texture shadow-2xs space-y-3">
         <div className="absolute top-0 right-0 h-32 w-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
@@ -321,7 +321,7 @@ export function SituationsLobby({
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5">
           {SITUATIONAL_CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.id && (!customTopic || cat.id !== "custom");
             return (

@@ -112,7 +112,7 @@ export function useSituationsSession(opts: UseSituationsSessionOptions = {}) {
   // 3. Auto Voice Activity Detection Hook
   const { isUserSpeaking } = useVoiceActivityDetection({
     volumeLevel: mic.volumeLevel,
-    sensitivity: "high",
+    sensitivity: mic.isWhisperMode ? "whisper" : "high",
     enabled: phase === "waiting_for_speech" || phase === "recording",
     onSpeechStart: () => {
       if (speechSubmitTimerRef.current) {
@@ -445,6 +445,8 @@ export function useSituationsSession(opts: UseSituationsSessionOptions = {}) {
       volumeLevel: mic.volumeLevel,
       micGain: mic.micGain,
       setMicGain: mic.setMicGain,
+      isWhisperMode: mic.isWhisperMode,
+      toggleWhisperMode: mic.toggleWhisperMode,
       releaseMicrophone: mic.releaseMicrophone,
     },
     speech: {

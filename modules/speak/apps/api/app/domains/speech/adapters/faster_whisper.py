@@ -82,16 +82,17 @@ class FasterWhisperAdapter(STTProvider):
         )
 
         try:
+            prompt_context = options.initial_prompt or "日本語の日常会話、発音練習です。"
             segments, info = model.transcribe(
                 audio_input,
                 language=options.language,
                 beam_size=options.beam_size,
                 temperature=options.temperature,
-                initial_prompt=options.initial_prompt,
+                initial_prompt=prompt_context,
                 condition_on_previous_text=False,
                 vad_filter=options.vad_filter,
-                vad_parameters=dict(min_silence_duration_ms=800, threshold=0.30, speech_pad_ms=300) if options.vad_filter else None,
-                no_speech_threshold=0.6,
+                vad_parameters=dict(min_silence_duration_ms=600, threshold=0.15, speech_pad_ms=400) if options.vad_filter else None,
+                no_speech_threshold=0.8,
                 compression_ratio_threshold=2.4,
                 word_timestamps=True,
             )
@@ -151,16 +152,17 @@ class FasterWhisperAdapter(STTProvider):
                         device="cpu",
                         compute_type="int8",
                     )
+                    prompt_context = options.initial_prompt or "日本語の日常会話、発音練習です。"
                     segments, info = cpu_model.transcribe(
                         audio_input,
                         language=options.language,
                         beam_size=options.beam_size,
                         temperature=options.temperature,
-                        initial_prompt=options.initial_prompt,
+                        initial_prompt=prompt_context,
                         condition_on_previous_text=False,
                         vad_filter=options.vad_filter,
-                        vad_parameters=dict(min_silence_duration_ms=250, threshold=0.35) if options.vad_filter else None,
-                        no_speech_threshold=0.6,
+                        vad_parameters=dict(min_silence_duration_ms=500, threshold=0.15, speech_pad_ms=400) if options.vad_filter else None,
+                        no_speech_threshold=0.8,
                         compression_ratio_threshold=2.4,
                         word_timestamps=True,
                     )

@@ -41,8 +41,19 @@ export function KeigoPromptCard({
   const [liveTranslation, setLiveTranslation] = useState<string>("");
 
   const rc = exercise?.extra_metadata?.keigo_config || {};
-  const prompt = rc.prompt || exercise?.prompt || exercise?.scenario || exercise?.title || "";
+  const rawPrompt = rc.prompt || exercise?.prompt || exercise?.scenario || exercise?.title || "";
   const isPlaying = phase === "prompt_playing";
+
+  // Clean prompt: Split pure Japanese text from any embedded Vietnamese annotations (e.g. "言う (nói)" -> "言う")
+  let cleanJapanesePrompt = rawPrompt;
+  let embeddedMeaning = "";
+  const parenMatch = rawPrompt.match(/^([^\(（]+)\s*[（\(]([^）\)]*[a-zA-ZÀ-ỹà-ỹ][^）\)]*)[）\)]/);
+  if (parenMatch) {
+    cleanJapanesePrompt = parenMatch[1].trim();
+    embeddedMeaning = parenMatch[2].trim();
+  }
+
+  const prompt = cleanJapanesePrompt;
 
   const socialCtx = exercise?.socialContext || rc.social_context || {};
   const speakerRole = socialCtx.speaker_role || "SELF";
@@ -58,6 +69,7 @@ export function KeigoPromptCard({
   const staticTranslation =
     rc.translation ||
     rc.vietnamese ||
+    (embeddedMeaning ? `${cleanJapanesePrompt}: ${embeddedMeaning}` : null) ||
     exercise?.extra_metadata?.vietnamese_translation ||
     exercise?.extra_metadata?.translation ||
     null;
@@ -112,6 +124,15 @@ export function KeigoPromptCard({
           <Badge variant={modeInfo.color} size="sm" className="font-bold text-[10px] py-0.5 px-2">
             {modeInfo.ja} • {modeInfo.label}
           </Badge>
+          {exercise?.frequencyRank && (
+            <Badge
+              variant="outline"
+              size="sm"
+              className="font-mono font-bold text-[9px] py-0.5 px-2 border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10 whitespace-nowrap shrink-0"
+            >
+              BCCWJ #{exercise.frequencyRank} • Tier {exercise.frequencyTier || 1}
+            </Badge>
+          )}
           {persona?.name && (
             <span className="text-[10px] font-bold text-muted-foreground hidden sm:inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full bg-background border border-border/70">
               <span>{persona.avatar || "💼"}</span>
@@ -200,7 +221,7 @@ export function KeigoPromptCard({
             </div>
 
             <div className="text-xl sm:text-2xl md:text-3xl font-black font-jp tracking-tight text-foreground px-2 flex justify-center">
-              <UniversalFurigana text={prompt} fontSize="xl" />
+              <UniversalFurigana text={cleanJapanesePrompt} fontSize="xl" />
             </div>
 
             {displayTranslation && (
@@ -219,7 +240,11 @@ export function KeigoPromptCard({
                 <Lightbulb className="h-4 w-4 text-amber-500 fill-current" />
                 <span>💡 Gợi Ý Nấc Thang {hintLevel === 1 ? "(Cấp 1: Hướng & Động từ)" : "(Cấp 2: Khung câu)"}</span>
               </span>
-              <span className="text-[10px] text-muted-foreground">Bấm H để đổi nấc gợi ý</span>
+              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <span>Bấm</span>
+                <kbd className="text-[10px] font-mono px-1 py-0.2 rounded bg-card border border-amber-500/30 text-amber-700 dark:text-amber-300 font-bold">H</kbd>
+                <span>để đổi nấc gợi ý</span>
+              </span>
             </div>
 
             {hintLevel >= 1 && hints.tier1 && (
@@ -250,10 +275,12 @@ export function KeigoPromptCard({
               size="sm"
               variant="outline"
               onClick={onPlayAudio}
-              className="gap-1.5 text-xs font-bold shrink-0 ml-auto"
+              className="gap-1.5 text-xs font-bold shrink-0 ml-auto cursor-pointer"
+              title="Nghe lại câu hỏi đề bài (Phím L)"
             >
               <Volume2 className={cn("h-3.5 w-3.5 text-primary", isPlaying && "animate-bounce")} />
-              <span>{isPlaying ? "Đang phát..." : "Nghe lại đề (L)"}</span>
+              <span>{isPlaying ? "Đang phát..." : "Nghe lại đề"}</span>
+              <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground font-bold ml-0.5">L</kbd>
             </Button>
           )}
         </div>

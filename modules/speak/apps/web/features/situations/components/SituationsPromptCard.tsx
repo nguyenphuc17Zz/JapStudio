@@ -102,11 +102,12 @@ export function SituationsPromptCard({
             variant={hintTier > 0 ? "sakura" : "outline"}
             size="sm"
             onClick={handleCycleHint}
-            className="h-7 gap-1 text-[11px] font-bold shadow-2xs px-2.5"
+            className="h-7 gap-1 text-[11px] font-bold shadow-2xs px-2.5 cursor-pointer"
             title="Gợi ý cứu nguy 3 cấp độ (Phím H)"
           >
             <Lightbulb className={cn("h-3 w-3", hintTier > 0 && "text-amber-500 fill-amber-500")} />
-            <span>{hintTier === 0 ? "Gợi ý (H)" : `Gợi ý T${hintTier}/3`}</span>
+            <span>{hintTier === 0 ? "Gợi ý" : `Gợi ý T${hintTier}/3`}</span>
+            {hintTier === 0 && <kbd className="text-[10px] font-mono px-1 py-0.2 rounded bg-card border border-border text-muted-foreground font-bold">H</kbd>}
           </Button>
 
           <Button
@@ -114,10 +115,12 @@ export function SituationsPromptCard({
             size="sm"
             onClick={onPlayAudio}
             disabled={isAudioPlaying}
-            className="h-7 gap-1 text-[11px] font-bold border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 shadow-2xs px-2.5"
+            className="h-7 gap-1 text-[11px] font-bold border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 shadow-2xs px-2.5 cursor-pointer"
+            title="Nghe phát âm lời thoại NPC (Phím L)"
           >
             <Volume2 className={cn("h-3 w-3", isAudioPlaying && "animate-pulse text-emerald-500")} />
-            <span>{isAudioPlaying ? "NPC nói..." : "Nghe (L)"}</span>
+            <span>{isAudioPlaying ? "NPC nói..." : "Nghe NPC"}</span>
+            {!isAudioPlaying && <kbd className="text-[10px] font-mono px-1 py-0.2 rounded bg-card border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold">L</kbd>}
           </Button>
         </div>
       </div>

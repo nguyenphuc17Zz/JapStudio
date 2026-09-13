@@ -129,6 +129,7 @@ class AIReflexGenerator:
                     target_form=conjugation_target,
                     difficulty=difficulty,
                     pressure_level=pressure_level,
+                    tier=kwargs.get("tier"),
                 )
             elif sub_mode == "reflex_transformation":
                 cat = kwargs.get("transformation_category")
@@ -165,6 +166,7 @@ class AIReflexGenerator:
                     difficulty=difficulty,
                     pressure_level=pressure_level,
                     vocab_category=kwargs.get("vocab_category"),
+                    tier=kwargs.get("tier"),
                 )
             elif sub_mode == "reflex_keigo_vocab":
                 # Keigo vocabulary blitz is fully deterministic — no AI needed

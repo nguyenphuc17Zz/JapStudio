@@ -33,7 +33,9 @@ from app.domains.keigo.social_context import (
     Register,
 )
 from app.domains.keigo.transformation_engine import KeigoTransformationEngine
+from app.domains.reflex.conjugation_engine import ConjugationForm, JapaneseConjugationEngine
 from app.domains.reflex.pressure_profiles import timer_for_level
+from app.domains.vocabulary.frequency_service import get_frequency_vocabulary_service
 
 # 20+ Diverse Business Contexts & Scenarios for Real-life Japanese Business Keigo
 BUSINESS_TOPICS_POOL = [
@@ -128,33 +130,35 @@ class AIKeigoGenerator:
         pressure_level: str,
         generator_coro_factory,
         category: str | None = None,
+        formulas: list[str] | None = None,
     ) -> dict[str, Any]:
         """
         Orchestrates Adaptive Bandit, Spaced Decay Zero-Latency Serving, and Async Pool Growth for Keigo.
         Returns smart cached exercise instantly if available, while expanding the pool in the background.
         """
-        is_explore, pool_size = await self.cache_service.should_explore(
-            domain="keigo", sub_mode=sub_mode, difficulty=difficulty
-        )
-        if not is_explore:
-            cached = await self.cache_service.get_smart_exercise(
-                domain="keigo",
-                sub_mode=sub_mode,
-                difficulty=difficulty,
-                recent_prompts=list(self.recent_signatures)[-6:],
+        if not formulas:
+            is_explore, pool_size = await self.cache_service.should_explore(
+                domain="keigo", sub_mode=sub_mode, difficulty=difficulty
             )
-            if cached:
-                cached["timer_limit_ms"] = timer_for_level(pressure_level)
-                cached["pressure_level"] = pressure_level
-                # Trigger background expansion to continuously enrich pool without blocking user
-                self.cache_service.trigger_background_expansion(
+            if not is_explore:
+                cached = await self.cache_service.get_smart_exercise(
                     domain="keigo",
                     sub_mode=sub_mode,
                     difficulty=difficulty,
-                    generator_coroutine_factory=generator_coro_factory,
-                    category=category,
+                    recent_prompts=list(self.recent_signatures)[-6:],
                 )
-                return cached
+                if cached:
+                    cached["timer_limit_ms"] = timer_for_level(pressure_level)
+                    cached["pressure_level"] = pressure_level
+                    # Trigger background expansion to continuously enrich pool without blocking user
+                    self.cache_service.trigger_background_expansion(
+                        domain="keigo",
+                        sub_mode=sub_mode,
+                        difficulty=difficulty,
+                        generator_coroutine_factory=generator_coro_factory,
+                        category=category,
+                    )
+                    return cached
 
         # Exploration turn or cache miss: generate fresh via Gemini
         fresh = await generator_coro_factory()
@@ -181,24 +185,31 @@ class AIKeigoGenerator:
         difficulty: str = "normal",
         pressure_level: str = "normal",
         user_id: str = "keigo_user",
+        tier: int | None = None,
+        category: str | None = None,
+        formulas: list[str] | None = None,
     ) -> dict[str, Any]:
         """Generates dynamic Keigo exercise via Gemini AI with linguistic verification, smart cache pool, and zero-latency serving."""
         try:
             if sub_mode == "keigo_vocab_blitz":
-                return await self._generate_dynamic_vocab_blitz(difficulty, pressure_level, user_id)
+                return await self._generate_dynamic_vocab_blitz(difficulty, pressure_level, user_id, tier=tier, category=category, formulas=formulas)
             elif sub_mode == "keigo_sonkeigo":
                 return await self._dispatch_smart_cached_exercise(
                     sub_mode=sub_mode,
                     difficulty=difficulty,
                     pressure_level=pressure_level,
-                    generator_coro_factory=lambda: self._generate_dynamic_sonkeigo(difficulty, pressure_level, user_id),
+                    generator_coro_factory=lambda: self._generate_dynamic_sonkeigo(difficulty, pressure_level, user_id, formulas=formulas),
+                    category=category,
+                    formulas=formulas,
                 )
             elif sub_mode == "keigo_kenjougo":
                 return await self._dispatch_smart_cached_exercise(
                     sub_mode=sub_mode,
                     difficulty=difficulty,
                     pressure_level=pressure_level,
-                    generator_coro_factory=lambda: self._generate_dynamic_kenjougo(difficulty, pressure_level, user_id),
+                    generator_coro_factory=lambda: self._generate_dynamic_kenjougo(difficulty, pressure_level, user_id, formulas=formulas),
+                    category=category,
+                    formulas=formulas,
                 )
             elif sub_mode == "keigo_teineigo":
                 return await self._dispatch_smart_cached_exercise(
@@ -206,6 +217,8 @@ class AIKeigoGenerator:
                     difficulty=difficulty,
                     pressure_level=pressure_level,
                     generator_coro_factory=lambda: self._generate_dynamic_teineigo(difficulty, pressure_level, user_id),
+                    category=category,
+                    formulas=formulas,
                 )
             elif sub_mode == "keigo_transformation":
                 return await self._dispatch_smart_cached_exercise(
@@ -213,6 +226,8 @@ class AIKeigoGenerator:
                     difficulty=difficulty,
                     pressure_level=pressure_level,
                     generator_coro_factory=lambda: self._generate_dynamic_shift(difficulty, pressure_level, user_id),
+                    category=category,
+                    formulas=formulas,
                 )
             elif sub_mode == "keigo_context":
                 return await self._dispatch_smart_cached_exercise(
@@ -220,6 +235,8 @@ class AIKeigoGenerator:
                     difficulty=difficulty,
                     pressure_level=pressure_level,
                     generator_coro_factory=lambda: self._generate_dynamic_uchi_soto(difficulty, pressure_level, user_id),
+                    category=category,
+                    formulas=formulas,
                 )
             elif sub_mode == "keigo_doctor":
                 return await self._dispatch_smart_cached_exercise(
@@ -227,6 +244,8 @@ class AIKeigoGenerator:
                     difficulty=difficulty,
                     pressure_level=pressure_level,
                     generator_coro_factory=lambda: self._generate_dynamic_doctor(difficulty, pressure_level, user_id),
+                    category=category,
+                    formulas=formulas,
                 )
             elif sub_mode == "keigo_naturalness":
                 return await self._dispatch_smart_cached_exercise(
@@ -234,23 +253,42 @@ class AIKeigoGenerator:
                     difficulty=difficulty,
                     pressure_level=pressure_level,
                     generator_coro_factory=lambda: self._generate_dynamic_naturalness(difficulty, pressure_level, user_id),
+                    category=category,
+                    formulas=formulas,
                 )
             else:
-                eff = random.choice([
+                candidate_modes = [
                     "keigo_sonkeigo",
                     "keigo_kenjougo",
+                    "keigo_vocab_blitz",
                     "keigo_teineigo",
                     "keigo_transformation",
                     "keigo_context",
-                    "keigo_doctor",
-                    "keigo_naturalness",
-                ])
-                return await self.generate_dynamic_exercise(eff, difficulty, pressure_level, user_id)
+                ]
+                if formulas:
+                    has_son = any(f.startswith("sonkeigo_") for f in formulas)
+                    has_ken = any(f.startswith("kenjougo_") for f in formulas)
+                    has_tei = any(f in ("bikago_prefix", "teineigo_desu_masu") for f in formulas)
+                    filtered_modes = []
+                    if has_son:
+                        filtered_modes.extend(["keigo_sonkeigo", "keigo_vocab_blitz"])
+                    if has_ken:
+                        filtered_modes.extend(["keigo_kenjougo", "keigo_vocab_blitz"])
+                    if has_tei:
+                        filtered_modes.extend(["keigo_teineigo", "keigo_vocab_blitz"])
+                    if filtered_modes:
+                        candidate_modes = filtered_modes
+                eff = random.choice(candidate_modes)
+                return await self.generate_dynamic_exercise(eff, difficulty, pressure_level, user_id, tier=tier, category=category, formulas=formulas)
         except Exception as e:
             logger.warning(f"[AIKeigoGenerator] AI generation exception, falling back to rule factory: {e}")
             result = self.factory.generate(sub_mode=sub_mode, difficulty=difficulty)
             result["ai_generated"] = False
             result["fallback_reason"] = str(e)[:150]
+            if tier:
+                result["frequency_tier"] = tier
+            if category:
+                result["vocab_category"] = category
             return result
 
     async def _generate_dynamic_vocab_blitz(
@@ -258,23 +296,303 @@ class AIKeigoGenerator:
         difficulty: str,
         pressure_level: str,
         user_id: str,
+        tier: int | None = None,
+        category: str | None = None,
+        formulas: list[str] | None = None,
     ) -> dict[str, Any]:
-        """Generates dynamic 1-to-1 Keigo Verb Flash-Blitz exercise from rich pool."""
+        """Generates dynamic 1-to-1 Keigo Verb Flash-Blitz exercise from rich pool and BCCWJ high frequency vocabulary."""
         timer_ms = min(timer_for_level(pressure_level), 4000)
+
+        # If specific formulas are requested, select targeting that formula
+        target_formula = random.choice(formulas) if formulas else None
+
+        if target_formula in ("sonkeigo_irregular", "kenjougo_irregular"):
+            use_bccwj = False
+        elif target_formula in ("bikago_prefix", "sonkeigo_o_ni_naru", "sonkeigo_passive", "sonkeigo_kudasai", "kenjougo_o_suru", "kenjougo_moushiageru", "kenjougo_permissive"):
+            use_bccwj = True
+        else:
+            use_bccwj = (
+                tier is not None
+                or (category is not None and category != "all")
+                or (random.random() < 0.5)
+            )
+
+        if use_bccwj:
+            try:
+                freq_svc = get_frequency_vocabulary_service()
+                regular_entries = freq_svc.get_regular_keigo_entries(category=category, tier=tier)
+                if target_formula:
+                    if target_formula == "bikago_prefix":
+                        filtered_entries = [e for e in regular_entries if e.get("type") == "noun_prefix"]
+                        if filtered_entries:
+                            regular_entries = filtered_entries
+                    elif target_formula in ("sonkeigo_o_ni_naru", "sonkeigo_passive", "sonkeigo_kudasai", "kenjougo_o_suru", "kenjougo_moushiageru", "kenjougo_permissive"):
+                        filtered_entries = [e for e in regular_entries if e.get("type") in ("regular_verb", "suru_verb")]
+                        if filtered_entries:
+                            regular_entries = filtered_entries
+
+                if regular_entries:
+                    item = random.choice(regular_entries)
+                    item_type = item.get("type")
+                    rank = item.get("rank", 500)
+                    item_tier = item.get("tier") or tier or 1
+                    item_cat = item.get("category") or category or "daily_life"
+
+                    if item_type == "noun_prefix":
+                        clean_word = item["source_word"]
+                        prefix = item["prefix"]
+                        canonical = item["canonical"]
+                        variants = [canonical]
+                        is_o = prefix == "お"
+                        formula = "Thêm tiền tố お (Kunyomi thuần Nhật / quen thuộc)" if is_o else "Thêm tiền tố ご (Onyomi Hán Nhật 2 âm tiết)"
+                        explanation = f"Từ '{clean_word}' là từ {'thuần Nhật (Kunyomi)' if is_o else 'gốc Hán (Onyomi)'}, do đó gắn tiền tố 「{prefix}」 để tôn kính hóa hoặc mỹ hóa."
+
+                        return {
+                            "title": f"Keigo Blitz (Mỹ Từ {prefix}): {clean_word} ➔ {canonical}",
+                            "objective": f"Nói dạng kính ngữ có tiền tố 「{prefix}」 trong {timer_ms/1000:.1f}s",
+                            "scenario": f"Biến đổi tiền tố danh từ • Top #{rank} (Tier {item_tier}) BCCWJ",
+                            "instructions": f"Từ: '{clean_word}' ({item.get('meaning_vi', '')}) — Thêm tiền tố お hoặc ご đúng chuẩn!",
+                            "prompt": clean_word,
+                            "source": clean_word,
+                            "canonical": canonical,
+                            "acceptable_variants": variants,
+                            "translation": f"{clean_word}: {item.get('meaning_vi', '')} ➔ {canonical}",
+                            "vietnamese": f"{clean_word}: {item.get('meaning_vi', '')}",
+                            "hints": {
+                                "tier1": f"Danh từ: {clean_word} ({item.get('meaning_vi', '')}) ➔ Gắn tiền tố 「{prefix}」",
+                                "tier2": f"Gợi ý: {formula}",
+                            },
+                            "anatomy": {
+                                "root_verb": clean_word,
+                                "formula": formula,
+                                "rationale": explanation,
+                                "pitfall_warning": "Tránh nhầm giữa tiền tố お (Kunyomi) và ご (Onyomi)",
+                            },
+                            "persona": {"name": "Keigo Sensei", "role": "COACH", "avatar": "🌸"},
+                            "timer_limit_ms": timer_ms,
+                            "pressure_level": pressure_level,
+                            "difficulty": difficulty,
+                            "constraints": ["Thêm đúng tiền tố tôn kính"],
+                            "target_patterns": variants[:2],
+                            "estimated_minutes": 1,
+                            "ai_generated": True,
+                            "generation_source": "bccwj_frequency_pool",
+                            "frequency_rank": rank,
+                            "frequency_tier": item_tier,
+                            "vocab_category": item_cat,
+                        }
+
+                    elif item_type == "suru_verb":
+                        clean_word = item["source_word"]
+                        noun_part = clean_word[:-2]
+                        prefix = item["prefix"]
+
+                        if target_formula in ("sonkeigo_o_ni_naru", "sonkeigo_passive", "sonkeigo_kudasai"):
+                            is_sonkeigo = True
+                        elif target_formula in ("kenjougo_o_suru", "kenjougo_moushiageru", "kenjougo_permissive"):
+                            is_sonkeigo = False
+                        else:
+                            is_sonkeigo = random.choice([True, False])
+
+                        if target_formula == "sonkeigo_kudasai":
+                            canonical = f"{prefix}{noun_part}ください"
+                            variants = [f"{prefix}{noun_part}ください", f"{prefix}{noun_part}くださいませ", f"{prefix}{noun_part}いただけますでしょうか"]
+                            target_label = "Thể Nhờ Vả / Yêu Cầu (お/ご〜ください)"
+                            formula = f"Công thức: {prefix} + Danh từ gốc Hán + ください / いただけますでしょうか"
+                            rationale = f"Đề nghị đối phương/khách hàng: {clean_word} ➔ {prefix}{noun_part}ください"
+                        elif target_formula == "kenjougo_moushiageru":
+                            canonical = f"{prefix}{noun_part}申し上げます"
+                            variants = [f"{prefix}{noun_part}申し上げます"]
+                            target_label = "Thưa Gửi & Báo Cáo Trang Trọng (〜申し上げます)"
+                            formula = f"Công thức: {prefix} + Danh từ gốc Hán + 申し上げます"
+                            rationale = f"Báo cáo thưa gửi trang trọng với khách: {clean_word} ➔ {prefix}{noun_part}申し上げます"
+                        elif target_formula == "kenjougo_permissive":
+                            canonical = f"{noun_part}させていただきます"
+                            variants = [f"{noun_part}させていただきます", f"{noun_part}させていただけますでしょうか"]
+                            target_label = "Xin Phép Được Làm (〜させていただきます)"
+                            formula = f"Công thức: Danh từ gốc Hán + させていただきます"
+                            rationale = f"Xin phép người nghe cho mình được thực hiện: {clean_word} ➔ {noun_part}させていただきます"
+                        elif is_sonkeigo:
+                            canonical = item["sonkeigo_polite"]
+                            variants = [
+                                item["sonkeigo_polite"],
+                                item["sonkeigo"],
+                                item["sonkeigo_nasaru"],
+                                f"{prefix}{noun_part}なさいます",
+                                item["passive_sonkeigo"],
+                                f"{noun_part}されます",
+                            ]
+                            target_label = "Tôn kính ngữ (尊敬語)"
+                            formula = f"Công thức: {prefix} + Danh từ gốc Hán + になる / になります (hoặc Bị động: 〜される)"
+                            rationale = f"Hành động của Đối tác/Khách hàng/Sếp: biến {clean_word} thành {prefix}{noun_part}になります"
+                        else:
+                            canonical = item["kenjougo_polite"]
+                            variants = [
+                                item["kenjougo_polite"],
+                                item["kenjougo"],
+                                f"{prefix}{noun_part}いたします",
+                                f"{prefix}{noun_part}します",
+                            ]
+                            target_label = "Khiêm nhường ngữ (謙譲語)"
+                            formula = f"Công thức: {prefix} + Danh từ gốc Hán + する / いたします"
+                            rationale = f"Hành động của Bản thân/Công ty mình: biến {clean_word} thành {prefix}{noun_part}いたします"
+
+                        return {
+                            "title": f"Keigo Blitz ({target_label}): {clean_word} ➔ {canonical}",
+                            "objective": f"Chuyển '{clean_word}' sang {target_label} trong {timer_ms/1000:.1f}s",
+                            "scenario": f"Quy tắc Kính ngữ động từ する • Top #{rank} (Tier {item_tier}) BCCWJ",
+                            "instructions": f"Từ: '{clean_word}' ({item.get('meaning_vi', '')}) — Nói ngay dạng {target_label}!",
+                            "prompt": clean_word,
+                            "source": clean_word,
+                            "canonical": canonical,
+                            "acceptable_variants": variants,
+                            "translation": f"{clean_word}: {item.get('meaning_vi', '')} ➔ {canonical}",
+                            "vietnamese": f"{clean_word}: {item.get('meaning_vi', '')}",
+                            "hints": {
+                                "tier1": f"Động từ: {clean_word} ({item.get('meaning_vi', '')}) ➔ Cần biến sang {target_label}",
+                                "tier2": f"Gợi ý: {formula}",
+                            },
+                            "anatomy": {
+                                "root_verb": clean_word,
+                                "formula": formula,
+                                "rationale": rationale,
+                                "pitfall_warning": "Tránh nhầm giữa Tôn kính ngữ (đối phương) và Khiêm nhường ngữ (bản thân)",
+                            },
+                            "persona": {"name": "Keigo Sensei", "role": "COACH", "avatar": "👔"},
+                            "timer_limit_ms": timer_ms,
+                            "pressure_level": pressure_level,
+                            "difficulty": difficulty,
+                            "constraints": [f"Chuyển đúng dạng {target_label}"],
+                            "target_patterns": variants[:2],
+                            "estimated_minutes": 1,
+                            "ai_generated": True,
+                            "generation_source": "bccwj_frequency_pool",
+                            "frequency_rank": rank,
+                            "frequency_tier": item_tier,
+                            "vocab_category": item_cat,
+                        }
+
+                    elif item_type == "regular_verb":
+                        clean_word = item["source_word"]
+                        ce = JapaneseConjugationEngine()
+                        vc = ce.identify_verb_class(clean_word)
+                        if vc.value == "ichidan":
+                            stem = clean_word[:-1] if clean_word.endswith("る") else clean_word
+                        else:
+                            ending = clean_word[-1]
+                            mapping = {"う": "い", "く": "き", "ぐ": "ぎ", "す": "し", "つ": "ち", "ぬ": "に", "ぶ": "び", "む": "み", "る": "り"}
+                            stem = clean_word[:-1] + mapping.get(ending, "")
+                        passive_obj = ce.conjugate(clean_word, ConjugationForm.PASSIVE)
+                        passive_form = passive_obj.canonical
+
+                        if target_formula in ("sonkeigo_o_ni_naru", "sonkeigo_passive", "sonkeigo_kudasai"):
+                            is_sonkeigo = True
+                        elif target_formula in ("kenjougo_o_suru", "kenjougo_moushiageru", "kenjougo_permissive"):
+                            is_sonkeigo = False
+                        else:
+                            is_sonkeigo = random.choice([True, False])
+
+                        if target_formula == "sonkeigo_passive":
+                            canonical = f"{passive_form[:-1]}ます" if passive_form.endswith("る") else f"{passive_form}ます"
+                            variants = [canonical, passive_form]
+                            target_label = "Thể Bị Động Kính Ngữ (〜れる / 〜られる)"
+                            formula = "Công thức: V(bị động) 〜れる / 〜られる / 〜されます"
+                            rationale = f"Kính ngữ bị động tôn trọng đối phương: {clean_word} ➔ {canonical}"
+                        elif target_formula == "sonkeigo_kudasai":
+                            canonical = f"お{stem}ください"
+                            variants = [f"お{stem}ください", f"お{stem}くださいませ", f"お{stem}いただけますでしょうか"]
+                            target_label = "Thể Nhờ Vả / Yêu Cầu (お〜ください)"
+                            formula = "Công thức: お + V_stem + ください / いただけますでしょうか"
+                            rationale = f"Khuyên nhủ đối phương lịch thiệp: {clean_word} ➔ {canonical}"
+                        elif target_formula == "kenjougo_moushiageru":
+                            canonical = f"お{stem}申し上げます"
+                            variants = [f"お{stem}申し上げます"]
+                            target_label = "Thưa Gửi & Báo Cáo (〜申し上げます)"
+                            formula = "Công thức: お + V_stem + 申し上げます"
+                            rationale = f"Thưa gửi báo cáo hạ mình trước khách: {clean_word} ➔ {canonical}"
+                        elif target_formula == "kenjougo_permissive":
+                            causative_obj = ce.conjugate(clean_word, ConjugationForm.CAUSATIVE)
+                            causative_form = causative_obj.canonical
+                            c_stem = causative_form[:-1] if causative_form.endswith("る") else causative_form
+                            canonical = f"{c_stem}ていただきます"
+                            variants = [canonical, f"{c_stem}ていただけますでしょうか"]
+                            target_label = "Xin Phép Được Làm (〜させていただきます)"
+                            formula = "Công thức: V(sai khiến) + いただきます / させていただきます"
+                            rationale = f"Xin phép được thực hiện hành động: {clean_word} ➔ {canonical}"
+                        elif is_sonkeigo:
+                            canonical = f"お{stem}になります"
+                            variants = [f"お{stem}になります", f"お{stem}になる", passive_form, f"{passive_form[:-1]}ます"]
+                            target_label = "Tôn kính ngữ (尊敬語)"
+                            formula = "Công thức: お + V_stem + になる / になります (hoặc Bị động: 〜れる / 〜られる)"
+                            rationale = f"Hành động của Đối tác/Khách hàng/Sếp: nâng cao thành お{stem}になります"
+                        else:
+                            canonical = f"お{stem}いたします"
+                            variants = [f"お{stem}いたします", f"お{stem}する", f"お{stem}します", f"お{stem}いたす"]
+                            target_label = "Khiêm nhường ngữ (謙譲語)"
+                            formula = "Công thức: お + V_stem + する / いたします"
+                            rationale = f"Hành động của Bản thân/Công ty mình: hạ mình thành お{stem}いたします"
+
+                        return {
+                            "title": f"Keigo Blitz ({target_label}): {clean_word} ➔ {canonical}",
+                            "objective": f"Chuyển '{clean_word}' sang {target_label} trong {timer_ms/1000:.1f}s",
+                            "scenario": f"Quy tắc お + V_stem • Top #{rank} (Tier {item_tier}) BCCWJ",
+                            "instructions": f"Từ: '{clean_word}' ({item.get('meaning_vi', '')}) — Nói ngay dạng {target_label}!",
+                            "prompt": clean_word,
+                            "source": clean_word,
+                            "canonical": canonical,
+                            "acceptable_variants": variants,
+                            "translation": f"{clean_word}: {item.get('meaning_vi', '')} ➔ {canonical}",
+                            "vietnamese": f"{clean_word}: {item.get('meaning_vi', '')}",
+                            "hints": {
+                                "tier1": f"Động từ: {clean_word} ({item.get('meaning_vi', '')}) ➔ Cần biến sang {target_label}",
+                                "tier2": f"Gợi ý: {formula}",
+                            },
+                            "anatomy": {
+                                "root_verb": clean_word,
+                                "formula": formula,
+                                "rationale": rationale,
+                                "pitfall_warning": "Tránh dùng nhầm thể Tôn kính ngữ cho hành động của chính mình",
+                            },
+                            "persona": {"name": "Keigo Sensei", "role": "COACH", "avatar": "🥋"},
+                            "timer_limit_ms": timer_ms,
+                            "pressure_level": pressure_level,
+                            "difficulty": difficulty,
+                            "constraints": [f"Chuyển đúng dạng {target_label}"],
+                            "target_patterns": variants[:2],
+                            "estimated_minutes": 1,
+                            "ai_generated": True,
+                            "generation_source": "bccwj_frequency_pool",
+                            "frequency_rank": rank,
+                            "frequency_tier": item_tier,
+                            "vocab_category": item_cat,
+                        }
+            except Exception as err:
+                logger.warning(f"Regular keigo generator fallback to pool: {err}")
+
+        # Fallback / Default: Standard irregular keigo vocab pool
         pool = get_all_keigo_vocab()
+        if target_formula == "sonkeigo_irregular":
+            filtered_pool = [e for e in pool if e.target_type == "sonkeigo"]
+            if filtered_pool:
+                pool = filtered_pool
+        elif target_formula == "kenjougo_irregular":
+            filtered_pool = [e for e in pool if e.target_type == "kenjougo"]
+            if filtered_pool:
+                pool = filtered_pool
         entry = random.choice(pool)
 
         target_name = "Tôn Kính Ngữ (尊敬語 ↑)" if entry.target_type == "sonkeigo" else "Khiêm Nhường Ngữ (謙譲語 ↓)" if entry.target_type == "kenjougo" else "Kính Ngữ / Lịch Sự"
-        prompt = f"{entry.source_word} ({entry.meaning_vi})"
+        clean_word = entry.source_word.split("(")[0].split("（")[0].strip()
+        prompt = clean_word
         canonical = entry.canonical
         variants = [canonical] + [v for v in entry.acceptable_variants if v != canonical]
 
         hints = {
-            "tier1": f"Động từ: {entry.source_word} ({entry.meaning_vi}) ➔ Cần biến sang {entry.target_label_vi}",
+            "tier1": f"Động từ: {clean_word} ({entry.meaning_vi}) ➔ Cần biến sang {entry.target_label_vi}",
             "tier2": f"Gợi ý bắt đầu: 「{entry.canonical[:2]}...」 | Dạng: {entry.formula or 'Bất quy tắc'}",
         }
         anatomy = {
-            "root_verb": f"{entry.source_word} ({entry.meaning_vi})",
+            "root_verb": f"{clean_word} ({entry.meaning_vi})",
             "formula": entry.formula or "Dạng bất quy tắc",
             "rationale": entry.explanation_vi or entry.subject_hint_vi or f"Dùng cho {target_name}",
             "pitfall_warning": "Tránh dùng nhầm hướng Tôn kính (nâng người) vs Khiêm nhường (hạ mình)",
@@ -289,13 +607,13 @@ class AIKeigoGenerator:
             "title": "Keigo Flash-Blitz: Phản Xạ Động Từ (瞬間反射 ⚡)",
             "objective": f"Phản xạ nhanh động từ {entry.target_label_vi} trong {timer_ms/1000:.1f}s",
             "scenario": f"Chuyển nhanh từ thường sang {entry.target_label_vi}",
-            "instructions": f"Hãy nói ngay dạng {entry.target_label_vi} của 「{entry.source_word}」",
+            "instructions": f"Hãy nói ngay dạng {entry.target_label_vi} của 「{clean_word}」",
             "prompt": prompt,
-            "source": entry.source_word,
+            "source": clean_word,
             "canonical": canonical,
             "acceptable_variants": variants,
-            "translation": f"{entry.source_word}: {entry.meaning_vi} ➔ {canonical}",
-            "vietnamese": f"{entry.source_word}: {entry.meaning_vi}",
+            "translation": f"{clean_word}: {entry.meaning_vi} ➔ {canonical}",
+            "vietnamese": f"{clean_word}: {entry.meaning_vi}",
             "hints": hints,
             "anatomy": anatomy,
             "persona": persona,
@@ -307,6 +625,9 @@ class AIKeigoGenerator:
             "estimated_minutes": 1,
             "ai_generated": True,
             "generation_source": "vocab_pool",
+            "frequency_rank": 35 if (tier == 1 or not tier) else 1250,
+            "frequency_tier": tier or 1,
+            "vocab_category": category or "action_verbs",
         }
 
     async def _generate_dynamic_sonkeigo(
@@ -314,17 +635,35 @@ class AIKeigoGenerator:
         difficulty: str,
         pressure_level: str,
         user_id: str,
+        formulas: list[str] | None = None,
     ) -> dict[str, Any]:
         """Generates dynamic Sonkeigo (尊敬語) exercise - honoring the listener/customer/boss."""
         timer_ms = timer_for_level(pressure_level)
         chosen_topic, topic_detail = random.choice(BUSINESS_TOPICS_POOL)
         nonce = uuid.uuid4().hex[:8]
 
+        formula_constraint = ""
+        if formulas:
+            son_cand = [f for f in formulas if f.startswith("sonkeigo_")] or formulas
+            picked_f = random.choice(son_cand)
+            if picked_f == "sonkeigo_kudasai":
+                formula_constraint = "ĐẶC BIỆT BẮT BUỘC: Yêu cầu người học dùng Thể Yêu Cầu / Nhờ Vả Lịch Sự (お/ご + V_stem + ください hoặc いただけますでしょうか), ví dụ: ご確認ください, お待ちください, ご覧ください.\n"
+            elif picked_f == "sonkeigo_passive":
+                formula_constraint = "ĐẶC BIỆT BẮT BUỘC: Yêu cầu người học dùng Thể Bị Động Kính Ngữ (〜れる / 〜られる / 〜される), ví dụ: 書かれる, 読まれる, 食べられる, 帰られる, される.\n"
+            elif picked_f == "sonkeigo_o_ni_naru":
+                formula_constraint = "ĐẶC BIỆT BẮT BUỘC: Yêu cầu người học dùng Khuôn mẫu quy tắc chuẩn お + V_stem + になる / になります (hoặc ご + N + になる / なさる), ví dụ: お待ちになる, お読みになります, ご連絡なさる.\n"
+            elif picked_f == "sonkeigo_irregular":
+                formula_constraint = "ĐẶC BIỆT BẮT BUỘC: Động từ tình huống BẮT BUỘC là Động từ Bất quy tắc tôn kính đặc biệt (như 召し上がる, いらっしゃる, おっしゃる, ご覧になる, なさる, ご存知...).\n"
+
         prompt_text = (
             f"Hãy tạo 1 bài tập Tôn Kính Ngữ (尊敬語 - Sonkeigo) độc đáo, tự nhiên trong bối cảnh công sở Nhật Bản. "
             f"Chủ đề: '{chosen_topic}' ({topic_detail}). [Nonce: {nonce}]\n"
             f"Quy tắc: Cho 1 câu nói về hành động của Đối tác/Khách hàng/Sếp (thể thông thường hoặc lịch sự nhẹ), "
             f"và yêu cầu người học chuyển sang câu Tôn Kính Ngữ (Sonkeigo) chuẩn mực cao nhất.\n"
+            f"{formula_constraint}"
+            f"TIÊU CHUẨN THỰC CHIẾN BẮT BUỘC: CHỈ dùng các từ vựng, động từ và tình huống thường xuyên gặp 100% ngoài đời thực "
+            f"(như xem tài liệu, chờ đợi, gọi điện, gửi báo cáo, trao đổi, tiếp khách, chỉ dẫn, ký hợp đồng). "
+            f"Tuyệt đối KHÔNG dùng từ hiếm, từ học thuật trừu tượng xa rời đời sống.\n"
             f"Trả về duy nhất JSON định dạng:\n"
             f"{{\n"
             f"  \"source_prompt\": \"<câu gốc tiếng Nhật, VD: 部長、この資料を見ましたか？>\",\n"
@@ -417,17 +756,35 @@ class AIKeigoGenerator:
         difficulty: str,
         pressure_level: str,
         user_id: str,
+        formulas: list[str] | None = None,
     ) -> dict[str, Any]:
         """Generates dynamic Kenjougo (謙譲語) exercise - humbling own actions to customer/external partner."""
         timer_ms = timer_for_level(pressure_level)
         chosen_topic, topic_detail = random.choice(BUSINESS_TOPICS_POOL)
         nonce = uuid.uuid4().hex[:8]
 
+        formula_constraint = ""
+        if formulas:
+            ken_cand = [f for f in formulas if f.startswith("kenjougo_")] or formulas
+            picked_f = random.choice(ken_cand)
+            if picked_f == "kenjougo_moushiageru":
+                formula_constraint = "ĐẶC BIỆT BẮT BUỘC: Yêu cầu người học dùng Thưa gửi & Báo cáo trang trọng 〜申し上げます (ví dụ: お願い申し上げます, ご報告申し上げます, お詫び申し上げます, お礼申し上げます).\n"
+            elif picked_f == "kenjougo_permissive":
+                formula_constraint = "ĐẶC BIỆT BẮT BUỘC: Yêu cầu người học dùng Mẫu xin phép bản thân được làm 〜させていただきます / させていただけますでしょうか (ví dụ: 说明させていただきます, 担当させていただきます, ご連絡させていただきます).\n"
+            elif picked_f == "kenjougo_o_suru":
+                formula_constraint = "ĐẶC BIỆT BẮT BUỘC: Yêu cầu người học dùng Khuôn mẫu quy tắc khiêm nhường chuẩn お + V_stem + いたします / します (hoặc ご + N + いたします), ví dụ: お届けいたします, お待ちいたします, ご案内いたします, ご連絡いたします.\n"
+            elif picked_f == "kenjougo_irregular":
+                formula_constraint = "ĐẶC BIỆT BẮT BUỘC: Động từ tình huống BẮT BUỘC là Động từ Bất quy tắc khiêm nhường đặc biệt (như いただく, 参る, 伺う, 申す, 拝見する, 致す, 存じる...).\n"
+
         prompt_text = (
             f"Hãy tạo 1 bài tập Khiêm Nhường Ngữ (謙譲語 - Kenjougo) thực tế trong công sở Nhật Bản. "
             f"Chủ đề: '{chosen_topic}' ({topic_detail}). [Nonce: {nonce}]\n"
             f"Quy tắc: Cho 1 câu nói về hành động của Bản thân / Công ty mình khi nói với Khách hàng/Đối tác, "
             f"và yêu cầu người học chuyển sang câu Khiêm Nhường Ngữ (Kenjougo I/II) chuẩn mực.\n"
+            f"{formula_constraint}"
+            f"TIÊU CHUẨN THỰC CHIẾN BẮT BUỘC: CHỈ dùng các từ vựng, động từ và tình huống thường xuyên gặp 100% ngoài đời thực "
+            f"(như đến thăm công ty khách, gọi điện, gửi tài liệu, chào hỏi, báo cáo tiến độ, giải thích, tiếp nhận yêu cầu). "
+            f"Tuyệt đối KHÔNG dùng từ hiếm, từ học thuật trừu tượng xa rời đời sống.\n"
             f"Trả về duy nhất JSON định dạng:\n"
             f"{{\n"
             f"  \"source_prompt\": \"<câu gốc tiếng Nhật, VD: 明日の14時にそちらの会社に行きます。>\",\n"

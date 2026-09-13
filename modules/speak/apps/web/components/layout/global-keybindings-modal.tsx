@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,7 @@ import {
   Music,
   Compass,
   Settings,
+  Activity,
 } from "lucide-react";
 import {
   SystemKeybindings,
@@ -28,12 +30,44 @@ import { cn } from "@/lib/utils";
 interface GlobalKeybindingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  defaultTab?: KeybindingCategory;
 }
 
-export function GlobalKeybindingsModal({ isOpen, onClose }: GlobalKeybindingsModalProps) {
-  const [activeTab, setActiveTab] = useState<KeybindingCategory>("situations");
+function getCategoryFromPath(pathname: string | null): KeybindingCategory {
+  if (!pathname) return "system";
+  if (pathname.startsWith("/reflex")) return "reflex";
+  if (pathname.startsWith("/keigo")) return "keigo";
+  if (pathname.startsWith("/pitch")) return "pitch";
+  if (pathname.startsWith("/situations")) return "situations";
+  if (pathname.startsWith("/ramp")) return "ramp";
+  if (pathname.startsWith("/speaking")) return "speaking";
+  if (pathname.startsWith("/shadowing")) return "shadowing";
+  return "system";
+}
+
+const MODAL_TABS: { id: KeybindingCategory; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: "reflex", label: "Phản Xạ", icon: Zap },
+  { id: "keigo", label: "Kính Ngữ", icon: Crown },
+  { id: "pitch", label: "Cao Độ", icon: Music },
+  { id: "situations", label: "Tình Huống", icon: Compass },
+  { id: "ramp", label: "Phục Hồi", icon: Activity },
+  { id: "speaking", label: "Hội Thoại", icon: MessageSquare },
+  { id: "shadowing", label: "Shadowing", icon: Tv },
+  { id: "system", label: "Hệ Thống", icon: Settings },
+];
+
+export function GlobalKeybindingsModal({ isOpen, onClose, defaultTab }: GlobalKeybindingsModalProps) {
+  const pathname = usePathname();
+  const [activeTab, setActiveTab] = useState<KeybindingCategory>(() => defaultTab || getCategoryFromPath(pathname));
   const { keybindings, updateKeybinding, resetToDefaults } = useSystemKeybindings();
   const [listeningAction, setListeningAction] = useState<keyof SystemKeybindings | null>(null);
+
+  // Sync activeTab whenever modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(defaultTab || getCategoryFromPath(pathname));
+    }
+  }, [isOpen, defaultTab, pathname]);
 
   // Capture pressed key when listening
   useEffect(() => {
@@ -71,129 +105,34 @@ export function GlobalKeybindingsModal({ isOpen, onClose }: GlobalKeybindingsMod
       }}
       title="Cài Đặt & Tra Cứu Phím Tắt"
       description="Tùy chỉnh các phím tắt nhanh được phân loại theo từng phòng học & tính năng"
-      className="max-w-xl"
+      className="max-w-2xl"
     >
       <div className="space-y-4 pt-2">
         {/* Module Category Tabs */}
-        <div className="flex items-center p-1 rounded-2xl bg-muted/70 border border-border overflow-x-auto scrollbar-thin">
-          <button
-            type="button"
-            onClick={() => {
-              soundFX.playFurin();
-              setActiveTab("situations");
-            }}
-            className={cn(
-              "flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap",
-              activeTab === "situations"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Compass className="h-3.5 w-3.5" />
-            <span>Tình Huống</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              soundFX.playFurin();
-              setActiveTab("pitch");
-            }}
-            className={cn(
-              "flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap",
-              activeTab === "pitch"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Music className="h-3.5 w-3.5" />
-            <span>Cao Độ</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              soundFX.playFurin();
-              setActiveTab("keigo");
-            }}
-            className={cn(
-              "flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap",
-              activeTab === "keigo"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Crown className="h-3.5 w-3.5" />
-            <span>Kính Ngữ</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              soundFX.playFurin();
-              setActiveTab("shadowing");
-            }}
-            className={cn(
-              "flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap",
-              activeTab === "shadowing"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Tv className="h-3.5 w-3.5" />
-            <span>Shadowing</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              soundFX.playFurin();
-              setActiveTab("speaking");
-            }}
-            className={cn(
-              "flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap",
-              activeTab === "speaking"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            <span>Hội Thoại</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              soundFX.playFurin();
-              setActiveTab("reflex");
-            }}
-            className={cn(
-              "flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap",
-              activeTab === "reflex"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Zap className="h-3.5 w-3.5" />
-            <span>Phản Xạ</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              soundFX.playFurin();
-              setActiveTab("system");
-            }}
-            className={cn(
-              "flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap",
-              activeTab === "system"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Settings className="h-3.5 w-3.5" />
-            <span>Hệ Thống</span>
-          </button>
+        <div className="flex items-center p-1 rounded-2xl bg-muted/70 border border-border overflow-x-auto scrollbar-thin gap-1">
+          {MODAL_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  soundFX.playFurin();
+                  setActiveTab(tab.id);
+                }}
+                className={cn(
+                  "flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Listening alert */}

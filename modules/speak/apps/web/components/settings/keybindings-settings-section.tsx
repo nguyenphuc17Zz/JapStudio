@@ -30,6 +30,8 @@ import {
   BookOpen,
   Edit3,
   Music,
+  Eye,
+  Activity,
 } from "lucide-react";
 import {
   useSystemKeybindings,
@@ -85,6 +87,14 @@ export const ALL_ACTION_DEFINITIONS: ActionDefinition[] = [
     categoryLabel: "Phòng Tình Huống",
     description: "Phát âm thanh câu trả lời mẫu chuẩn ngữ dụng tiếng Nhật",
     icon: <Play className="h-4 w-4 text-sky-500" />,
+  },
+  {
+    key: "situationsToggleReveal",
+    label: "Xem Trước / Ẩn Câu Thoại Mẫu Chuẩn",
+    category: "situations",
+    categoryLabel: "Phòng Tình Huống",
+    description: "Bật hoặc tắt làm mờ câu đối thoại mẫu chuẩn tiếng Nhật để xem trước hoặc tự trả lời",
+    icon: <Eye className="h-4 w-4 text-indigo-500" />,
   },
   {
     key: "situationsToggleHint",
@@ -159,6 +169,14 @@ export const ALL_ACTION_DEFINITIONS: ActionDefinition[] = [
     categoryLabel: "Phòng Cao Độ",
     description: "Phát lại âm thanh mẫu chuẩn để so sánh với đường F0 của bạn",
     icon: <Play className="h-4 w-4 text-sky-500" />,
+  },
+  {
+    key: "pitchToggleReveal",
+    label: "Xem Trước / Ẩn Đáp Án Mẫu & Cao Độ",
+    category: "pitch",
+    categoryLabel: "Phòng Cao Độ",
+    description: "Bật hoặc tắt làm mờ đáp án mẫu và sơ đồ phách mora cao độ Tokyo",
+    icon: <Eye className="h-4 w-4 text-indigo-500" />,
   },
   {
     key: "pitchMetronome",
@@ -251,6 +269,14 @@ export const ALL_ACTION_DEFINITIONS: ActionDefinition[] = [
     icon: <Play className="h-4 w-4 text-sky-500" />,
   },
   {
+    key: "keigoToggleReveal",
+    label: "Xem Trước / Ẩn Đáp Án Kính Ngữ Mẫu",
+    category: "keigo",
+    categoryLabel: "Phòng Kính Ngữ",
+    description: "Bật hoặc tắt làm mờ đáp án kính ngữ mẫu và giải phẫu ngữ pháp Keigo Anatomy",
+    icon: <Eye className="h-4 w-4 text-indigo-500" />,
+  },
+  {
     key: "keigoToggleHint",
     label: "Bật / Đổi Tầng Gợi Ý (Hint 1 ➔ 2)",
     category: "keigo",
@@ -325,6 +351,14 @@ export const ALL_ACTION_DEFINITIONS: ActionDefinition[] = [
     icon: <Play className="h-4 w-4 text-sky-500" />,
   },
   {
+    key: "reflexToggleReveal",
+    label: "Xem Trước / Ẩn Đáp Án Mẫu Phản Xạ",
+    category: "reflex",
+    categoryLabel: "Luyện Phản Xạ",
+    description: "Bật hoặc tắt làm mờ đáp án mẫu để xem trước hoặc thử tài tự phản xạ nhanh",
+    icon: <Eye className="h-4 w-4 text-indigo-500" />,
+  },
+  {
     key: "reflexRetry",
     label: "Thử Lại Câu Hiện Tại (Retry)",
     category: "reflex",
@@ -365,7 +399,49 @@ export const ALL_ACTION_DEFINITIONS: ActionDefinition[] = [
     icon: <Edit3 className="h-4 w-4 text-purple-500" />,
   },
 
-  // 5. Speaking / Conversation (/speaking)
+  // 5. Speaking Ramp / Rehab (/ramp)
+  {
+    key: "rampStartOrSubmit",
+    label: "Bắt Đầu Nói / Nộp Bài Phục Hồi",
+    category: "ramp",
+    categoryLabel: "Phục Hồi Nói",
+    description: "Kích hoạt microphone hoặc nộp bài tập phục hồi phản xạ",
+    icon: <Mic className="h-4 w-4 text-emerald-500" />,
+  },
+  {
+    key: "rampRetry",
+    label: "Thử Lại Câu Hiện Tại (Retry)",
+    category: "ramp",
+    categoryLabel: "Phục Hồi Nói",
+    description: "Luyện lại ngay câu phục hồi hiện tại",
+    icon: <RotateCcw className="h-4 w-4 text-amber-500" />,
+  },
+  {
+    key: "rampNext",
+    label: "Chuyển Sang Câu Kế Tiếp (Next)",
+    category: "ramp",
+    categoryLabel: "Phục Hồi Nói",
+    description: "Chuyển sang bài tập phục hồi tiếp theo",
+    icon: <ArrowRight className="h-4 w-4 text-sky-500" />,
+  },
+  {
+    key: "rampHint",
+    label: "Mở Gợi Ý Từ Khóa & Mẫu Câu (Hint)",
+    category: "ramp",
+    categoryLabel: "Phục Hồi Nói",
+    description: "Mở gợi ý từ vựng cứu nguy và mẫu câu trợ lực",
+    icon: <Sparkles className="h-4 w-4 text-amber-500" />,
+  },
+  {
+    key: "rampCheatsheet",
+    label: "Mở Sổ Tay Phục Hồi Khớp Lời (Cheatsheet)",
+    category: "ramp",
+    categoryLabel: "Phục Hồi Nói",
+    description: "Tra cứu bí kíp phục hồi phản xạ và mẫu câu rèn luyện nhanh",
+    icon: <BookOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />,
+  },
+
+  // 6. Speaking / Conversation (/speaking)
   {
     key: "speakingMic",
     label: "Bật / Dừng Nói Chuyện Với AI",
@@ -644,10 +720,11 @@ export function KeybindingsSettingsSection() {
           <div className="flex items-center p-1 rounded-xl bg-muted/60 border border-border/80 overflow-x-auto scrollbar-thin">
             {[
               { id: "all", label: "Tất cả" },
-              { id: "situations", label: "Tình huống (Situations)" },
-              { id: "pitch", label: "Cao độ (Pitch)" },
-              { id: "keigo", label: "Kính ngữ (Keigo)" },
               { id: "reflex", label: "Luyện phản xạ (Reflex)" },
+              { id: "keigo", label: "Kính ngữ (Keigo)" },
+              { id: "pitch", label: "Cao độ (Pitch)" },
+              { id: "situations", label: "Tình huống (Situations)" },
+              { id: "ramp", label: "Phục hồi nói (Ramp)" },
               { id: "speaking", label: "Hội thoại AI" },
               { id: "shadowing", label: "Shadowing" },
               { id: "system", label: "Hệ thống" },

@@ -123,6 +123,8 @@ interface VocabFilterModalProps {
   onClose: () => void;
   selectedCategories: string[];
   onChange: (categories: string[]) => void;
+  selectedTier?: number | null;
+  onChangeTier?: (tier: number | null) => void;
   customKeywords?: string;
   onChangeCustomKeywords?: (val: string) => void;
 }
@@ -132,6 +134,8 @@ export function VocabFilterModal({
   onClose,
   selectedCategories,
   onChange,
+  selectedTier = null,
+  onChangeTier,
   customKeywords = "",
   onChangeCustomKeywords,
 }: VocabFilterModalProps) {
@@ -248,6 +252,52 @@ export function VocabFilterModal({
                 Mặc định
               </button>
             )}
+          </div>
+        </div>
+
+        {/* BCCWJ Frequency Tier Selector Bar */}
+        <div className="px-6 py-2.5 bg-muted/20 border-b border-border/40 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold text-foreground flex items-center gap-1.5 shrink-0">
+              <Zap className="h-3.5 w-3.5 text-amber-500" />
+              Tần suất BCCWJ:
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { id: null, label: "Tất cả", badge: "Mọi cấp độ" },
+                { id: 1, label: "🔥 Tier 1", badge: "Top 1.000 thiết yếu" },
+                { id: 2, label: "⚡ Tier 2", badge: "Top 3.000 đời sống" },
+                { id: 3, label: "💎 Tier 3", badge: "Top 5.000 mở rộng" },
+              ].map((t) => {
+                const isSelected = selectedTier === t.id || (t.id === null && (selectedTier === null || selectedTier === undefined));
+                return (
+                  <button
+                    key={String(t.id)}
+                    type="button"
+                    onClick={() => {
+                      soundFX.playFurin();
+                      onChangeTier?.(t.id);
+                    }}
+                    className={cn(
+                      "px-2.5 py-1 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5",
+                      isSelected
+                        ? "bg-amber-500 text-white border-amber-500 shadow-xs"
+                        : "bg-background border-border/70 text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                    )}
+                  >
+                    <span>{t.label}</span>
+                    <span
+                      className={cn(
+                        "text-[10px] px-1.5 py-0.2 rounded-md font-medium",
+                        isSelected ? "bg-white/25 text-white" : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {t.badge}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -471,6 +521,11 @@ export function VocabFilterModal({
             ) : (
               <span>
                 Đã chọn: <strong className="font-bold text-foreground">{selectedCategories.length}</strong> nhóm từ vựng
+              </span>
+            )}
+            {selectedTier && (
+              <span className="inline-flex items-center gap-1 font-bold text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-md ml-1.5 border border-amber-500/20">
+                🔥 Tier {selectedTier}
               </span>
             )}
           </div>

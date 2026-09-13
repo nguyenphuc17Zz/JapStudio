@@ -24,6 +24,7 @@ import { formatKeyDisplay } from "@/hooks/use-system-keybindings";
 import { soundFX } from "@/lib/sound-fx";
 import { cn } from "@/lib/utils";
 import { useReflexFilters } from "../hooks/useReflexFilters";
+import { VocabularyLevelSelect } from "@/components/japanese/VocabularyLevelSelect";
 
 export const DEDICATED_MODES = [
   {
@@ -160,7 +161,7 @@ export function ReflexLobby({
   const { insights, dismiss } = useCoachProactive();
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-300 max-w-5xl mx-auto pb-8">
+    <div className="space-y-4 animate-in fade-in duration-300 max-w-[1600px] w-full mx-auto pb-8 h-full overflow-y-auto pr-1">
       {/* Proactive Coach Insight Banner */}
       {insights.slice(0, 1).map((ins, idx) => (
         <CoachInsightCard
@@ -206,9 +207,9 @@ export function ReflexLobby({
       </div>
 
       {/* 2-Column Cockpit Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-        {/* Left 2 Cols: Mode Selection */}
-        <div className="lg:col-span-2 space-y-2.5">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* Left Column: Mode Selection */}
+        <div className="lg:col-span-7 xl:col-span-8 space-y-2.5">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-xs font-bold text-foreground flex items-center gap-1.5">
               <span>1. Chọn Dạng Bài Phản Xạ:</span>
@@ -258,8 +259,8 @@ export function ReflexLobby({
             </div>
           </button>
 
-          {/* 6 DEDICATED FOCUS MODES (2-Col Grid) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {/* 6 DEDICATED FOCUS MODES (2/3-Col Grid) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
             {DEDICATED_MODES.map((m) => {
               const isSelected = subMode === m.id;
               const Icon = m.icon;
@@ -404,8 +405,18 @@ export function ReflexLobby({
           </div>
         </div>
 
-        {/* Right 1 Col: Session Configuration Cockpit */}
-        <div className="space-y-3 p-3.5 rounded-xl border border-border bg-card">
+        {/* Right Column: Session Configuration Cockpit */}
+        <div className="lg:col-span-5 xl:col-span-4 space-y-3 p-3.5 rounded-xl border border-border bg-card">
+          {/* Dynamic Vocabulary Level Select for Vocabulary Blitz, Conjugation & Mixed */}
+          {(subMode === "reflex_vocabulary" || subMode === "reflex_conjugation" || subMode === "mixed") && (
+            <VocabularyLevelSelect
+              tier={filters.selectedVocabTier ?? 0}
+              setTier={(t) => filters.setSelectedVocabTier(t === 0 ? null : t)}
+              showCategory={false}
+              variant="default"
+            />
+          )}
+
           {/* Pressure Selector */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs font-bold">

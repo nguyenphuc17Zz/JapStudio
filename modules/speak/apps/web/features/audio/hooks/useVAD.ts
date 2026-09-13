@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export type VADSensitivity = "low" | "medium" | "high" | "ultra";
+export type VADSensitivity = "low" | "medium" | "high" | "ultra" | "whisper";
 
 export interface UseVADOptions {
   volumeLevel: number;
@@ -38,6 +38,9 @@ export function useVAD({
   } else if (sensitivity === "ultra") {
     speechThreshold = 0.008;
     silenceDurationMs = 1200;
+  } else if (sensitivity === "whisper") {
+    speechThreshold = 0.005;
+    silenceDurationMs = 1300;
   }
 
   useEffect(() => {

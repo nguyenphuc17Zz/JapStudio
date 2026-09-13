@@ -46,10 +46,22 @@ async def generate_pitch_exercise_get(
     difficulty: str | None = Query(default=None),
     timer_limit_ms: int | None = Query(default=None, ge=500, le=10000),
     learning_item_key: str | None = Query(default=None),
+    tier: int | None = Query(default=None, description="BCCWJ Tier: 1 (1k), 2 (3k), 3 (5k)"),
+    category: str | None = Query(default=None, description="BCCWJ Category: daily_life, workplace_biz, etc."),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    return await generate_pitch_exercise(sub_mode, pressure_level, difficulty, timer_limit_ms, learning_item_key, user_id, db)
+    return await generate_pitch_exercise(
+        sub_mode=sub_mode,
+        pressure_level=pressure_level,
+        difficulty=difficulty,
+        timer_limit_ms=timer_limit_ms,
+        learning_item_key=learning_item_key,
+        tier=tier,
+        category=category,
+        user_id=user_id,
+        db=db,
+    )
 
 
 @router.post("/exercises/generate", response_model=ExerciseDTO)
@@ -59,6 +71,8 @@ async def generate_pitch_exercise(
     difficulty: str | None = Query(default=None),
     timer_limit_ms: int | None = Query(default=None, ge=0, le=10000),
     learning_item_key: str | None = Query(default=None),
+    tier: int | None = Query(default=None, description="BCCWJ Tier: 1 (1k), 2 (3k), 3 (5k)"),
+    category: str | None = Query(default=None, description="BCCWJ Category: daily_life, workplace_biz, etc."),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -77,6 +91,8 @@ async def generate_pitch_exercise(
         difficulty=eff_diff,
         pressure_level=pressure_level,
         user_id=user_id,
+        tier=tier,
+        category=category,
     )
 
     from app.domains.learning.exercise_variety_policy import ExerciseVarietyPolicy
@@ -164,6 +180,9 @@ async def generate_pitch_exercise(
                 "pitfall_vi": data.get("pitfall_vi"),
                 "mora_count": data.get("mora_count"),
                 "resource_source": data.get("resource_source"),
+                "frequency_rank": data.get("frequency_rank"),
+                "frequency_tier": data.get("frequency_tier"),
+                "vocab_category": data.get("vocab_category"),
             },
             "priority_score": 0.7,
             "item_type": "pitch_accent",

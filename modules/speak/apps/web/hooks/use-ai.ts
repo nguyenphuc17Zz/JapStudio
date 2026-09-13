@@ -15,6 +15,22 @@ import { aiApi } from "@/services/ai-api";
 export function useAI() {
   const [healthList, setHealthList] = useState<ProviderHealth[]>([]);
   const [routingPolicy, setRoutingPolicy] = useState<AIRoutingPolicyRead | null>(null);
+
+  useEffect(() => {
+    try {
+      const p = localStorage.getItem("speaking_global_ai_provider");
+      const m = localStorage.getItem("speaking_global_ai_model");
+      if (p && m) {
+        setRoutingPolicy({
+          routing_mode: "manual",
+          preferred_provider: p,
+          default_model: m,
+          fallback_enabled: true,
+          fallback_priority: ["groq", "gemini", "openrouter"],
+        });
+      }
+    } catch {}
+  }, []);
   const [models, setModels] = useState<ModelMetadata[]>([]);
   const [loading, setLoading] = useState(false);
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
@@ -33,6 +49,14 @@ export function useAI() {
     try {
       const data = await aiApi.getRoutingPolicy();
       setRoutingPolicy(data);
+      if (typeof window !== "undefined" && data) {
+        if (data.preferred_provider) {
+          localStorage.setItem("speaking_global_ai_provider", data.preferred_provider);
+        }
+        if (data.default_model) {
+          localStorage.setItem("speaking_global_ai_model", data.default_model);
+        }
+      }
     } catch (err: any) {
       console.error("Failed to fetch routing policy:", err);
     }
@@ -85,6 +109,17 @@ export function useAI() {
     try {
       const updated = await aiApi.updateRoutingPolicy(payload);
       setRoutingPolicy(updated);
+      if (typeof window !== "undefined" && updated) {
+        if (updated.preferred_provider) {
+          localStorage.setItem("speaking_global_ai_provider", updated.preferred_provider);
+        }
+        if (updated.default_model) {
+          localStorage.setItem("speaking_global_ai_model", updated.default_model);
+        }
+        window.dispatchEvent(
+          new CustomEvent("speaking_ai_routing_changed", { detail: updated })
+        );
+      }
       return true;
     } catch (err: any) {
       setError(err.message || "Failed to update routing policy");
@@ -93,6 +128,20 @@ export function useAI() {
       setLoading(false);
     }
   };
+
+  // Listen for real-time routing policy updates from other components
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleRoutingChanged = (e: any) => {
+      if (e.detail) {
+        setRoutingPolicy((prev) => (prev ? { ...prev, ...e.detail } : e.detail));
+      }
+    };
+    window.addEventListener("speaking_ai_routing_changed", handleRoutingChanged);
+    return () => {
+      window.removeEventListener("speaking_ai_routing_changed", handleRoutingChanged);
+    };
+  }, []);
 
   useEffect(() => {
     fetchHealth();

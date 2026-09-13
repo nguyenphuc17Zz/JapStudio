@@ -23,6 +23,7 @@ import { CoroSubtitleBar } from "@/features/shadowing/CoroSubtitleBar";
 import { TranscriptPanel } from "@/features/shadowing/TranscriptPanel";
 import { YoutubePlayer, YoutubePlayerRef } from "@/features/shadowing/YoutubePlayer";
 import { useShadowing } from "@/hooks/use-shadowing";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useFuriganaSettings } from "@/hooks/use-furigana-settings";
 import { useShadowingKeybindings } from "@/hooks/use-system-keybindings";
 import { soundFX } from "@/lib/sound-fx";
@@ -80,7 +81,10 @@ export default function ShadowingVideoStudioPage() {
     applyPedagogicalLevel,
   } = useShadowing(videoId);
 
-  const [subtitleMode, setSubtitleMode] = useState<SubtitleMode>("bilingual");
+  const [subtitleMode, setSubtitleMode] = usePersistedState<SubtitleMode>(
+    "speaking_shadowing_sub_mode",
+    "bilingual"
+  );
   const [showHelpModal, setShowHelpModal] = useState(false);
 
   const { keybindings, matchesAction } = useShadowingKeybindings();

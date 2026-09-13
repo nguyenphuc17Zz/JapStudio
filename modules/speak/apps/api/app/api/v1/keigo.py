@@ -48,10 +48,26 @@ async def generate_keigo_exercise_get(
     learning_item_key: str | None = Query(default=None),
     source_register: str | None = Query(default=None),
     target_register: str | None = Query(default=None),
+    tier: int | None = Query(default=None, description="BCCWJ Tier: 1, 2, or 3"),
+    category: str | None = Query(default=None, description="BCCWJ Category"),
+    formulas: str | None = Query(default=None, description="Comma-separated formula IDs"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    return await generate_keigo_exercise(sub_mode, pressure_level, difficulty, timer_limit_ms, learning_item_key, source_register, target_register, user_id, db)
+    return await generate_keigo_exercise(
+        sub_mode,
+        pressure_level,
+        difficulty,
+        timer_limit_ms,
+        learning_item_key,
+        source_register,
+        target_register,
+        tier,
+        category,
+        formulas,
+        user_id,
+        db,
+    )
 
 
 @router.post("/exercises/generate", response_model=ExerciseDTO)
@@ -63,6 +79,9 @@ async def generate_keigo_exercise(
     learning_item_key: str | None = Query(default=None),
     source_register: str | None = Query(default=None),
     target_register: str | None = Query(default=None),
+    tier: int | None = Query(default=None, description="BCCWJ Tier: 1, 2, or 3"),
+    category: str | None = Query(default=None, description="BCCWJ Category"),
+    formulas: str | None = Query(default=None, description="Comma-separated formula IDs"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -74,6 +93,12 @@ async def generate_keigo_exercise(
     eff_diff = difficulty or PRESSURE_PROFILES[pressure_level]["difficulty"]
     eff_timer = timer_limit_ms if timer_limit_ms is not None else timer_for_level(pressure_level)
 
+    parsed_formulas = (
+        [f.strip() for f in formulas.split(",") if f.strip() and f.strip() != "__none__"]
+        if formulas
+        else None
+    )
+
     # Generate 100% on-the-fly dynamic exercise via AIKeigoGenerator
     ai_gen = AIKeigoGenerator(db)
     data = await ai_gen.generate_dynamic_exercise(
@@ -81,6 +106,9 @@ async def generate_keigo_exercise(
         difficulty=eff_diff,
         pressure_level=pressure_level,
         user_id=user_id,
+        tier=tier,
+        category=category,
+        formulas=parsed_formulas,
     )
 
     # Persist as Exercise
@@ -164,6 +192,9 @@ async def generate_keigo_exercise(
                 "hints": data.get("hints"),
                 "anatomy": data.get("anatomy"),
                 "persona": data.get("persona"),
+                "frequency_rank": data.get("frequency_rank"),
+                "frequency_tier": data.get("frequency_tier") or tier,
+                "vocab_category": data.get("vocab_category") or category,
             },
             "priority_score": 0.7,
             "item_type": "politeness",

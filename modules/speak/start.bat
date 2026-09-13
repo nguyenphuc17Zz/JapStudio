@@ -119,7 +119,7 @@ if not exist "%WEB_DIR%\node_modules" (
 
 echo [4/4] Khoi dong dich vu...
 echo   - Backend FastAPI: http://localhost:8000 ^(docs: /docs^)
-start "JapSpeak - FastAPI Backend (8000)" /D "%API_DIR%" cmd /c "title JapSpeak API (8000) && color 0C && call .venv\Scripts\activate.bat && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+start "JapSpeak - FastAPI Backend (8000)" /D "%API_DIR%" cmd /c "title JapSpeak API (8000) && color 0C && call .venv\Scripts\activate.bat && .venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
 ping 127.0.0.1 -n 2 >nul
 
 echo   - Frontend Next.js: http://localhost:3000

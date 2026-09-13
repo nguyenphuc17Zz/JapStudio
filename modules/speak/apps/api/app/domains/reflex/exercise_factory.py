@@ -25,6 +25,9 @@ from app.domains.reflex.dictionary_pool import (
     DICT_QNA_QUESTIONS,
     DICT_TRANSFORMATIONS,
     DictVerb,
+    EASY_VERBS,
+    NORMAL_VERBS,
+    HARD_VERBS,
 )
 from app.domains.reflex.pressure_profiles import timer_for_level
 from app.domains.reflex.vocab_pool import (
@@ -231,12 +234,39 @@ class ReflexExerciseFactory:
         target_form: str | list[str | ConjugationForm] | ConjugationForm | None = None,
         difficulty: str = "normal",
         pressure_level: str = "normal",
+        tier: int | None = None,
         **kwargs,
     ) -> dict[str, Any]:
         timer_ms = timer_for_level(pressure_level)
 
-        # 1. 100% Full Unrestricted Verb Pool and All 49 Active Conjugation Forms
-        pool = ALL_DICT_VERBS
+        # 1. Resolve verb pool by BCCWJ Tier or Difficulty Level
+        tier_val = tier if tier is not None else kwargs.get("tier")
+        if tier_val is not None and tier_val != 0:
+            try:
+                t_int = int(tier_val)
+                if t_int == 1:
+                    pool = EASY_VERBS  # Tier 1: Top 1000 (N5/N4 core verbs)
+                elif t_int == 2:
+                    pool = NORMAL_VERBS  # Tier 2: Top 3000 (N3 intermediate verbs)
+                elif t_int == 3:
+                    pool = HARD_VERBS  # Tier 3: Top 5000 (N2/N1 advanced verbs)
+                else:
+                    pool = ALL_DICT_VERBS
+            except (ValueError, TypeError):
+                pool = ALL_DICT_VERBS
+        elif difficulty and difficulty != "all":
+            d_lower = difficulty.lower()
+            if d_lower in ("easy", "n5", "n4"):
+                pool = EASY_VERBS
+            elif d_lower in ("normal", "n3"):
+                pool = NORMAL_VERBS
+            elif d_lower in ("hard", "n2", "n1"):
+                pool = HARD_VERBS
+            else:
+                pool = ALL_DICT_VERBS
+        else:
+            pool = ALL_DICT_VERBS
+
         candidate_forms = [
             # Core (11)
             ConjugationForm.NAI,
@@ -320,9 +350,21 @@ class ReflexExerciseFactory:
         else:
             v = verb
             match = next((x for x in ALL_DICT_VERBS if x.verb == v), None)
-            meaning_vi = match.meaning_vi if match else "Động từ tiếng Nhật"
-            reading = match.reading if match else (self.lang_provider.get_reading(v) or v)
-            jlpt_level = match.level if match else difficulty
+            chosen_entry = match or DictVerb(v, self.lang_provider.get_reading(v) or v, "Động từ tiếng Nhật", difficulty)
+            meaning_vi = chosen_entry.meaning_vi
+            reading = chosen_entry.reading
+            jlpt_level = chosen_entry.level
+
+        # Determine effective tier and frequency badge
+        if chosen_entry in EASY_VERBS or chosen_entry.level in ("n5", "n4"):
+            v_tier = 1
+            v_badge = "🔥 Tier 1 • N5-N4"
+        elif chosen_entry in NORMAL_VERBS or chosen_entry.level == "n3":
+            v_tier = 2
+            v_badge = "⭐ Tier 2 • N3"
+        else:
+            v_tier = 3
+            v_badge = "💎 Tier 3 • N2-N1"
 
         # 3. Filter target forms based on user selection
         selected_candidates = _resolve_candidate_forms(target_form, candidate_forms)
@@ -356,6 +398,8 @@ class ReflexExerciseFactory:
             "pressure_level": pressure_level,
             "difficulty": difficulty,
             "jlpt_level": jlpt_level.upper(),
+            "tier": v_tier,
+            "frequency_badge": v_badge,
             "constraints": ["Nói chính xác dạng chia, không thêm filler dài."],
             "target_patterns": [target.canonical] + target.accepted,
             "estimated_minutes": 3,
@@ -596,6 +640,7 @@ class ReflexExerciseFactory:
         """
         timer_ms = timer_for_level(pressure_level)
         category_filter = vocab_category or category or kwargs.get("category")
+        tier_filter = kwargs.get("tier")
 
         if category_filter and category_filter != "all":
             tokens = [c.strip().lower() for c in category_filter.split(",") if c.strip()]
@@ -616,6 +661,13 @@ class ReflexExerciseFactory:
         else:
             candidates = get_all_vocab_words()
 
+        if tier_filter:
+            try:
+                t_int = int(tier_filter)
+                candidates = [w for w in candidates if getattr(w, "tier", 1) == t_int] or candidates
+            except Exception:
+                pass
+
         word = _get_next_vocab(candidates)
 
         word_type_label = {
@@ -624,6 +676,7 @@ class ReflexExerciseFactory:
             "adj_i": "Tính từ い",
             "adj_na": "Tính từ な",
             "adverb": "Phó từ / Tượng thanh",
+            "phrase": "Khẩu ngữ đời sống",
         }.get(word.word_type, "Từ vựng")
 
         category_label = {
@@ -634,10 +687,15 @@ class ReflexExerciseFactory:
             "daily_life": "Sinh hoạt & Dịch vụ",
         }.get(word.category, "Từ vựng thực chiến")
 
+        w_rank = getattr(word, "rank", 100)
+        w_tier = getattr(word, "tier", 1)
+        w_score = getattr(word, "frequency_score", 9.0)
+        w_badge = f"⭐ Top #{w_rank}" if w_rank <= 1000 else f"🔥 Tier {w_tier}"
+
         return {
             "title": f"瞬発語彙: {word.word}",
             "objective": f"Bật ngay từ tiếng Nhật chuẩn xác trong {timer_ms/1000:.1f}s",
-            "scenario": f"{word_type_label} • {category_label}",
+            "scenario": f"{word_type_label} • {category_label} ({w_badge})",
             "instructions": f"Nghĩa: '{word.meaning_vi}' — Nói ngay từ tiếng Nhật!",
             "prompt": word.meaning_vi,
             "prompt_reading": None,
@@ -652,6 +710,10 @@ class ReflexExerciseFactory:
             "category": word.category,
             "vocab_category": word.category,
             "jlpt_level": word.jlpt.upper() if word.jlpt else "ALL",
+            "rank": w_rank,
+            "tier": w_tier,
+            "frequency_score": w_score,
+            "frequency_badge": w_badge,
             "word_reading": word.reading,
             "word_meaning_vi": word.meaning_vi,
             "collocation_ja": word.collocation_ja,
@@ -714,6 +776,7 @@ class ReflexExerciseFactory:
             "kenjougo": "🙇 謙譲語",
             "rule_based": "⚙️ 規則敬語",
             "business": "💼 ビジネス語",
+            "prefix": "🌸 美化語・接頭辞",
         }.get(entry.target_type, "敬語")
 
         return {

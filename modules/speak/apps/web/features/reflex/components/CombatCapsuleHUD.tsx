@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { soundFX } from "@/lib/sound-fx";
 import { cn } from "@/lib/utils";
+import { VocabularyLevelSelect } from "@/components/japanese/VocabularyLevelSelect";
 
 export interface CombatCapsuleHUDProps {
   questionNumber: number;
@@ -35,6 +36,10 @@ export interface CombatCapsuleHUDProps {
   setStartTrigger?: React.Dispatch<React.SetStateAction<"manual" | "auto">>;
   autoNext?: boolean;
   setAutoNext?: React.Dispatch<React.SetStateAction<boolean>>;
+  tier?: number;
+  setTier?: (tier: number) => void;
+  category?: string;
+  setCategory?: (category: string) => void;
   filterTrigger?: {
     label: string;
     onClick: () => void;
@@ -62,6 +67,10 @@ export function CombatCapsuleHUD({
   setStartTrigger,
   autoNext = false,
   setAutoNext,
+  tier,
+  setTier,
+  category,
+  setCategory,
   filterTrigger,
   onSubmit,
   onExit,
@@ -96,7 +105,7 @@ export function CombatCapsuleHUD({
         className
       )}
     >
-      {/* 1. Left Section: Question Badge, Mode Title, Streak */}
+      {/* 1. Left Section: Question Badge, Mode Title, Streak, Vocab Select */}
       <div className="flex items-center gap-2 shrink-0">
         <Badge
           variant="kintsugi"
@@ -117,6 +126,19 @@ export function CombatCapsuleHUD({
           <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-500 text-[11px] font-bold shadow-2xs animate-pulse">
             <Flame className="h-3 w-3 fill-current" />
             <span>{currentStreak} Streak</span>
+          </div>
+        )}
+
+        {/* Dynamic Vocabulary Level & Category Dropdowns on HUD */}
+        {tier !== undefined && setTier && (
+          <div className="hidden sm:block">
+            <VocabularyLevelSelect
+              tier={tier}
+              setTier={setTier}
+              category={category}
+              setCategory={setCategory}
+              variant="hud"
+            />
           </div>
         )}
 
@@ -312,6 +334,19 @@ export function CombatCapsuleHUD({
                       TẮT
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Vocabulary Level & Category in Settings Popover */}
+              {tier !== undefined && setTier && (
+                <div className="pt-2 border-t border-border/60">
+                  <VocabularyLevelSelect
+                    tier={tier}
+                    setTier={setTier}
+                    category={category}
+                    setCategory={setCategory}
+                    variant="compact"
+                  />
                 </div>
               )}
 

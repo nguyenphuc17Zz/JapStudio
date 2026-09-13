@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 
 export type KeybindingCategory =
-  | "situations"
-  | "pitch"
-  | "keigo"
   | "reflex"
+  | "keigo"
+  | "pitch"
+  | "situations"
+  | "ramp"
   | "speaking"
   | "shadowing"
   | "system";
@@ -34,6 +35,7 @@ export interface SystemKeybindings {
   keigoListenPrompt: string;
   keigoReplayModel: string;
   keigoToggleHint: string;
+  keigoToggleReveal: string;
   keigoRetry: string;
   keigoSkip: string;
   keigoOpenCheatsheet: string;
@@ -44,6 +46,7 @@ export interface SystemKeybindings {
   pitchSubmitOrNext: string;
   pitchListenPrompt: string;
   pitchReplayModel: string;
+  pitchToggleReveal: string;
   pitchRetry: string;
   pitchSkip: string;
   pitchOpenCheatsheet: string;
@@ -57,6 +60,7 @@ export interface SystemKeybindings {
   situationsSubmitOrNext: string;
   situationsListenPrompt: string;
   situationsReplayModel: string;
+  situationsToggleReveal: string;
   situationsToggleHint: string;
   situationsRetry: string;
   situationsSkip: string;
@@ -68,12 +72,20 @@ export interface SystemKeybindings {
   reflexSubmitOrNext: string;
   reflexListenPrompt: string;
   reflexReplayModel: string;
+  reflexToggleReveal: string;
   reflexRetry: string;
   reflexSkip: string;
   reflexToggleHelp: string;
   reflexPauseOrResume: string;
   reflexStartVoice: string;
   reflexToggleInputMode: string;
+
+  // 7. Speaking Ramp / Rehab (/ramp)
+  rampStartOrSubmit: string;
+  rampRetry: string;
+  rampNext: string;
+  rampHint: string;
+  rampCheatsheet: string;
 
   // Generic Drills Aliases (for backward compatibility)
   drillSubmitOrNext: string;
@@ -84,7 +96,7 @@ export interface SystemKeybindings {
   drillPauseOrResume: string;
   drillStartQuestion: string;
 
-  // 7. System & Navigation
+  // 8. System & Navigation
   globalSearch: string;
   openCoach: string;
   openKeybindingsModal: string;
@@ -118,6 +130,7 @@ export const DEFAULT_KEYBINDINGS: SystemKeybindings = {
   keigoListenPrompt: "l",
   keigoReplayModel: "a",
   keigoToggleHint: "h",
+  keigoToggleReveal: "v",
   keigoRetry: "r",
   keigoSkip: "n",
   keigoOpenCheatsheet: "c",
@@ -128,6 +141,7 @@ export const DEFAULT_KEYBINDINGS: SystemKeybindings = {
   pitchSubmitOrNext: "enter",
   pitchListenPrompt: "l",
   pitchReplayModel: "a",
+  pitchToggleReveal: "v",
   pitchRetry: "r",
   pitchSkip: "n",
   pitchOpenCheatsheet: "c",
@@ -141,6 +155,7 @@ export const DEFAULT_KEYBINDINGS: SystemKeybindings = {
   situationsSubmitOrNext: "enter",
   situationsListenPrompt: "l",
   situationsReplayModel: "a",
+  situationsToggleReveal: "v",
   situationsToggleHint: "h",
   situationsRetry: "r",
   situationsSkip: "n",
@@ -152,12 +167,20 @@ export const DEFAULT_KEYBINDINGS: SystemKeybindings = {
   reflexSubmitOrNext: "enter",
   reflexListenPrompt: "l",
   reflexReplayModel: "a",
+  reflexToggleReveal: "v",
   reflexRetry: "r",
   reflexSkip: "n",
   reflexToggleHelp: "?",
   reflexPauseOrResume: "p",
   reflexStartVoice: "space",
   reflexToggleInputMode: "t",
+
+  // Speaking Ramp / Rehab
+  rampStartOrSubmit: "space",
+  rampRetry: "r",
+  rampNext: "n",
+  rampHint: "h",
+  rampCheatsheet: "c",
 
   // Generic Drills Aliases
   drillSubmitOrNext: "enter",
@@ -200,6 +223,7 @@ export const ACTION_CATEGORIES: Record<keyof SystemKeybindings, KeybindingCatego
   keigoListenPrompt: "keigo",
   keigoReplayModel: "keigo",
   keigoToggleHint: "keigo",
+  keigoToggleReveal: "keigo",
   keigoRetry: "keigo",
   keigoSkip: "keigo",
   keigoOpenCheatsheet: "keigo",
@@ -210,6 +234,7 @@ export const ACTION_CATEGORIES: Record<keyof SystemKeybindings, KeybindingCatego
   pitchSubmitOrNext: "pitch",
   pitchListenPrompt: "pitch",
   pitchReplayModel: "pitch",
+  pitchToggleReveal: "pitch",
   pitchRetry: "pitch",
   pitchSkip: "pitch",
   pitchOpenCheatsheet: "pitch",
@@ -223,6 +248,7 @@ export const ACTION_CATEGORIES: Record<keyof SystemKeybindings, KeybindingCatego
   situationsSubmitOrNext: "situations",
   situationsListenPrompt: "situations",
   situationsReplayModel: "situations",
+  situationsToggleReveal: "situations",
   situationsToggleHint: "situations",
   situationsRetry: "situations",
   situationsSkip: "situations",
@@ -234,12 +260,20 @@ export const ACTION_CATEGORIES: Record<keyof SystemKeybindings, KeybindingCatego
   reflexSubmitOrNext: "reflex",
   reflexListenPrompt: "reflex",
   reflexReplayModel: "reflex",
+  reflexToggleReveal: "reflex",
   reflexRetry: "reflex",
   reflexSkip: "reflex",
   reflexToggleHelp: "reflex",
   reflexPauseOrResume: "reflex",
   reflexStartVoice: "reflex",
   reflexToggleInputMode: "reflex",
+
+  // Speaking Ramp / Rehab
+  rampStartOrSubmit: "ramp",
+  rampRetry: "ramp",
+  rampNext: "ramp",
+  rampHint: "ramp",
+  rampCheatsheet: "ramp",
 
   // Generic Drills Aliases
   drillSubmitOrNext: "reflex",

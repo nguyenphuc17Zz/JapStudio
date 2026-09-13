@@ -56,10 +56,10 @@ class AudioPreprocessor:
                     if all_frames:
                         samples = np.concatenate(all_frames).astype(np.float32)
 
-                        # Gentle peak normalization
+                        # Dynamic peak normalization with whisper auto-boost (up to 10x gain)
                         max_abs = np.max(np.abs(samples)) if len(samples) > 0 else 0.0
-                        if 0.001 < max_abs < 0.90:
-                            gain = min(0.90 / max_abs, 4.0)
+                        if 0.0002 < max_abs < 0.90:
+                            gain = min(0.85 / max_abs, 10.0)
                             samples = samples * gain
 
                         duration_sec = len(samples) / float(cls.TARGET_SAMPLE_RATE)
@@ -95,10 +95,10 @@ class AudioPreprocessor:
                 samples = cls._resample(samples, sample_rate, cls.TARGET_SAMPLE_RATE)
                 sample_rate = cls.TARGET_SAMPLE_RATE
 
-            # Gentle amplitude normalization
+            # Dynamic amplitude normalization with whisper auto-boost
             max_abs = np.max(np.abs(samples)) if len(samples) > 0 else 0.0
-            if 0.001 < max_abs < 0.90:
-                gain = min(0.90 / max_abs, 4.0)
+            if 0.0002 < max_abs < 0.90:
+                gain = min(0.85 / max_abs, 10.0)
                 samples = samples * gain
 
             duration_sec = len(samples) / float(sample_rate) if sample_rate > 0 else 0.0

@@ -55,6 +55,11 @@ export function PitchPromptCard({
           <Badge variant="fuji" size="sm" className="font-bold text-[10px] py-0.5 px-2">
             {exercise.exercise_type.replace("pitch_", "").replace("_", " ").toUpperCase()}
           </Badge>
+          {exercise.frequencyRank && (
+            <Badge variant="outline" size="sm" className="font-mono font-bold text-[9px] py-0.5 px-2 border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10">
+              BCCWJ #{exercise.frequencyRank} • Tier {exercise.frequencyTier || 1}
+            </Badge>
+          )}
           <span className="text-[11px] text-muted-foreground font-semibold">
             {exercise.instructions || "Lắng nghe và phát âm đúng chuẩn cao độ Tokyo"}
           </span>

@@ -54,6 +54,8 @@ export function ZenUnifiedInputBar({
     }
   }, [speechTranscript, onChange]);
 
+  // Strict Voice-First Policy: Do NOT auto-focus input bar in speaking training
+  // to avoid capturing global audio/speech hotkeys (Space, A, L, V, ArrowRight, etc.)
   useEffect(() => {
     if (autoFocus && !disabled && !isEvaluating) {
       inputRef.current?.focus();
@@ -64,7 +66,6 @@ export function ZenUnifiedInputBar({
     userClearedRef.current = true;
     lastSyncedTranscriptRef.current = speechTranscript || "";
     onChange("");
-    inputRef.current?.focus();
   };
 
   const effectiveValue = userClearedRef.current && !value ? "" : (value || speechTranscript || "");
@@ -75,7 +76,13 @@ export function ZenUnifiedInputBar({
       e.preventDefault();
       if (hasContent && !isEvaluating && !disabled) {
         onSubmit();
+        // Immediately release focus back to window so hotkeys work for next action
+        inputRef.current?.blur();
       }
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      // Release focus immediately on Escape so global shortcuts resume
+      inputRef.current?.blur();
     }
   };
 

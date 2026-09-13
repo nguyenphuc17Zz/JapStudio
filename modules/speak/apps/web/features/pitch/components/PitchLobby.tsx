@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { soundFX } from "@/lib/sound-fx";
 import { cn } from "@/lib/utils";
+import { VocabularyLevelSelect } from "@/components/japanese/VocabularyLevelSelect";
 
 export interface PitchSubModeItem {
   id: string;
@@ -95,6 +96,22 @@ export const PITCH_DURATIONS = [
   { min: 20, label: "20 phút", desc: "Thử thách bền bỉ" },
 ];
 
+export const BCCWJ_TIERS = [
+  { tier: 0, label: "Tất cả", desc: "Toàn bộ 4.200 từ vựng", badge: "💎 4.2k" },
+  { tier: 1, label: "Top 1k", desc: "Top 1.000 từ thiết yếu", badge: "🔥 Tier 1" },
+  { tier: 2, label: "Top 3k", desc: "Top 3.000 từ đời thường", badge: "⭐ Tier 2" },
+  { tier: 3, label: "Top 5k", desc: "Top 5.000 từ nâng cao", badge: "💎 Tier 3" },
+];
+
+export const BCCWJ_CATEGORIES = [
+  { id: "all", label: "Tất cả" },
+  { id: "daily_life", label: "Đời sống" },
+  { id: "workplace_biz", label: "Công sở" },
+  { id: "food_retail", label: "Ẩm thực" },
+  { id: "emotions_adj", label: "Cảm xúc" },
+  { id: "action_verbs", label: "Hành động" },
+];
+
 interface PitchLobbyProps {
   subMode: string;
   setSubMode: (v: string) => void;
@@ -106,6 +123,10 @@ interface PitchLobbyProps {
   setDuration: (v: 0 | 3 | 5 | 10 | 20) => void;
   autoNext: boolean;
   setAutoNext: (v: boolean) => void;
+  tier?: number;
+  setTier?: (v: number) => void;
+  category?: string;
+  setCategory?: (v: string) => void;
   onStartSession: () => void;
   onOpenCheatsheet: () => void;
   onOpenHelp: () => void;
@@ -123,6 +144,10 @@ export function PitchLobby({
   setDuration,
   autoNext,
   setAutoNext,
+  tier = 0,
+  setTier = () => {},
+  category = "all",
+  setCategory = () => {},
   onStartSession,
   onOpenCheatsheet,
   onOpenHelp,
@@ -132,7 +157,7 @@ export function PitchLobby({
   const currentSubMode = PITCH_SUB_MODES.find((m) => m.id === subMode) || PITCH_SUB_MODES[0];
 
   return (
-    <div className="space-y-4 max-w-5xl mx-auto animate-in fade-in duration-300 pb-8">
+    <div className="space-y-4 max-w-[1600px] w-full mx-auto animate-in fade-in duration-300 pb-8 h-full overflow-y-auto pr-1">
       {/* Hero Zen Banner */}
       <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5 washi-texture shadow-2xs">
         <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/10 blur-2xl pointer-events-none" />
@@ -191,9 +216,9 @@ export function PitchLobby({
       )}
 
       {/* 2-Column Grid: Submode Selection & Session Config */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-        {/* Left 2 Cols: 6 Submodes */}
-        <div className="lg:col-span-2 space-y-2.5">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* Left Column: 6 Submodes */}
+        <div className="lg:col-span-8 xl:col-span-8 space-y-2.5">
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-bold text-foreground flex items-center gap-1.5">
               <span>1. Chọn Chuyên Đề Âm Điệu:</span>
@@ -201,7 +226,7 @@ export function PitchLobby({
             <span className="text-[10px] text-muted-foreground font-semibold">6 Chế Độ Luyện Tập</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
             {PITCH_SUB_MODES.map((m) => {
               const isSelected = subMode === m.id;
               const isMixed = m.id === "mixed";
@@ -249,8 +274,17 @@ export function PitchLobby({
           </div>
         </div>
 
-        {/* Right 1 Col: Session Configuration */}
-        <div className="space-y-3 p-3.5 rounded-2xl border border-border/80 bg-card shadow-2xs washi-texture">
+        {/* Right Column: Session Configuration */}
+        <div className="lg:col-span-4 xl:col-span-4 space-y-3 p-3.5 rounded-2xl border border-border/80 bg-card shadow-2xs washi-texture">
+          {/* BCCWJ Vocabulary Tier & Topic Dropdown Cockpit */}
+          <VocabularyLevelSelect
+            tier={tier}
+            setTier={setTier}
+            category={category}
+            setCategory={setCategory}
+            variant="default"
+          />
+
           {/* Time Pressure Selector */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs font-bold">

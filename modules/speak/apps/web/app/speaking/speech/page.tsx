@@ -313,9 +313,7 @@ export default function SpeechPage() {
       }
 
       if (e.key === "Escape") {
-        if (mono.phase !== "idle") {
-          monoRef.current.setPhase("idle" as any);
-        } else {
+        if (showHelp) {
           setShowHelp(false);
         }
       }

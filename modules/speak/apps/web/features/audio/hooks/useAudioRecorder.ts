@@ -28,18 +28,22 @@ export function useAudioRecorder(options: UseAudioRecorderOptions = {}) {
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
 
   // Digital Pre-Amp Software Mic Gain (Default 2.0x for quiet voices)
-  const [micGain, setMicGainState] = useState<number>(() => {
-    if (typeof window === "undefined") return 2.0;
-    try {
-      const saved = localStorage.getItem("speaking_training_mic_gain");
-      return saved ? parseFloat(saved) || 2.0 : 2.0;
-    } catch {
-      return 2.0;
-    }
-  });
-
+  const [micGain, setMicGainState] = useState<number>(2.0);
   const micGainRef = useRef<number>(micGain);
   micGainRef.current = micGain;
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("speaking_training_mic_gain");
+      if (saved) {
+        const val = parseFloat(saved);
+        if (val) {
+          setMicGainState(val);
+          micGainRef.current = val;
+        }
+      }
+    } catch {}
+  }, []);
 
   const optionsRef = useRef(options);
   optionsRef.current = options;

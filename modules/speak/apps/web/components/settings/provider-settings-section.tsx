@@ -279,6 +279,7 @@ export function ProviderSettingsSection() {
 
   const handleApplyModel = async (providerId: string, modelId: string) => {
     await updateRouting({
+      routing_mode: "manual",
       preferred_provider: providerId,
       default_model: modelId,
     });
@@ -515,7 +516,7 @@ export function ProviderSettingsSection() {
                 const newProv = e.target.value;
                 const provObj = providers.find((p) => p.id === newProv);
                 const firstModel = provObj?.models[0]?.id || "";
-                updateRouting({ preferred_provider: newProv, default_model: firstModel || routingPolicy?.default_model });
+                updateRouting({ routing_mode: "manual", preferred_provider: newProv, default_model: firstModel || routingPolicy?.default_model });
                 if (firstModel) setFeedbackMsg(`Đã chuyển sang ${newProv.toUpperCase()} — ${firstModel}`);
               }}
               className="w-full h-9 bg-background border border-border rounded-lg px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"

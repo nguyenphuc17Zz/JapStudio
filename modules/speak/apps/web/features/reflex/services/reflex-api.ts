@@ -18,6 +18,7 @@ export interface ReflexExercise {
   scaffold_hint: string | null;
   estimated_minutes: number;
   created_at: string;
+  extra_metadata?: Record<string, any>;
   // reflex extra
   subMode?: string;
   timerLimitMs: number;
@@ -58,7 +59,11 @@ export interface ReflexExercise {
   starters?: string[];
   ideaSparks?: string[];
   multiAnswers?: Record<string, { ja: string; vi: string }>;
-  extra_metadata?: any;
+  // Frequency metadata (BCCWJ)
+  rank?: number;
+  tier?: number;
+  frequencyScore?: number;
+  frequencyBadge?: string;
   // AI generation metadata
   ai_generated?: boolean;
   fallback_reason?: string;
@@ -114,6 +119,7 @@ export interface GenerateOpts {
   contextCategory?: string;
   vocabCategory?: string;
   keigoCategory?: string;
+  tier?: number;
   difficulty?: string;
 }
 
@@ -138,6 +144,7 @@ export async function generateExercise(opts: GenerateOpts): Promise<ReflexExerci
   if (opts.contextCategory) params.set("context_category", opts.contextCategory);
   if (opts.vocabCategory) params.set("vocab_category", opts.vocabCategory);
   if (opts.keigoCategory) params.set("keigo_category", opts.keigoCategory);
+  if (opts.tier !== undefined) params.set("tier", String(opts.tier));
   if (opts.difficulty) params.set("difficulty", opts.difficulty);
   params.set("nonce", `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
   const data = await apiClient.post(`/reflex/exercises/generate?${params.toString()}`);
@@ -182,6 +189,10 @@ export async function generateExercise(opts: GenerateOpts): Promise<ReflexExerci
     starters: rc.starters || ex.starters,
     ideaSparks: rc.idea_sparks || ex.idea_sparks,
     multiAnswers: rc.multi_answers || ex.multi_answers,
+    rank: rc.rank ?? ex.rank,
+    tier: rc.tier ?? ex.tier,
+    frequencyScore: rc.frequency_score ?? ex.frequency_score,
+    frequencyBadge: rc.frequency_badge || ex.frequency_badge,
   };
 }
 

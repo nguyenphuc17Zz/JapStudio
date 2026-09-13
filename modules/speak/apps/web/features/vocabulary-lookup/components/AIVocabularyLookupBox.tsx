@@ -19,16 +19,25 @@ import {
   Layers,
   Send,
   Edit3,
+  ChevronDown,
 } from "lucide-react";
 import { useVocabularyLookup } from "../context/VocabularyLookupContext";
 import { dispatchToast } from "@/lib/toast";
 
-const JLPT_LEVELS = ["N5", "N4", "N3", "N2", "N1"];
-const REGISTERS = [
-  { id: "auto", label: "Tự động" },
-  { id: "casual", label: "Thân mật" },
-  { id: "polite", label: "Lịch sự" },
-  { id: "business", label: "Kính ngữ" },
+const JLPT_OPTIONS = [
+  { value: "", label: "Tự động nhận diện cấp độ (All)" },
+  { value: "N5", label: "JLPT N5 (Nhập môn / Cơ bản)" },
+  { value: "N4", label: "JLPT N4 (Sơ cấp)" },
+  { value: "N3", label: "JLPT N3 (Trung cấp)" },
+  { value: "N2", label: "JLPT N2 (Trung cao cấp)" },
+  { value: "N1", label: "JLPT N1 (Thượng cấp)" },
+];
+
+const REGISTER_OPTIONS = [
+  { id: "auto", label: "Tự động theo ngữ cảnh" },
+  { id: "casual", label: "Thân mật (Tameguchi)" },
+  { id: "polite", label: "Lịch sự (Teineigo)" },
+  { id: "business", label: "Kính ngữ doanh nghiệp (Keigo)" },
 ];
 
 export function AIVocabularyLookupBox() {
@@ -304,52 +313,57 @@ export function AIVocabularyLookupBox() {
             )}
           </div>
 
-          {/* Filter Pills (JLPT & Register) */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/40 text-[11px]">
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground font-semibold mr-1">
-                JLPT:
-              </span>
-              {JLPT_LEVELS.map((lvl) => (
-                <button
-                  key={lvl}
-                  type="button"
-                  onClick={() => {
+          {/* Dual Dropdown Selects for JLPT Level & Register */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1.5 border-t border-border/40 text-[11px]">
+            {/* JLPT Level Select */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                <Layers className="h-3 w-3 text-primary" />
+                <span>Mức Độ JLPT:</span>
+              </label>
+              <div className="relative flex items-center">
+                <select
+                  value={targetLevel || ""}
+                  onChange={(e) => {
+                    const lvl = e.target.value;
                     setTargetLevel(lvl);
                     fetchLookup(undefined, undefined, lvl);
                   }}
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md border transition-all ${
-                    targetLevel === lvl
-                      ? "bg-primary text-primary-foreground border-primary shadow-xs"
-                      : "bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"
-                  }`}
+                  className="w-full h-8 pl-2.5 pr-7 rounded-xl bg-card border border-primary/30 text-xs font-bold text-foreground hover:border-primary focus:outline-none focus:ring-1.5 focus:ring-primary/40 shadow-2xs appearance-none cursor-pointer"
                 >
-                  {lvl}
-                </button>
-              ))}
+                  {JLPT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value} className="bg-popover text-foreground py-1">
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-primary pointer-events-none" />
+              </div>
             </div>
 
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground font-semibold mr-1">
-                Sắc thái:
-              </span>
-              {REGISTERS.map((reg) => (
-                <button
-                  key={reg.id}
-                  type="button"
-                  onClick={() => {
-                    setRegisterPreference(reg.id);
-                    fetchLookup(undefined, undefined, undefined, reg.id);
+            {/* Register Select */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                <span>Văn Phong / Sắc Thái:</span>
+              </label>
+              <div className="relative flex items-center">
+                <select
+                  value={registerPreference || "auto"}
+                  onChange={(e) => {
+                    const reg = e.target.value;
+                    setRegisterPreference(reg);
+                    fetchLookup(undefined, undefined, undefined, reg);
                   }}
-                  className={`text-[10px] font-medium px-2 py-0.5 rounded-md border transition-all ${
-                    registerPreference === reg.id
-                      ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-xs font-bold"
-                      : "bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"
-                  }`}
+                  className="w-full h-8 pl-2.5 pr-7 rounded-xl bg-card border border-border/80 text-xs font-semibold text-foreground hover:border-primary/50 focus:outline-none focus:ring-1.5 focus:ring-primary/40 shadow-2xs appearance-none cursor-pointer"
                 >
-                  {reg.label}
-                </button>
-              ))}
+                  {REGISTER_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id} className="bg-popover text-foreground py-1">
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              </div>
             </div>
           </div>
         </div>

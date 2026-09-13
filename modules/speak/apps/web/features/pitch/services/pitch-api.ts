@@ -48,6 +48,9 @@ export interface PitchExercise {
   downstepNotation?: string;
   pitfallVi?: string;
   quizOptions?: PitchQuizOption[];
+  frequencyRank?: number;
+  frequencyTier?: number;
+  vocabCategory?: string;
   extra_metadata?: any;
 }
 
@@ -83,16 +86,20 @@ export interface GeneratePitchParams {
   pressureLevel?: PitchPressureLevel;
   timerLimitMs?: number;
   difficulty?: string;
+  tier?: number;
+  category?: string;
 }
 
 export async function generateExercise(params: GeneratePitchParams = {}): Promise<PitchExercise> {
-  const { subMode = "pitch_minimal_pair", pressureLevel = "normal", timerLimitMs, difficulty } = params;
+  const { subMode = "pitch_minimal_pair", pressureLevel = "normal", timerLimitMs, difficulty, tier, category } = params;
   const q = new URLSearchParams({
     sub_mode: subMode,
     pressure_level: pressureLevel,
   });
   if (timerLimitMs !== undefined) q.set("timer_limit_ms", String(timerLimitMs));
   if (difficulty) q.set("difficulty", difficulty);
+  if (tier !== undefined && tier > 0) q.set("tier", String(tier));
+  if (category && category !== "all") q.set("category", category);
 
   const res = await apiClient.post<any>(`/pitch/exercises/generate?${q.toString()}`);
   const pc = res.extra_metadata?.pitch_config || {};
@@ -113,6 +120,9 @@ export async function generateExercise(params: GeneratePitchParams = {}): Promis
     downstepNotation: pc.downstep_notation || "",
     pitfallVi: pc.pitfall_vi || "",
     quizOptions: pc.quiz_options || [],
+    frequencyRank: pc.frequency_rank,
+    frequencyTier: pc.frequency_tier,
+    vocabCategory: pc.vocab_category,
   };
 }
 

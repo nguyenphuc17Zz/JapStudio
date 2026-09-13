@@ -142,6 +142,8 @@ class AIPitchGenerator:
         difficulty: str = "normal",
         pressure_level: str = "normal",
         user_id: str = "pitch_user",
+        tier: int | None = None,
+        category: str | None = None,
     ) -> dict[str, Any]:
         """Generates dynamic pitch exercise via Gemini AI with acoustic validation and smart cache pool."""
         try:
@@ -150,6 +152,7 @@ class AIPitchGenerator:
                     sub_mode=sub_mode,
                     difficulty=difficulty,
                     pressure_level=pressure_level,
+                    category=category,
                     generator_coro_factory=lambda: self._generate_dynamic_minimal_pair(difficulty, pressure_level, user_id),
                 )
             elif sub_mode == "mora_length":
@@ -157,6 +160,7 @@ class AIPitchGenerator:
                     sub_mode=sub_mode,
                     difficulty=difficulty,
                     pressure_level=pressure_level,
+                    category=category,
                     generator_coro_factory=lambda: self._generate_dynamic_mora_length(difficulty, pressure_level, user_id),
                 )
             elif sub_mode == "vowel_devoicing":
@@ -164,21 +168,24 @@ class AIPitchGenerator:
                     sub_mode=sub_mode,
                     difficulty=difficulty,
                     pressure_level=pressure_level,
-                    generator_coro_factory=lambda: self._generate_dynamic_devoicing(difficulty, pressure_level, user_id),
+                    category=category,
+                    generator_coro_factory=lambda: self._generate_dynamic_devoicing(difficulty, pressure_level, user_id, tier=tier, category=category),
                 )
             elif sub_mode == "pitch_contour":
                 return await self._dispatch_smart_cached_exercise(
                     sub_mode=sub_mode,
                     difficulty=difficulty,
                     pressure_level=pressure_level,
-                    generator_coro_factory=lambda: self._generate_dynamic_contour(difficulty, pressure_level, user_id),
+                    category=category,
+                    generator_coro_factory=lambda: self._generate_dynamic_contour(difficulty, pressure_level, user_id, tier=tier, category=category),
                 )
             elif sub_mode == "pitch_recognition":
                 return await self._dispatch_smart_cached_exercise(
                     sub_mode=sub_mode,
                     difficulty=difficulty,
                     pressure_level=pressure_level,
-                    generator_coro_factory=lambda: self._generate_dynamic_recognition(difficulty, pressure_level, user_id),
+                    category=category,
+                    generator_coro_factory=lambda: self._generate_dynamic_recognition(difficulty, pressure_level, user_id, tier=tier, category=category),
                 )
             else:
                 eff = random.choice([
@@ -188,17 +195,17 @@ class AIPitchGenerator:
                     "pitch_contour",
                     "pitch_recognition",
                 ])
-                return await self.generate_dynamic_exercise(eff, difficulty, pressure_level, user_id)
+                return await self.generate_dynamic_exercise(eff, difficulty, pressure_level, user_id, tier=tier, category=category)
         except Exception as e:
             logger.warning(f"[AIPitchGenerator] Global generation exception, falling back to factory: {e}")
             if sub_mode == "mora_length":
                 return self.factory.generate_mora_length(difficulty, pressure_level)
             elif sub_mode == "vowel_devoicing":
-                return self.factory.generate_devoicing(difficulty, pressure_level)
+                return self.factory.generate_devoicing(difficulty, pressure_level, tier=tier, category=category)
             elif sub_mode == "pitch_contour":
-                return self.factory.generate_contour(difficulty, pressure_level)
+                return self.factory.generate_contour(difficulty, pressure_level, tier=tier, category=category)
             elif sub_mode == "pitch_recognition":
-                return self.factory.generate_recognition(difficulty, pressure_level)
+                return self.factory.generate_recognition(difficulty, pressure_level, tier=tier, category=category)
             else:
                 return self.factory.generate_minimal_pair(difficulty, pressure_level)
 
@@ -388,6 +395,8 @@ class AIPitchGenerator:
         difficulty: str,
         pressure_level: str,
         user_id: str,
+        tier: int | None = None,
+        category: str | None = None,
     ) -> dict[str, Any]:
         """Generates dynamic Vowel Devoicing (母音無声化) challenge."""
         timer_ms = timer_for_level(pressure_level)
@@ -415,7 +424,7 @@ class AIPitchGenerator:
             expl = data.get("explanation", "Nguyên âm 'u' trong mora 'su' đứng cuối câu không rung dây thanh")
         except Exception as e:
             logger.warning(f"[AIPitchGenerator] Devoicing generation fallback: {e}")
-            return self.factory.generate_devoicing(difficulty, pressure_level)
+            return self.factory.generate_devoicing(difficulty, pressure_level, tier=tier, category=category)
 
         pat = ["L"] + ["H"] * (max(1, len(reading) - 1))
         mora_breakdown, downstep_notation = compute_pitch_mora_helpers(reading, pat, 0)
@@ -456,6 +465,8 @@ class AIPitchGenerator:
         difficulty: str,
         pressure_level: str,
         user_id: str,
+        tier: int | None = None,
+        category: str | None = None,
     ) -> dict[str, Any]:
         """Generates dynamic Pitch Contour (Đường cao độ Tokyo 4 loại) challenge."""
         timer_ms = timer_for_level(pressure_level)
@@ -484,7 +495,7 @@ class AIPitchGenerator:
             drop = data.get("drop_position", 0)
         except Exception as e:
             logger.warning(f"[AIPitchGenerator] Contour generation fallback: {e}")
-            return self.factory.generate_contour(difficulty, pressure_level)
+            return self.factory.generate_contour(difficulty, pressure_level, tier=tier, category=category)
 
         mora_breakdown, downstep_notation = compute_pitch_mora_helpers(reading, pat, drop)
 
@@ -525,6 +536,8 @@ class AIPitchGenerator:
         difficulty: str,
         pressure_level: str,
         user_id: str,
+        tier: int | None = None,
+        category: str | None = None,
     ) -> dict[str, Any]:
         """Generates dynamic Pitch Recognition (Luyện tai nghe phân biệt A/B) challenge."""
         timer_ms = timer_for_level(pressure_level)
@@ -555,7 +568,7 @@ class AIPitchGenerator:
             distractor_type = data.get("distractor_accent_type", "尾高型 [2]")
         except Exception as e:
             logger.warning(f"[AIPitchGenerator] Recognition generation fallback: {e}")
-            return self.factory.generate_recognition(difficulty, pressure_level)
+            return self.factory.generate_recognition(difficulty, pressure_level, tier=tier, category=category)
 
         pat = ["H", "L"] if "1" in spoken_type or "頭高" in spoken_type else ["L", "H"]
         downstep_idx = 1 if "1" in spoken_type or "頭高" in spoken_type else (0 if "0" in spoken_type or "平板" in spoken_type else 2)

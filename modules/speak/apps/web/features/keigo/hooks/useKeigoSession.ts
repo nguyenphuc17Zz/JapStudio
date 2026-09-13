@@ -27,6 +27,9 @@ export interface UseKeigoSessionOptions {
   autoNext?: boolean;
   autoNextDelayMs?: number;
   startTrigger?: "manual" | "auto";
+  tier?: number;
+  category?: string;
+  formulas?: string[];
 }
 
 export function useKeigoSession(opts: UseKeigoSessionOptions) {
@@ -37,6 +40,9 @@ export function useKeigoSession(opts: UseKeigoSessionOptions) {
     autoNext = false,
     autoNextDelayMs = 4500,
     startTrigger = "manual",
+    tier,
+    category,
+    formulas,
   } = opts;
 
   const [phase, setPhase] = useState<KeigoPhase>("idle");
@@ -109,7 +115,7 @@ export function useKeigoSession(opts: UseKeigoSessionOptions) {
   // 3. Auto Voice Activity Detection Hook
   const { isUserSpeaking } = useVoiceActivityDetection({
     volumeLevel: mic.volumeLevel,
-    sensitivity: "high",
+    sensitivity: mic.isWhisperMode ? "whisper" : "high",
     enabled: phase === "waiting_for_speech" || phase === "recording",
     onSpeechStart: () => {
       if (speechSubmitTimerRef.current) {
@@ -182,6 +188,10 @@ export function useKeigoSession(opts: UseKeigoSessionOptions) {
     return "keigo_context";
   }, [subMode]);
 
+  useEffect(() => {
+    setPrefetched([]);
+  }, [subMode, tier, category, formulas]);
+
   const fetchExercise = useCallback(async (): Promise<KeigoExercise> => {
     const eff = resolveMixed();
     if (prefetched.length > 0) {
@@ -189,13 +199,13 @@ export function useKeigoSession(opts: UseKeigoSessionOptions) {
       setPrefetched(rest);
       const nm = resolveMixed();
       keigoApi
-        .generateExercise({ subMode: nm, pressureLevel, timerLimitMs: overrideTimer })
+        .generateExercise({ subMode: nm, pressureLevel, timerLimitMs: overrideTimer, tier, category, formulas })
         .then((ex) => setPrefetched((p) => [...p, ex]))
         .catch(() => {});
       return next;
     }
-    return await keigoApi.generateExercise({ subMode: eff, pressureLevel, timerLimitMs: overrideTimer });
-  }, [subMode, pressureLevel, overrideTimer, prefetched, resolveMixed]);
+    return await keigoApi.generateExercise({ subMode: eff, pressureLevel, timerLimitMs: overrideTimer, tier, category, formulas });
+  }, [subMode, pressureLevel, overrideTimer, tier, category, formulas, prefetched, resolveMixed]);
 
   const onPromptAudioFinished = useCallback(() => {
     if (phaseRef.current !== "prompt_playing") return;
@@ -426,13 +436,13 @@ export function useKeigoSession(opts: UseKeigoSessionOptions) {
     const m1 = resolveMixed();
     const m2 = resolveMixed();
     Promise.all([
-      keigoApi.generateExercise({ subMode: m1, pressureLevel, timerLimitMs: overrideTimer }),
-      keigoApi.generateExercise({ subMode: m2, pressureLevel, timerLimitMs: overrideTimer }),
+      keigoApi.generateExercise({ subMode: m1, pressureLevel, timerLimitMs: overrideTimer, tier, category, formulas }),
+      keigoApi.generateExercise({ subMode: m2, pressureLevel, timerLimitMs: overrideTimer, tier, category, formulas }),
     ])
       .then(([a, b]) => setPrefetched([a, b]))
       .catch(() => {});
     startNext();
-  }, [subMode, pressureLevel, overrideTimer, startNext, resolveMixed]);
+  }, [subMode, pressureLevel, overrideTimer, tier, category, formulas, startNext, resolveMixed]);
 
   const cancelAutoNext = useCallback(() => {
     if (autoNextTimerRef.current) {
@@ -479,6 +489,8 @@ export function useKeigoSession(opts: UseKeigoSessionOptions) {
       volumeLevel: mic.volumeLevel,
       micGain: mic.micGain,
       setMicGain: mic.setMicGain,
+      isWhisperMode: mic.isWhisperMode,
+      toggleWhisperMode: mic.toggleWhisperMode,
       isRecording: mic.isRecording,
       releaseMicrophone: mic.releaseMicrophone,
     },

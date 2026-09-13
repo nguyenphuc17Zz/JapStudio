@@ -34,6 +34,7 @@ export interface UseReflexSessionOptions {
   contextCategory?: string;
   vocabCategory?: string;
   keigoCategory?: string;
+  tier?: number;
 }
 
 export function useReflexSession(opts: UseReflexSessionOptions) {
@@ -50,6 +51,7 @@ export function useReflexSession(opts: UseReflexSessionOptions) {
     contextCategory,
     vocabCategory,
     keigoCategory,
+    tier,
   } = opts;
 
   const [phase, setPhase] = useState<ReflexPhase>("idle");
@@ -101,6 +103,8 @@ export function useReflexSession(opts: UseReflexSessionOptions) {
   vocabCategoryRef.current = vocabCategory;
   const keigoCategoryRef = useRef(keigoCategory);
   keigoCategoryRef.current = keigoCategory;
+  const tierRef = useRef(tier);
+  tierRef.current = tier;
 
   const promptCompletedAtRef = useRef<number | null>(null);
   const reactionLatencyRef = useRef<number | null>(null);
@@ -137,7 +141,7 @@ export function useReflexSession(opts: UseReflexSessionOptions) {
   // 3. Auto Voice Activity Detection Hook (VU volume & auto-end-of-speech from Speaking architecture)
   const { isUserSpeaking } = useVoiceActivityDetection({
     volumeLevel: mic.volumeLevel,
-    sensitivity: "high",
+    sensitivity: mic.isWhisperMode ? "whisper" : "high",
     enabled: phase === "waiting_for_speech" || phase === "recording",
     onSpeechStart: () => {
       if (speechSubmitTimerRef.current) {
@@ -282,6 +286,7 @@ export function useReflexSession(opts: UseReflexSessionOptions) {
           contextCategory: contextCategoryRef.current,
           vocabCategory: vocabCategoryRef.current,
           keigoCategory: keigoCategoryRef.current,
+          tier: tierRef.current,
         })
         .then((ex) => setPrefetched((p) => [...p, ex] as any))
         .catch(() => {});
@@ -297,6 +302,7 @@ export function useReflexSession(opts: UseReflexSessionOptions) {
       contextCategory: contextCategoryRef.current,
       vocabCategory: vocabCategoryRef.current,
       keigoCategory: keigoCategoryRef.current,
+      tier: tierRef.current,
     });
   }, [pressureLevel, prefetched, resolveMixedSubMode]);
 
@@ -603,6 +609,8 @@ export function useReflexSession(opts: UseReflexSessionOptions) {
     retry,
     skip,
     setPhase,
+    isWhisperMode: mic.isWhisperMode,
+    toggleWhisperMode: mic.toggleWhisperMode,
   };
 }
 

@@ -174,7 +174,7 @@ export function RampLobby({
   };
 
   return (
-    <div className="space-y-3.5 max-w-5xl mx-auto animate-in fade-in duration-300">
+    <div className="space-y-3.5 max-w-[1600px] w-full mx-auto animate-in fade-in duration-300 pb-8">
       {/* 1. Compact Hero Header Washi */}
       <div className="relative overflow-hidden rounded-2xl border border-border bg-card/95 seigaiha-pattern shadow-xs p-4 md:p-5 washi-texture">
         <SakuraPetals count={2} />

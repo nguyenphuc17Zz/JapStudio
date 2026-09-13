@@ -50,6 +50,7 @@ const CoachPanel = dynamic(
 import { useCoachProactive } from "@/features/coach/hooks/useCoachProactive";
 import { useCoachCore } from "@/features/coach/hooks/useCoachCore";
 import { useSystemKeybindings } from "@/hooks/use-system-keybindings";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
 import { soundFX } from "@/lib/sound-fx";
 import { SakuraPetals } from "@/components/ui/sakura-petals";
@@ -99,9 +100,22 @@ export default function RampPage() {
   const [coachOpen, setCoachOpen] = useState(false);
 
   // Modals & configuration
-  const [selectedMinutes, setSelectedMinutes] = useState(15);
-  const [selectedGoal, setSelectedGoal] = useState("general");
-  const [subtitleMode, setSubtitleMode] = useState<"hidden" | "japanese" | "vietnamese">("vietnamese");
+  const [selectedMinutes, setSelectedMinutes] = usePersistedState<number>(
+    "speaking_ramp_duration",
+    15
+  );
+  const [selectedGoal, setSelectedGoal] = usePersistedState<string>(
+    "speaking_ramp_goal",
+    "general"
+  );
+  const [subtitleMode, setSubtitleMode] = usePersistedState<"hidden" | "japanese" | "vietnamese">(
+    "speaking_ramp_subtitle",
+    "vietnamese"
+  );
+  const [inputMode, setInputMode] = usePersistedState<"voice" | "office">(
+    "speaking_ramp_input_mode",
+    "voice"
+  );
   const [showCheatsheet, setShowCheatsheet] = useState(false);
   const [showKeybindingsModal, setShowKeybindingsModal] = useState(false);
 
@@ -109,7 +123,6 @@ export default function RampPage() {
   const [sessionElapsedSec, setSessionElapsedSec] = useState(0);
 
   // Input & Timers
-  const [inputMode, setInputMode] = useState<"voice" | "office">("voice");
   const [transcriptInput, setTranscriptInput] = useState("");
   const [showEmbeddedScaffold, setShowEmbeddedScaffold] = useState(false);
   const [prepLeft, setPrepLeft] = useState(0);
@@ -136,29 +149,6 @@ export default function RampPage() {
 
   // System keybindings
   const { matchesAction } = useSystemKeybindings();
-
-  // Load preferences from localStorage
-  useEffect(() => {
-    try {
-      const savedGoal = localStorage.getItem("speaking_ramp_goal");
-      if (savedGoal) setSelectedGoal(savedGoal);
-      const savedDur = localStorage.getItem("speaking_ramp_duration");
-      if (savedDur !== null && savedDur !== undefined) setSelectedMinutes(Number(savedDur));
-      const savedSub = localStorage.getItem("speaking_ramp_subtitle");
-      if (savedSub === "hidden" || savedSub === "japanese" || savedSub === "vietnamese") {
-        setSubtitleMode(savedSub);
-      }
-    } catch (e) {}
-  }, []);
-
-  // Save preferences on change
-  useEffect(() => {
-    try {
-      localStorage.setItem("speaking_ramp_goal", selectedGoal);
-      localStorage.setItem("speaking_ramp_duration", String(selectedMinutes));
-      localStorage.setItem("speaking_ramp_subtitle", subtitleMode);
-    } catch (e) {}
-  }, [selectedGoal, selectedMinutes, subtitleMode]);
 
   // Errors surface
   useEffect(() => { if (ramp.error) toast.error(ramp.error); }, [ramp.error]);
@@ -333,30 +323,30 @@ export default function RampPage() {
         return;
       }
 
-      if (e.key === "?" || (e.key === "k" && (e.ctrlKey || e.metaKey))) {
+      if (e.key === "?" || matchesAction(e, "openKeybindingsModal") || (e.key === "k" && (e.ctrlKey || e.metaKey))) {
         e.preventDefault();
         setShowKeybindingsModal((prev) => !prev);
-      } else if (e.key === "c" || e.key === "C") {
+      } else if (matchesAction(e, "rampCheatsheet") || e.key === "c" || e.key === "C") {
         e.preventDefault();
         setShowCheatsheet((prev) => !prev);
-      } else if (e.code === "Space") {
+      } else if (matchesAction(e, "rampStartOrSubmit") || e.code === "Space") {
         e.preventDefault();
         if (ramp.phase === "prompting") {
           handleBeginExercise();
         } else if (ramp.phase === "recording") {
           handleStopAndSubmit();
         }
-      } else if (e.key === "r" || e.key === "R") {
+      } else if (matchesAction(e, "rampRetry") || e.key === "r" || e.key === "R") {
         if (ramp.phase === "feedback") {
           e.preventDefault();
           handleRetry();
         }
-      } else if (e.key === "n" || e.key === "N") {
+      } else if (matchesAction(e, "rampNext") || e.key === "n" || e.key === "N") {
         if (ramp.phase === "feedback") {
           e.preventDefault();
           handleNext();
         }
-      } else if (e.key === "h" || e.key === "H") {
+      } else if (matchesAction(e, "rampHint") || e.key === "h" || e.key === "H") {
         if (ramp.phase === "prompting" || ramp.phase === "preparing") {
           e.preventDefault();
           ramp.revealHint();
@@ -366,7 +356,7 @@ export default function RampPage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [ramp.phase, handleBeginExercise, handleStopAndSubmit, handleRetry, handleNext, ramp]);
+  }, [ramp.phase, handleBeginExercise, handleStopAndSubmit, handleRetry, handleNext, ramp, matchesAction]);
 
   // Contextual data
   const task = ramp.currentExercise?.task_spec;
@@ -397,7 +387,7 @@ export default function RampPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-3 pb-6 animate-in fade-in duration-200">
+    <div className="max-w-[1600px] w-full mx-auto space-y-3 pb-6 animate-in fade-in duration-200">
       {/* ── Compact Session Header Bar ── */}
       <header className="flex items-center justify-between gap-3 p-3 rounded-2xl border border-border bg-card/95 washi-texture shadow-xs">
         <div className="flex items-center gap-2.5 min-w-0">

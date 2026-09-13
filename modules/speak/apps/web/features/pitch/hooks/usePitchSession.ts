@@ -24,6 +24,8 @@ export interface UsePitchSessionOptions {
   subMode?: string;
   pressureLevel?: PitchPressureLevel;
   timerLimitMs?: number;
+  tier?: number;
+  category?: string;
   autoNext?: boolean;
   autoNextDelayMs?: number;
   startTrigger?: "manual" | "auto";
@@ -34,6 +36,8 @@ export function usePitchSession(opts: UsePitchSessionOptions = {}) {
     subMode = "pitch_minimal_pair",
     pressureLevel = "normal",
     timerLimitMs: overrideTimer,
+    tier,
+    category,
     autoNext = false,
     autoNextDelayMs = 4500,
     startTrigger = "manual",
@@ -104,7 +108,7 @@ export function usePitchSession(opts: UsePitchSessionOptions = {}) {
   // 3. Auto Voice Activity Detection Hook
   const { isUserSpeaking } = useVoiceActivityDetection({
     volumeLevel: mic.volumeLevel,
-    sensitivity: "high",
+    sensitivity: mic.isWhisperMode ? "whisper" : "high",
     enabled: phase === "waiting_for_speech" || phase === "recording",
     onSpeechStart: () => {
       if (speechSubmitTimerRef.current) {
@@ -176,13 +180,13 @@ export function usePitchSession(opts: UsePitchSessionOptions = {}) {
       setPrefetched(rest);
       const nm = resolveMixed();
       pitchApi
-        .generateExercise({ subMode: nm, pressureLevel, timerLimitMs: overrideTimer })
+        .generateExercise({ subMode: nm, pressureLevel, timerLimitMs: overrideTimer, tier, category })
         .then((ex) => setPrefetched((p) => [...p, ex]))
         .catch(() => {});
       return next;
     }
-    return pitchApi.generateExercise({ subMode: eff, pressureLevel, timerLimitMs: overrideTimer });
-  }, [subMode, pressureLevel, overrideTimer, prefetched, resolveMixed]);
+    return pitchApi.generateExercise({ subMode: eff, pressureLevel, timerLimitMs: overrideTimer, tier, category });
+  }, [subMode, pressureLevel, overrideTimer, tier, category, prefetched, resolveMixed]);
 
   const startNext = useCallback(async () => {
     if (autoNextTimerRef.current) {
@@ -502,6 +506,8 @@ export function usePitchSession(opts: UsePitchSessionOptions = {}) {
       volumeLevel: mic.volumeLevel,
       micGain: mic.micGain,
       setMicGain: mic.setMicGain,
+      isWhisperMode: mic.isWhisperMode,
+      toggleWhisperMode: mic.toggleWhisperMode,
       releaseMicrophone: mic.releaseMicrophone,
     },
     speech: {

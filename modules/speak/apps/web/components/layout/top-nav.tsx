@@ -5,6 +5,7 @@ import { useHealth } from "@/hooks/use-health";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GlobalFuriganaControl } from "@/components/japanese/GlobalFuriganaControl";
 import { GlobalAudioQuickSettings } from "./global-audio-quick-settings";
+import { GlobalAIQuickSettings } from "./global-ai-quick-settings";
 import { GlobalKeybindingsModal } from "./global-keybindings-modal";
 import { ModeSwitcher } from "./ModeSwitcher";
 import { DynamicIsland } from "./dynamic-island";
@@ -86,6 +87,9 @@ export function TopNav({
               ⌘J
             </span>
           </button>
+
+          {/* AI Provider & Model Quick Switcher */}
+          <GlobalAIQuickSettings />
 
           {/* Keybindings Shortcut Button */}
           <button

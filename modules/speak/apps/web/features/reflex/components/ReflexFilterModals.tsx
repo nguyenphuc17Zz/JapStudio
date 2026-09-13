@@ -62,6 +62,8 @@ export const ReflexFilterModals = React.memo(function ReflexFilterModals({
         onClose={() => filters.setShowVocabFilterModal(false)}
         selectedCategories={filters.selectedVocabCategories}
         onChange={filters.setSelectedVocabCategories}
+        selectedTier={filters.selectedVocabTier}
+        onChangeTier={filters.setSelectedVocabTier}
         customKeywords={filters.customVocabKeywords}
         onChangeCustomKeywords={filters.setCustomVocabKeywords}
       />

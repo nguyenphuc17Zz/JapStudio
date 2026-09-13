@@ -29,6 +29,7 @@ from app.domains.ai.contracts import (
 from app.domains.ai.router import AIRouter
 from app.domains.reflex.pressure_profiles import timer_for_level
 from app.domains.situations.scenario_generator import ScenarioGenerator
+from app.domains.vocabulary.frequency_service import get_frequency_vocabulary_service
 
 SITUATIONAL_CATEGORIES = {
     "food": {
@@ -317,6 +318,17 @@ class AISituationsGenerator:
             is_ai_success = False
             fallback_err = str(e)[:150]
 
+        # Enrich hints and vocabulary with authentic BCCWJ high frequency vocabulary
+        bccwj_svc = get_frequency_vocabulary_service()
+        bccwj_keywords = bccwj_svc.get_situational_keywords(chosen_cat_key, count=3)
+        current_kw = hints.get("tier1_keywords") or []
+        merged_kw = list(current_kw)
+        existing_words = {k.get("word") for k in merged_kw if isinstance(k, dict)}
+        for bw in bccwj_keywords:
+            if bw["word"] not in existing_words and len(merged_kw) < 4:
+                merged_kw.append(bw)
+        hints["tier1_keywords"] = merged_kw
+
         return {
             "title": title,
             "objective": f"Nhập vai '{user_role}' hoàn thành {len(goals)} mục tiêu trong {timer_ms/1000:.1f}s",
@@ -326,6 +338,8 @@ class AISituationsGenerator:
             "canonical": canonical,
             "acceptable_variants": variants,
             "translation": opening_vi,
+            "key_vocab": bccwj_keywords,
+            "situational_key_vocab": bccwj_keywords,
             "situational_data": {
                 "category_key": chosen_cat_key,
                 "category_label": cat_label,

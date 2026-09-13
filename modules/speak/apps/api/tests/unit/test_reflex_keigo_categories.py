@@ -62,4 +62,52 @@ def test_generate_keigo_vocabulary_enriched():
 
     # 3. Custom Keyword Search Filter
     ex_custom = factory.generate_keigo_vocabulary(keigo_category="ăn")
-    assert ex_custom["canonical"] in ("召し上がる", "いただく")
+    assert ex_custom["canonical"] in ("召し上がる", "いただく", "お食事", "お料理")
+
+    # 4. Noun prefixes category
+    ex_prefix = factory.generate_keigo_vocabulary(keigo_category="prefix")
+    assert "お" in ex_prefix["canonical"] or "ご" in ex_prefix["canonical"]
+
+
+def test_keigo_engine_formulas_and_passive():
+    """Verify KeigoTransformationEngine generates both regular formulas and passive honorific forms."""
+    from app.domains.keigo.transformation_engine import KeigoTransformationEngine, get_honorific_prefix
+    from app.domains.keigo.social_context import Register
+
+    engine = KeigoTransformationEngine()
+
+    # 1. Sonkeigo: 書く should generate お書きになる / お書きになります AND 書かれる / 書かれます
+    res_kaku = engine._get_sonkeigo_variants("書く", "書く", None)
+    assert any("お書きになる" in v for v in res_kaku)
+    assert any("お書きになります" in v for v in res_kaku)
+    assert any("書かれる" in v for v in res_kaku)
+    assert any("書かれます" in v for v in res_kaku)
+
+    # 2. Sonkeigo: する should have なさる/なさいます and される/されます
+    res_suru = engine._get_sonkeigo_variants("する", "する", {"sonkeigo": "なさる"})
+    assert any("なさる" in v for v in res_suru)
+    assert any("なさいます" in v for v in res_suru)
+    assert any("される" in v for v in res_suru)
+
+    # 3. Kenjougo: 連絡する (Nhóm 3) should generate ご連絡いたします / ご連絡します
+    res_renraku = engine._get_kenjougo_variants("連絡する", "連絡する", None)
+    assert any("ご連絡いたします" in v for v in res_renraku)
+    assert any("ご連絡します" in v for v in res_renraku)
+
+    # 4. Kenjougo: 待つ (Nhóm 1) should generate お待ちいたします / お待ちします
+    res_matsu = engine._get_kenjougo_variants("待つ", "待つ", None)
+    assert any("お待ちいたします" in v for v in res_matsu)
+    assert any("お待ちします" in v for v in res_matsu)
+
+    # 5. Honorific prefix algorithm:
+    p_name = get_honorific_prefix("名前")
+    assert p_name["result"] == "お名前"
+    assert p_name["prefix"] == "お"
+
+    p_kazoku = get_honorific_prefix("家族")
+    assert p_kazoku["result"] == "ご家族"
+    assert p_kazoku["prefix"] == "ご"
+
+    p_denwa = get_honorific_prefix("電話")  # Kango exception taking お
+    assert p_denwa["result"] == "お電話"
+    assert p_denwa["prefix"] == "お"

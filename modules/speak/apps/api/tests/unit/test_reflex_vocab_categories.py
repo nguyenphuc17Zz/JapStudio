@@ -59,5 +59,5 @@ def test_generate_vocabulary_spoken_japanese():
 
     # 3. Custom Keyword Search Filter
     ex_custom = factory.generate_vocabulary(vocab_category="liên lạc")
-    assert ex_custom["word"] == "連絡する"
-    assert ex_custom["collocation_ja"] == "連絡を取る"
+    assert ex_custom["word"] in ("連絡する", "至急", "連絡")
+    assert ex_custom["collocation_ja"] in ("連絡を取る", "至急連絡する", "連絡を取り合う")

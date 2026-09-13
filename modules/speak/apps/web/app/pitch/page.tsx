@@ -34,62 +34,51 @@ import { soundFX } from "@/lib/sound-fx";
 import { cn } from "@/lib/utils";
 import { ZenLoadingState } from "@/components/ui/zen-loading-state";
 import { ZenUnifiedInputBar } from "@/components/ui/zen-unified-input-bar";
+import { usePersistedState } from "@/hooks/use-persisted-state";
 
 export default function PitchPage() {
-  const [subMode, setSubMode] = useState("mixed");
-  const [pressure, setPressure] = useState<"infinite" | "relaxed" | "normal" | "fast" | "reflex" | "extreme">("normal");
-  const [subtitleMode, setSubtitleMode] = useState<"hidden" | "japanese" | "japanese_reading" | "vietnamese">("japanese");
-  const [startTrigger, setStartTrigger] = useState<"manual" | "auto">("manual");
+  const [subMode, setSubMode] = usePersistedState<string>("speaking_pitch_submode", "mixed");
+  const [pressure, setPressure] = usePersistedState<
+    "infinite" | "relaxed" | "normal" | "fast" | "reflex" | "extreme"
+  >("speaking_pitch_pressure", "normal");
+  const [subtitleMode, setSubtitleMode] = usePersistedState<
+    "hidden" | "japanese" | "japanese_reading" | "vietnamese"
+  >("speaking_pitch_subtitle", "japanese");
+  const [startTrigger, setStartTrigger] = usePersistedState<"manual" | "auto">(
+    "speaking_pitch_trigger",
+    "manual"
+  );
+  const [duration, setDuration] = usePersistedState<0 | 3 | 5 | 10 | 20>(
+    "speaking_pitch_duration",
+    5
+  );
+  const [autoNext, setAutoNext] = usePersistedState<boolean>("speaking_pitch_autonext", false);
+  const [tier, setTier] = usePersistedState<number>("speaking_pitch_tier", 0);
+  const [category, setCategory] = usePersistedState<string>("speaking_pitch_category", "all");
+  const [showTextInput, setShowTextInput] = usePersistedState<boolean>(
+    "speaking_pitch_show_text_input",
+    false
+  );
+
   const [transcriptInput, setTranscriptInput] = useState("");
-  const [showTextInput, setShowTextInput] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [showCheatsheet, setShowCheatsheet] = useState(false);
   const [showKeybindingsModal, setShowKeybindingsModal] = useState(false);
-  const [duration, setDuration] = useState<0 | 3 | 5 | 10 | 20>(5);
   const [sessionRemainingSec, setSessionRemainingSec] = useState(duration * 60);
   const [elapsedSec, setElapsedSec] = useState(0);
-  const [autoNext, setAutoNext] = useState(false);
 
   const sessionEndTimestampRef = useRef<number | null>(null);
   const sessionPausedRemainingMsRef = useRef<number>(duration * 60 * 1000);
 
   const { matchesAction, keybindings } = useSystemKeybindings();
 
-  // Load preferences from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedSubMode = localStorage.getItem("speaking_pitch_submode");
-      if (savedSubMode) setSubMode(savedSubMode);
-      const savedPressure = localStorage.getItem("speaking_pitch_pressure");
-      if (savedPressure) setPressure(savedPressure as any);
-      const savedDuration = localStorage.getItem("speaking_pitch_duration");
-      if (savedDuration !== null) setDuration(Number(savedDuration) as any);
-      const savedSubtitle = localStorage.getItem("speaking_pitch_subtitle");
-      if (savedSubtitle) setSubtitleMode(savedSubtitle as any);
-      const savedTrigger = localStorage.getItem("speaking_pitch_trigger");
-      if (savedTrigger) setStartTrigger(savedTrigger as any);
-      const savedAutoNext = localStorage.getItem("speaking_pitch_autonext");
-      if (savedAutoNext !== null) setAutoNext(savedAutoNext === "true");
-    } catch (e) {}
-  }, []);
-
-  // Save preferences on change
-  useEffect(() => {
-    try {
-      localStorage.setItem("speaking_pitch_submode", subMode);
-      localStorage.setItem("speaking_pitch_pressure", pressure);
-      localStorage.setItem("speaking_pitch_duration", String(duration));
-      localStorage.setItem("speaking_pitch_subtitle", subtitleMode);
-      localStorage.setItem("speaking_pitch_trigger", startTrigger);
-      localStorage.setItem("speaking_pitch_autonext", String(autoNext));
-    } catch (e) {}
-  }, [subMode, pressure, duration, subtitleMode, startTrigger, autoNext]);
-
   const session = usePitchSession({
     subMode,
     pressureLevel: pressure as any,
     autoNext,
     startTrigger,
+    tier,
+    category,
   });
   const sessionRef = useRef(session);
   sessionRef.current = session;
@@ -271,15 +260,17 @@ export default function PitchPage() {
         e.preventDefault();
         soundFX.playSuikinkutsu();
         session.retry();
-      } else if (matchesAction(e, "pitchSkip") && session.phase === "result") {
+      } else if (
+        (e.key === "ArrowRight" || matchesAction(e, "pitchSkip") || matchesAction(e, "drillSkip")) &&
+        session.phase !== "idle" &&
+        session.phase !== "summary"
+      ) {
         e.preventDefault();
         soundFX.playSuikinkutsu();
         session.startNext();
       } else if (
-        (matchesAction(e, "pitchReplayModel") ||
-          matchesAction(e, "pitchListenPrompt") ||
-          matchesAction(e, "drillReplayAudio")) &&
-        session.phase === "result"
+        matchesAction(e, "pitchReplayModel") ||
+        (matchesAction(e, "drillReplayAudio") && session.phase === "result")
       ) {
         e.preventDefault();
         const canonical =
@@ -298,10 +289,10 @@ export default function PitchPage() {
           setShowCheatsheet(false);
         } else if (showKeybindingsModal) {
           setShowKeybindingsModal(false);
-        } else if (session.phase !== "idle") {
-          session.setPhase("idle" as any);
-          setShowSummary(false);
-          stopWebSpeech();
+        } else if (coachOpen) {
+          setCoachOpen(false);
+        } else if (session.phase === "waiting_for_speech" || session.phase === "recording") {
+          session.setIsPaused((v) => !v);
         }
       } else if (matchesAction(e, "pitchSubmitOrNext") || matchesAction(e, "drillSubmitOrNext")) {
         e.preventDefault();
@@ -369,6 +360,10 @@ export default function PitchPage() {
           setDuration={setDuration}
           autoNext={autoNext}
           setAutoNext={setAutoNext}
+          tier={tier}
+          setTier={setTier}
+          category={category}
+          setCategory={setCategory}
           onStartSession={() => {
             soundFX.playKatana();
             session.startSession();
@@ -389,7 +384,7 @@ export default function PitchPage() {
   const currentSubModeInfo = PITCH_SUB_MODES.find((m) => m.id === subMode) || PITCH_SUB_MODES[0];
 
   return (
-    <div className="w-full max-w-7xl mx-auto h-full flex flex-col justify-between px-2 sm:px-4 py-2 gap-2 overflow-hidden select-none animate-in fade-in duration-200">
+    <div className="w-full max-w-[1760px] mx-auto h-full flex flex-col justify-between px-2 sm:px-4 py-2 gap-2 overflow-hidden select-none animate-in fade-in duration-200">
       {/* 1. Combat Capsule HUD */}
       <CombatCapsuleHUD
         questionNumber={session.stats.total + (session.phase === "result" ? 0 : 1)}
@@ -405,6 +400,10 @@ export default function PitchPage() {
         setStartTrigger={setStartTrigger}
         autoNext={autoNext}
         setAutoNext={setAutoNext}
+        tier={tier}
+        setTier={setTier}
+        category={category}
+        setCategory={setCategory}
         filterTrigger={{
           label: "Sổ tay cao độ",
           onClick: () => setShowCheatsheet(true),
@@ -438,8 +437,8 @@ export default function PitchPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full min-h-0">
-            {/* LEFT COLUMN: Mission Deck */}
-            <div className="lg:col-span-5 h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
+            {/* COLUMN 1: Mission & Pitch Prompt Deck (4 cols ~ 33.3%) */}
+            <div className="lg:col-span-4 h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-3.5 sm:p-4 relative overflow-hidden shadow-lg">
               <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-72 h-36 bg-sky-500/10 blur-3xl rounded-full pointer-events-none -z-10" />
 
               <div className="flex-1 min-h-0 overflow-y-auto pr-1">
@@ -467,126 +466,181 @@ export default function PitchPage() {
               </div>
             </div>
 
-            {/* RIGHT COLUMN: Combat Action Deck or Result Card */}
-            <div className="lg:col-span-7 h-full min-h-0 relative">
-              {session.phase === "result" && session.result ? (
-                <div className="h-full overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-                  <PitchResultCard
-                    result={session.result}
-                    exercise={activeExercise}
-                    onNext={() => {
-                      soundFX.playSuikinkutsu();
-                      session.startNext();
-                    }}
-                    onRetry={() => {
-                      soundFX.playSuikinkutsu();
-                      session.retry();
-                    }}
-                    onAskCoach={handleCoachSelect}
-                    onCancelAutoNext={session.cancelAutoNext}
-                  />
+            {/* COLUMN 2: Result & Model Accent Card (5 cols ~ 41.7% - Always Visible) */}
+            <div className="lg:col-span-5 h-full min-h-0 overflow-y-auto pr-0.5">
+              <PitchResultCard
+                result={session.result}
+                exercise={activeExercise}
+                isPending={session.phase !== "result" || !session.result}
+                liveTranscript={session.speech.transcript}
+                onNext={() => {
+                  soundFX.playSuikinkutsu();
+                  session.startNext();
+                }}
+                onRetry={() => {
+                  soundFX.playSuikinkutsu();
+                  session.retry();
+                }}
+                onAskCoach={handleCoachSelect}
+                onCancelAutoNext={session.cancelAutoNext}
+              />
+            </div>
+
+            {/* COLUMN 3: Compact Mic & Action Deck (3 cols ~ 25.0%) */}
+            <div className="lg:col-span-3 h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-3.5 sm:p-4 relative overflow-hidden shadow-lg">
+              {/* Ambient Glow */}
+              <div className="absolute bottom-[-30px] right-[-30px] w-40 h-40 bg-sky-500/10 blur-3xl rounded-full pointer-events-none -z-10" />
+
+              {/* Status Header */}
+              <div className="flex items-center justify-between gap-2 shrink-0 pb-2 border-b border-border/60 dark:border-white/10">
+                <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                  {isEvaluating ? (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 text-primary animate-spin" />
+                      <span className="text-primary">CHẤM CAO ĐỘ...</span>
+                    </>
+                  ) : session.phase === "ready" ? (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 text-sky-400" />
+                      <span className="text-sky-400">SẴN SÀNG</span>
+                    </>
+                  ) : isRecordingOrWaiting ? (
+                    <>
+                      <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                      <span className="text-rose-500">ĐANG THU ÂM...</span>
+                    </>
+                  ) : session.phase === "result" ? (
+                    <>
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                      <span className="text-emerald-500">HOÀN THÀNH</span>
+                    </>
+                  ) : (
+                    <span>TRẠM THU ÂM</span>
+                  )}
+                </span>
+
+                <Badge variant="outline" size="sm" className="text-[9px] font-mono border-white/15 bg-white/5 text-primary rounded-full px-1.5 py-0 whitespace-nowrap shrink-0">
+                  Pitch Mic Live
+                </Badge>
+              </div>
+
+              {/* Compact Visualizer & Speech Preview */}
+              <div className="flex-1 min-h-0 flex flex-col items-center justify-center py-2 space-y-3">
+                {/* Dynamic Mini Soundwaves */}
+                <div className="flex items-center gap-1 h-10">
+                  {[0.5, 1.0, 1.5, 1.8, 1.3, 0.9, 0.4].map((scale, i) => {
+                    const activeMultiplier = isRecordingOrWaiting ? (session.recorder.volumeLevel || 0.08) * 50 : 5;
+                    const height = Math.max(5, Math.min(36, activeMultiplier * scale + 5));
+                    return (
+                      <span
+                        key={i}
+                        className={cn(
+                          "w-1.5 rounded-full transition-all duration-75",
+                          isRecordingOrWaiting
+                            ? "bg-gradient-to-t from-rose-500 to-amber-400 shadow-xs shadow-rose-500/30"
+                            : session.phase === "result"
+                            ? "bg-gradient-to-t from-emerald-500 to-teal-400"
+                            : "bg-gradient-to-t from-sky-500 to-primary/60"
+                        )}
+                        style={{ height: `${height}px` }}
+                      />
+                    );
+                  })}
                 </div>
-              ) : (
-                <div className="h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
-                  {/* Status Header */}
-                  <div className="flex items-center justify-between gap-2 shrink-0 pb-2 border-b border-border/60 dark:border-white/10">
-                    <span className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                      {isEvaluating ? (
-                        <span className="text-primary">AI ĐANG CHẤM CAO ĐỘ F₀...</span>
-                      ) : session.phase === "ready" ? (
-                        <>
-                          <Sparkles className="h-3.5 w-3.5 text-sky-400" />
-                          <span className="text-sky-400">ĐÃ SẴN SÀNG PHÁT ÂM</span>
-                        </>
-                      ) : isRecordingOrWaiting ? (
-                        <>
-                          <Mic className="h-3.5 w-3.5 text-rose-500 animate-pulse" />
-                          <span className="text-rose-500">ĐANG THU ÂM CAO ĐỘ F₀...</span>
-                        </>
-                      ) : (
-                        <span>TOKYO PITCH ACCENT LAB</span>
-                      )}
-                    </span>
 
-                    <Badge variant="outline" size="sm" className="text-[10px] font-mono border-white/15 bg-white/5 text-primary rounded-full">
-                      F₀ Contour & Mora Analyzer
-                    </Badge>
+                {/* Compact Live Speech Recognition Bubble */}
+                <div className="w-full p-2.5 rounded-2xl bg-muted/40 dark:bg-black/30 border border-border/80 dark:border-white/10 backdrop-blur-md text-center space-y-1 shadow-inner">
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-center gap-1">
+                    <Mic className="h-3 w-3 text-primary" />
+                    <span>Giọng bạn:</span>
+                    {session.speech.transcript && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+                    )}
                   </div>
+                  <div className="text-xs sm:text-sm font-black font-jp text-foreground min-h-[1.5rem] flex items-center justify-center px-1">
+                    {session.speech.transcript ? (
+                      <span className="line-clamp-2">“{session.speech.transcript}”</span>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground font-sans font-normal italic">
+                        {isRecordingOrWaiting
+                          ? "Nói to vào mic..."
+                          : session.phase === "ready"
+                          ? "Bấm nút bắt đầu để phát âm"
+                          : session.phase === "result"
+                          ? "Đã có kết quả ở Cột 2"
+                          : "Chờ sẵn sàng..."}
+                      </span>
+                    )}
+                  </div>
+                </div>
 
-                  {/* Soundwaves & Actions */}
-                  <div className="flex-1 min-h-0 flex flex-col items-center justify-center py-2 space-y-4">
-                    <div className="flex items-center gap-1.5 h-14">
-                      {[0.5, 1.1, 0.7, 1.5, 0.9, 1.3, 0.6].map((scale, i) => {
-                        const activeMultiplier = isRecordingOrWaiting ? 36 : 6;
-                        const height = Math.max(6, Math.min(50, activeMultiplier * scale + 6));
-                        return (
-                          <span
-                            key={i}
-                            className={cn(
-                              "w-1.5 rounded-full transition-all duration-75",
-                              isRecordingOrWaiting
-                                ? "bg-gradient-to-t from-rose-500 to-amber-400"
-                                : "bg-gradient-to-t from-blue-600 to-primary/60"
-                            )}
-                            style={{ height: `${height}px` }}
-                          />
-                        );
-                      })}
-                    </div>
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-1.5 w-full">
+                  {session.phase === "ready" && (
+                    <Button
+                      size="sm"
+                      className="w-full font-black text-xs h-10 rounded-xl shadow-md bg-gradient-to-r from-sky-500 via-sky-600 to-indigo-600 text-white cursor-pointer ring-1 ring-sky-500/40 gap-1.5"
+                      onClick={() => session.startVoiceRecording()}
+                    >
+                      <Mic className="h-3.5 w-3.5" />
+                      <span>Bắt Đầu Nói ({formatKeyDisplay(keybindings.pitchStartVoice)})</span>
+                    </Button>
+                  )}
 
-                    {session.phase === "ready" && (
+                  {isRecordingOrWaiting && (
+                    <div className="grid grid-cols-1 gap-1.5 w-full">
                       <Button
-                        size="lg"
-                        className="font-extrabold text-sm h-11 px-6 rounded-2xl shadow-lg shadow-sky-500/20 hover:shadow-sky-500/40 transition-all gap-2 bg-gradient-to-r from-sky-500 via-sky-600 to-indigo-600 text-white cursor-pointer ring-2 ring-sky-500/30"
-                        onClick={() => session.startVoiceRecording()}
+                        size="sm"
+                        variant="akane"
+                        className="w-full font-bold text-xs h-9 rounded-xl shadow-xs gap-1.5 cursor-pointer bg-gradient-to-r from-blue-600 to-primary text-white"
+                        onClick={() => handleDirectSubmit()}
+                        disabled={isEvaluating}
                       >
-                        <Mic className="h-4 w-4" />
-                        <span>🎙️ Bắt Đầu Phát Âm ({formatKeyDisplay(keybindings.pitchStartVoice)})</span>
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span>Nộp câu này</span>
                       </Button>
-                    )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full font-bold text-[11px] h-8 rounded-xl border-border/80 text-muted-foreground hover:text-foreground cursor-pointer"
+                        onClick={() => session.skip()}
+                        disabled={isEvaluating}
+                      >
+                        Bỏ qua câu ({formatKeyDisplay(keybindings.pitchSkip)})
+                      </Button>
+                    </div>
+                  )}
 
-                    {isRecordingOrWaiting && (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="akane"
-                          className="font-bold text-xs h-9 px-4 rounded-xl shadow-xs gap-1.5 cursor-pointer bg-gradient-to-r from-blue-600 to-primary text-white"
-                          onClick={handleDirectSubmit}
-                          disabled={isEvaluating}
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          <span>Nộp câu này</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="font-bold text-xs h-9 px-3 rounded-xl border-border/80 text-muted-foreground hover:text-foreground"
-                          onClick={() => session.skip()}
-                          disabled={isEvaluating}
-                        >
-                          Bỏ qua câu ({formatKeyDisplay(keybindings.pitchSkip)})
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Unified Input Bar */}
-                  <div className="shrink-0 pt-2 border-t border-border/60 dark:border-white/10">
-                    <ZenUnifiedInputBar
-                      value={transcriptInput}
-                      onChange={setTranscriptInput}
-                      onSubmit={handleDirectSubmit}
-                      speechTranscript={session.speech.transcript}
-                      isRecording={isRecordingOrWaiting}
-                      isEvaluating={isEvaluating}
-                      placeholder="Nói vào mic hoặc gõ từ/câu cao độ... (VD: 雨 / 飴 / 橋 / 箸)"
-                      submitButtonText={`Gửi (${formatKeyDisplay(keybindings.pitchSubmitOrNext)})`}
-                      autoFocus={true}
-                      hintText="Gõ phím thay mic khi ở văn phòng"
-                    />
-                  </div>
+                  {session.phase === "result" && (
+                    <Button
+                      size="sm"
+                      className="w-full font-bold text-xs h-9 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-xs cursor-pointer gap-1.5"
+                      onClick={() => {
+                        soundFX.playSuikinkutsu();
+                        session.startNext();
+                      }}
+                    >
+                      <span>Câu tiếp theo (Enter)</span>
+                    </Button>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Unified Input Bar */}
+              <div className="shrink-0 pt-2 border-t border-border/60 dark:border-white/10">
+                <ZenUnifiedInputBar
+                  value={transcriptInput}
+                  onChange={setTranscriptInput}
+                  onSubmit={handleDirectSubmit}
+                  speechTranscript={session.speech.transcript}
+                  isRecording={isRecordingOrWaiting}
+                  isEvaluating={isEvaluating}
+                  placeholder="Nói hoặc gõ từ/câu cao độ..."
+                  submitButtonText="Gửi"
+                  autoFocus={false}
+                  hintText="Enter để nộp"
+                />
+              </div>
             </div>
           </div>
         )}
@@ -594,14 +648,14 @@ export default function PitchPage() {
 
       {/* 3. Bottom Shortcuts Strip */}
       <div className="h-7 shrink-0 border-t border-border/60 dark:border-white/10 flex items-center justify-between text-[11px] text-muted-foreground px-1">
-        <div className="flex items-center gap-3">
-          <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.pitchSubmitOrNext)}</kbd> Bắt đầu / Nộp</span>
-          <span className="hidden sm:inline"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.pitchRetry)}</kbd> Làm lại</span>
-          <span className="hidden md:inline"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.pitchListenPrompt)}</kbd> Nghe mẫu</span>
+        <div className="flex items-center gap-3 overflow-hidden">
+          <span className="whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.pitchSubmitOrNext)}</kbd> Bắt đầu / Nộp</span>
+          <span className="hidden sm:inline whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.pitchRetry)}</kbd> Làm lại</span>
+          <span className="hidden md:inline whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.pitchListenPrompt)}</kbd> Nghe mẫu</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.pitchOpenCheatsheet)}</kbd> Sổ tay</span>
-          <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">Esc</kbd> Thoát</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="whitespace-nowrap"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.pitchOpenCheatsheet)}</kbd> Sổ tay</span>
+          <span className="whitespace-nowrap"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">Esc</kbd> Thoát</span>
         </div>
       </div>
 

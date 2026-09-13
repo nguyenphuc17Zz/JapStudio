@@ -335,4 +335,32 @@ def test_reflex_conjugation_target_form_filter():
     assert ex_all["form"] is not None
 
 
+def test_reflex_conjugation_tier_filter():
+    """Verify that specifying tier filters verbs to the corresponding difficulty tier."""
+    from app.domains.reflex.dictionary_pool import EASY_VERBS, NORMAL_VERBS, HARD_VERBS
+    factory = ReflexExerciseFactory()
 
+    easy_set = {v.verb for v in EASY_VERBS}
+    normal_set = {v.verb for v in NORMAL_VERBS}
+    hard_set = {v.verb for v in HARD_VERBS}
+
+    # 1. Tier 1 -> N5/N4 core verbs
+    for _ in range(15):
+        ex = factory.generate_conjugation(tier=1)
+        assert ex["tier"] == 1
+        assert "Tier 1" in ex["frequency_badge"]
+        assert ex["prompt"] in easy_set
+
+    # 2. Tier 2 -> N3 intermediate verbs
+    for _ in range(15):
+        ex = factory.generate_conjugation(tier=2)
+        assert ex["tier"] == 2
+        assert "Tier 2" in ex["frequency_badge"]
+        assert ex["prompt"] in normal_set
+
+    # 3. Tier 3 -> N2/N1 advanced verbs
+    for _ in range(15):
+        ex = factory.generate_conjugation(tier=3)
+        assert ex["tier"] == 3
+        assert "Tier 3" in ex["frequency_badge"]
+        assert ex["prompt"] in hard_set
