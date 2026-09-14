@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Sparkles, Activity, ArrowRight, Mic, TrendingUp, BarChart2 } from "lucide-react";
+import { Sparkles, Activity, Mic, TrendingUp, BarChart2 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -183,17 +183,14 @@ export function SkillRadarCard({ className }: { className?: string }) {
         )}
       </div>
 
-      {/* Footer link to detailed analytics */}
+      {/* Footer status */}
       <div className="pt-2 border-t border-border/60 flex items-center justify-between text-xs relative z-10">
         <span className="text-[11px] text-muted-foreground">
           {hasData ? `Đã phân tích ${totalTurns} lượt đối thoại` : "Cập nhật tự động sau mỗi lượt nói"}
         </span>
-        <Link
-          href="/progress"
-          className="font-bold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
-        >
-          Xem chi tiết <ArrowRight className="h-3 w-3" />
-        </Link>
+        <span className="text-[11px] text-emerald-500 font-medium flex items-center gap-1">
+          <Sparkles className="h-3 w-3" /> Radar 4 Trụ Cột
+        </span>
       </div>
     </div>
   );

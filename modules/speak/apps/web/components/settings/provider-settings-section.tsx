@@ -30,84 +30,13 @@ import {
   Activity,
   AlertCircle,
   Loader2,
-  MessageSquare,
-  Compass,
-  Crown,
-  Music,
   Volume2,
-  Swords,
-  Layers,
 } from "lucide-react";
 import { ProviderDetail, ModelMetadata } from "@/types/provider";
 import { ProviderHealth } from "@/types/ai";
 import { aiApi } from "@/services/ai-api";
 
-export const AI_FEATURES = [
-  {
-    key: "speaking",
-    label: "Hội thoại AI (/speaking)",
-    badge: "Đàm thoại",
-    description: "Trò chuyện nhập vai đối thoại tự do với nhân vật AI bản ngữ",
-    hint: "Khuyên dùng: Gemini 2.0 / GPT-4o cho văn phong tự nhiên",
-    icon: MessageSquare,
-  },
-  {
-    key: "reflex",
-    label: "Luyện Phản Xạ (/reflex)",
-    badge: "Tốc độ 3-5s",
-    description: "Biến đổi câu, hỏi đáp tốc độ cao đếm ngược 3s - 5s",
-    hint: "Khuyên dùng: Groq Llama-3 để phản hồi tức thì <300ms",
-    icon: Zap,
-  },
-  {
-    key: "situations",
-    label: "Phòng Tình Huống (/situations)",
-    badge: "Thực tế",
-    description: "100+ kịch bản đối đáp NPC (Konbini, Ga tàu...) & 3 cấp gợi ý",
-    hint: "Khuyên dùng: Gemini 2.0 / Claude 3.5 Sonnet",
-    icon: Compass,
-  },
-  {
-    key: "keigo",
-    label: "Phòng Kính Ngữ (/keigo)",
-    badge: "Ngữ dụng",
-    description: "Tôn kính ngữ, Khiêm nhường ngữ, phát hiện lỗi nhị trùng kính ngữ",
-    hint: "Khuyên dùng: Gemini 1.5 Pro / Claude cho độ chuẩn xác cao",
-    icon: Crown,
-  },
-  {
-    key: "coach",
-    label: "AI Coach Cố Vấn",
-    badge: "Phân tích",
-    description: "Chẩn đoán điểm yếu, giải thích lỗi sai & lập kế hoạch học tập",
-    hint: "Khuyên dùng: Gemini 2.0 / GPT-4o",
-    icon: Sparkles,
-  },
-  {
-    key: "pitch",
-    label: "Luyện Cao Độ (/pitch)",
-    badge: "Ngữ điệu",
-    description: "Đánh giá đường cao độ Tokyo F0 & phân biệt từ tối thiểu",
-    hint: "Khuyên dùng: Gemini 2.0 Flash / Groq",
-    icon: Music,
-  },
-  {
-    key: "shadowing",
-    label: "Phòng Shadowing (/shadowing)",
-    badge: "Đọc đuổi",
-    description: "Dịch nghĩa ngữ cảnh, phân tách ngữ đoạn Mora và ngắt cụm chuẩn",
-    hint: "Khuyên dùng: Gemini 2.0 Flash",
-    icon: Volume2,
-  },
-  {
-    key: "boss",
-    label: "Võ Đường & Đấu Boss (/game)",
-    badge: "Dojo Boss",
-    description: "Sinh đề bài thử thách đấu trùm linh hoạt theo cấp bậc võ sinh",
-    hint: "Khuyên dùng: Groq / Gemini Flash",
-    icon: Swords,
-  },
-] as const;
+
 
 export function ProviderSettingsSection() {
   const {
@@ -347,20 +276,6 @@ export function ProviderSettingsSection() {
     }
   };
 
-  const handleFeatureModelChange = async (featureKey: string, modelId: string) => {
-    const currentRouting = routingPolicy?.feature_routing || {};
-    const updated = {
-      ...currentRouting,
-      [featureKey]: modelId === "default" ? "" : modelId,
-    };
-
-    await updateRouting({ feature_routing: updated });
-    setFeedbackMsg(
-      modelId === "default"
-        ? `Đã chuyển tính năng "${featureKey.toUpperCase()}" về mô hình mặc định.`
-        : `Đã lưu mô hình riêng cho "${featureKey.toUpperCase()}": ${modelId}`
-    );
-  };
 
   // Build model options for SearchableSelect (Default Model)
   const activeModels = apiModels.length > 0
@@ -387,38 +302,6 @@ export function ProviderSettingsSection() {
     });
   }, [activeModels]);
 
-  // Build model options for Per-Feature routing (Across all providers)
-  const allFeatureModelOptions = useMemo<SearchableOption[]>(() => {
-    const pool = allApiModels.length > 0 ? allApiModels : providers.flatMap((p) => p.models);
-    const modelOptions: SearchableOption[] = pool.map((m) => {
-      const pName = providers.find((p) => p.id === m.provider_id)?.display_name || m.provider_id.toUpperCase();
-      const badges: string[] = [pName];
-      if (m.is_recommended) badges.push("Khuyên dùng");
-      if (m.context_window) {
-        badges.push(
-          m.context_window >= 1_000_000
-            ? `${(m.context_window / 1_000_000).toFixed(0)}M`
-            : `${Math.round(m.context_window / 1000)}k`
-        );
-      }
-      return {
-        value: m.id,
-        label: m.display_name || m.id,
-        description: `${pName} · ${m.id}`,
-        badge: badges.join(" · "),
-      };
-    });
-
-    return [
-      {
-        value: "default",
-        label: "Dùng mô hình mặc định hệ thống",
-        description: `Đang dùng: ${routingPolicy?.default_model || "Mặc định"} (${(routingPolicy?.preferred_provider || "gemini").toUpperCase()})`,
-        badge: "Toàn hệ thống",
-      },
-      ...modelOptions,
-    ];
-  }, [allApiModels, providers, routingPolicy?.default_model, routingPolicy?.preferred_provider]);
 
   return (
     <div className="space-y-5">
@@ -574,90 +457,6 @@ export function ProviderSettingsSection() {
         </div>
       </div>
 
-      {/* Per-Feature AI Model Configuration Matrix */}
-      <div className="rounded-xl border border-border bg-card p-4 sm:p-5 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-border/60">
-          <div className="flex items-center gap-2">
-            <span className="h-7 w-7 rounded-md bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
-              <Layers className="h-3.5 w-3.5" />
-            </span>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Cấu hình Mô hình theo từng Tính năng
-              </h3>
-              <p className="text-[11px] text-muted-foreground">
-                Chỉ định AI Provider & Model tối ưu riêng cho từng chức năng. Tự động lưu vào hồ sơ và áp dụng vĩnh viễn.
-              </p>
-            </div>
-          </div>
-          <Badge variant="outline" className="text-[10px] self-start sm:self-center font-normal">
-            8/8 Chức năng hỗ trợ
-          </Badge>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          {AI_FEATURES.map((feat) => {
-            const FeatIcon = feat.icon;
-            const currentSelected = routingPolicy?.feature_routing?.[feat.key] || "default";
-            const isCustom = currentSelected !== "default" && currentSelected !== "";
-
-            return (
-              <div
-                key={feat.key}
-                className={cn(
-                  "p-3.5 rounded-xl border transition-all space-y-2.5",
-                  isCustom
-                    ? "bg-card border-primary/30 shadow-2xs"
-                    : "bg-muted/30 border-border/80"
-                )}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="h-7 w-7 rounded-lg bg-background border border-border flex items-center justify-center text-foreground shrink-0">
-                      <FeatIcon className="h-3.5 w-3.5 text-primary" />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs font-semibold text-foreground truncate">
-                          {feat.label}
-                        </span>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border shrink-0">
-                          {feat.badge}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground truncate">
-                        {feat.description}
-                      </p>
-                    </div>
-                  </div>
-                  {isCustom ? (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-medium shrink-0">
-                      Tùy chỉnh
-                    </span>
-                  ) : (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border shrink-0">
-                      Mặc định
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <SearchableSelect
-                    value={currentSelected}
-                    onChange={(newVal) => handleFeatureModelChange(feat.key, newVal)}
-                    options={allFeatureModelOptions}
-                    placeholder="Mặc định hệ thống"
-                    searchPlaceholder={`Tìm model cho ${feat.label}...`}
-                  />
-                  <p className="text-[10px] text-muted-foreground italic pl-0.5">
-                    💡 {feat.hint}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
 
       {/* Thống kê — accordion gọn */}
       {usageSummary && (

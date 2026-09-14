@@ -18,8 +18,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CoachInsightCard } from "@/features/coach/components/CoachInsightCard";
-import { useCoachProactive } from "@/features/coach/hooks/useCoachProactive";
 import { formatKeyDisplay } from "@/hooks/use-system-keybindings";
 import { soundFX } from "@/lib/sound-fx";
 import { cn } from "@/lib/utils";
@@ -132,7 +130,6 @@ export interface ReflexLobbyProps {
   timerMs: number;
   onStartSession: () => void;
   onOpenHelp: () => void;
-  onCoachSelect: (prompt: string) => void;
 }
 
 export function ReflexLobby({
@@ -155,22 +152,11 @@ export function ReflexLobby({
   timerMs,
   onStartSession,
   onOpenHelp,
-  onCoachSelect,
 }: ReflexLobbyProps) {
   const isMixedSelected = subMode === "mixed";
-  const { insights, dismiss } = useCoachProactive();
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300 max-w-[1600px] w-full mx-auto pb-8 h-full overflow-y-auto pr-1">
-      {/* Proactive Coach Insight Banner */}
-      {insights.slice(0, 1).map((ins, idx) => (
-        <CoachInsightCard
-          key={idx}
-          insight={ins}
-          onDismiss={() => dismiss(ins.insight_type)}
-          onAction={() => onCoachSelect(`Luyện ${ins.recommended_action || "reflex"} cho tui`)}
-        />
-      ))}
 
       {/* Hero Header */}
       <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
@@ -396,7 +382,7 @@ export function ReflexLobby({
                       className="w-full py-1.5 rounded-lg bg-muted hover:bg-muted/80 border border-border text-[11px] font-medium text-foreground flex items-center justify-center gap-1.5 transition-colors"
                     >
                       <Crown className="h-3 w-3 text-muted-foreground" />
-                      <span>{filters.selectedKeigoCategories.length === 0 ? "Ngẫu nhiên 80+ cặp kính ngữ" : `${filters.selectedKeigoCategories.length} nhóm đã lọc`}</span>
+                      <span>{filters.selectedKeigoCategories.length === 0 ? "Ngẫu nhiên 290 cặp kính ngữ" : `${filters.selectedKeigoCategories.length} công thức đã chọn`}</span>
                     </button>
                   )}
                 </div>

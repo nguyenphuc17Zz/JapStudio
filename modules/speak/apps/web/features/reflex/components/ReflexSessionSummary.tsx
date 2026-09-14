@@ -178,7 +178,7 @@ export function ReflexSessionSummary({ results, onRestart, onToPlan }: Props) {
           className="flex-1 font-bold rounded-2xl border-border gap-2"
           onClick={onToPlan}
         >
-          <span>Về Lộ Trình Hôm Nay</span>
+          <span>Về Bảng Điều Khiển</span>
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>

@@ -233,13 +233,3 @@ class ReviewDecision(BaseModel):
     difficulty: float | None = None
 
 
-class CurriculumUnit(BaseModel):
-    id: str
-    title: str
-    objective: str
-    target_learning_items: list[str] = Field(default_factory=list)
-    recommended_exercise_types: list[ExerciseType] = Field(default_factory=list)
-    completion_criteria: str
-    estimated_sessions: int = 3
-    is_completed: bool = False
-    progress_ratio: float = 0.0

@@ -3,7 +3,6 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domains.learning.curriculum_engine import CurriculumEngine
 from app.domains.learning.daily_plan_generator import DailyPlanGenerator
 from app.domains.learning.exercise_generator import ExerciseGenerator
 from app.domains.learning.exercise_session_service import ExerciseSessionService
@@ -15,7 +14,6 @@ from app.domains.learning.queue import learning_job_queue
 from app.domains.learning.recommendation_engine import RecommendationEngine
 from app.domains.learning.review_scheduler import ReviewScheduler
 from app.domains.learning.schemas import (
-    CurriculumUnitDTO,
     DailyPlanDTO,
     DailyPlanRegenerateRequest,
     ExerciseDTO,
@@ -466,67 +464,7 @@ async def submit_exercise(
     )
     return result
 
-
-# 7. Adaptive Curriculum Units & Full Milestone Roadmap
-@router.get("/curriculum", response_model=list[CurriculumUnitDTO])
-async def get_dynamic_curriculum(
-    user_id: str = Depends(get_current_user_id),
-    db: AsyncSession = Depends(get_db),
-):
-    """Synthesizes dynamic curriculum units based on active goals and mastery."""
-    engine = CurriculumEngine(db)
-    return await engine.generate_dynamic_curriculum(user_id=user_id)
-
-
-@router.get("/roadmap")
-async def get_curriculum_roadmap(
-    user_id: str = Depends(get_current_user_id),
-    db: AsyncSession = Depends(get_db),
-):
-    """Retrieves full 4-stage interactive milestone roadmap for the learner."""
-    engine = CurriculumEngine(db)
-    return await engine.get_curriculum_roadmap(user_id=user_id)
-
-
-@router.post("/roadmap/generate")
-async def generate_curriculum_roadmap(
-    payload: dict[str, Any],
-    user_id: str = Depends(get_current_user_id),
-    db: AsyncSession = Depends(get_db),
-):
-    """Generates / regenerates a bespoke AI speaking curriculum roadmap."""
-    engine = CurriculumEngine(db)
-    return await engine.get_curriculum_roadmap(
-        user_id=user_id,
-        level=payload.get("level", "intermediate"),
-        target_goal=payload.get("target_goal", "workplace"),
-        daily_minutes=payload.get("daily_minutes", 30),
-        custom_wish=payload.get("custom_wish"),
-        force_regenerate=True,
-    )
-
-
-@router.post("/roadmap/nodes/{node_id}/toggle")
-async def toggle_roadmap_node(
-    node_id: str,
-    payload: dict[str, Any] = {},
-    user_id: str = Depends(get_current_user_id),
-    db: AsyncSession = Depends(get_db),
-):
-    """Toggles completion status and score of a specific lesson node in the roadmap."""
-    engine = CurriculumEngine(db)
-    res = await engine.toggle_node_completion(
-        user_id=user_id,
-        node_id=node_id,
-        is_completed=payload.get("is_completed"),
-        score=payload.get("score"),
-    )
-    if not res:
-        raise NotFoundException(f"Roadmap node '{node_id}' not found.")
-    return res
-
-
-# 8. Full Recalculation Trigger
+# 7. Full Recalculation Trigger
 @router.post("/recalculate", status_code=status.HTTP_202_ACCEPTED)
 async def trigger_recalculation(
     user_id: str = Depends(get_current_user_id),

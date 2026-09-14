@@ -207,13 +207,3 @@ class LearningRecommendationDTO(BaseModel):
     goal_relevance: float
 
 
-class CurriculumUnitDTO(BaseModel):
-    id: str
-    title: str
-    objective: str
-    target_learning_items: list[str]
-    recommended_exercise_types: list[str]
-    completion_criteria: str
-    estimated_sessions: int
-    is_completed: bool
-    progress_ratio: float

@@ -8,13 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
-import { CoachQuickActions, CoachPanel } from "@/features/coach";
-import { CoachInsightCard } from "@/features/coach/components/CoachInsightCard";
-import { SpeakingLiveCoachOverlay } from "@/features/coach/components/SpeakingLiveCoachOverlay";
-import { SpeakingPostSessionCoachCard } from "@/features/coach/components/SpeakingPostSessionCoachCard";
-import { useCoachProactive } from "@/features/coach/hooks/useCoachProactive";
-import { usePathname } from "next/navigation";
-import { useCoachCore } from "@/features/coach/hooks/useCoachCore";
 import {
   Mic,
   Sparkles,
@@ -69,10 +62,7 @@ export default function SpeakingPage() {
   );
   const [activePersona, setActivePersona] = useState<Persona | null>(null);
   const [isLobbyOpen, setIsLobbyOpen] = useState(false);
-  const pathname = usePathname();
-  const { insights, dismiss } = useCoachProactive();
-  const [coachOpen, setCoachOpen] = useState(false);
-  const coach = useCoachCore();
+
 
   // Persona Creation & Deletion States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -235,26 +225,8 @@ export default function SpeakingPage() {
       state === "paused" ||
       state === "ready");
 
-  const handleCoachSelect = (prompt: string) => {
-    setCoachOpen(true);
-    setTimeout(() => coach.ask(prompt, { route: pathname || "/speaking", sessionId: session?.id }), 300);
-  };
-
   return (
     <div className="space-y-3.5 sm:space-y-4 animate-in fade-in duration-200">
-      {/* Coach proactive insight */}
-      {insights.length > 0 && !isSessionActive && (
-        <div className="space-y-2">
-          {insights.slice(0, 1).map((ins, idx) => (
-            <CoachInsightCard
-              key={idx}
-              insight={ins}
-              onDismiss={() => dismiss(ins.insight_type)}
-              onAction={() => handleCoachSelect(`Luyện ${ins.recommended_action || ins.insight_type} cho tui`)}
-            />
-          ))}
-        </div>
-      )}
 
       {/* Feedback Toast Banner */}
       {feedback && !isSessionActive && (
@@ -284,7 +256,6 @@ export default function SpeakingPage() {
 
       {isSessionActive && activePersona ? (
         <div className="space-y-3">
-          <SpeakingLiveCoachOverlay sessionId={session?.id} isActive={isSessionActive} />
           <ActiveSessionRoom
             session={session!}
             persona={activePersona}
@@ -712,36 +683,12 @@ export default function SpeakingPage() {
       />
 
       {/* Session Summary Modal */}
-      {summary !== null && state === "ended" && (
-        <div className="space-y-3">
-          <SpeakingPostSessionCoachCard sessionId={session?.id || summary.session_id || undefined} />
-        </div>
-      )}
       <SessionSummaryModal
         isOpen={isSummaryOpen}
         summary={summary}
         onClose={handleCloseSummary}
         onReplayVoice={replayVoice}
       />
-
-      {/* Coach Panel */}
-      <CoachPanel
-        open={coachOpen}
-        onClose={() => setCoachOpen(false)}
-        route={pathname || "/speaking"}
-        sessionId={session?.id}
-      />
-
-      {/* Quick In-session Coach Button */}
-      {isSessionActive && (
-        <button
-          onClick={() => setCoachOpen(true)}
-          className="fixed bottom-24 right-4 z-30 md:bottom-6 px-3 py-2 rounded-xl bg-card border border-border shadow-lg text-xs font-bold flex items-center gap-1.5"
-        >
-          <span className="h-6 w-6 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">🤖</span>
-          Hỏi Coach
-        </button>
-      )}
     </div>
   );
 }

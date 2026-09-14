@@ -197,10 +197,10 @@ export function RecentSessions({ className }: { className?: string }) {
           {sessions.length > 0 ? "Tự động đồng bộ với phiên hội thoại" : "Dữ liệu được lưu trữ an toàn"}
         </span>
         <Link
-          href="/progress"
+          href="/speaking"
           className="font-bold text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
         >
-          Toàn bộ lịch sử <ArrowRight className="h-3 w-3" />
+          Luyện nói ngay <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
     </div>

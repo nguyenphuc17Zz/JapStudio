@@ -23,11 +23,6 @@ import { PitchSessionSummary } from "@/features/pitch/components/PitchSessionSum
 import { PitchCheatsheetModal } from "@/features/pitch/components/PitchCheatsheetModal";
 import { PitchLobby, PITCH_SUB_MODES, PITCH_PRESSURE_LEVELS } from "@/features/pitch/components/PitchLobby";
 import { GlobalKeybindingsModal } from "@/components/layout/global-keybindings-modal";
-import { CoachPanel } from "@/features/coach";
-import { usePathname } from "next/navigation";
-import { useCoachCore } from "@/features/coach/hooks/useCoachCore";
-import { CoachInsightCard } from "@/features/coach/components/CoachInsightCard";
-import { useCoachProactive } from "@/features/coach/hooks/useCoachProactive";
 import { useSystemKeybindings, formatKeyDisplay } from "@/hooks/use-system-keybindings";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
 import { soundFX } from "@/lib/sound-fx";
@@ -145,15 +140,7 @@ export default function PitchPage() {
 
   const timerMs = PITCH_PRESSURE_LEVELS.find((p) => p.id === pressure)?.ms ?? 5000;
   const activeExercise = session.exercise;
-  const pathname = usePathname();
-  const { insights, dismiss } = useCoachProactive();
-  const [coachOpen, setCoachOpen] = useState(false);
-  const coach = useCoachCore();
 
-  const handleCoachSelect = (prompt: string) => {
-    setCoachOpen(true);
-    setTimeout(() => coach.ask(prompt, { route: pathname || "/pitch", exerciseId: (activeExercise as any)?.id }), 300);
-  };
 
   const playedPromptExerciseIdRef = useRef<string | null>(null);
 
@@ -289,8 +276,6 @@ export default function PitchPage() {
           setShowCheatsheet(false);
         } else if (showKeybindingsModal) {
           setShowKeybindingsModal(false);
-        } else if (coachOpen) {
-          setCoachOpen(false);
         } else if (session.phase === "waiting_for_speech" || session.phase === "recording") {
           session.setIsPaused((v) => !v);
         }
@@ -481,7 +466,6 @@ export default function PitchPage() {
                   soundFX.playSuikinkutsu();
                   session.retry();
                 }}
-                onAskCoach={handleCoachSelect}
                 onCancelAutoNext={session.cancelAutoNext}
               />
             </div>
@@ -661,8 +645,6 @@ export default function PitchPage() {
 
       <PitchCheatsheetModal isOpen={showCheatsheet} onClose={() => setShowCheatsheet(false)} />
       <GlobalKeybindingsModal isOpen={showKeybindingsModal} onClose={() => setShowKeybindingsModal(false)} />
-
-      <CoachPanel open={coachOpen} onClose={() => setCoachOpen(false)} />
     </div>
   );
 }

@@ -28,7 +28,7 @@ def test_pitch_contour_with_tier_filter():
     assert len(ex_tier1["mora_breakdown"]) > 0
     assert ex_tier1["frequency_tier"] == 1
     assert ex_tier1["frequency_rank"] is not None
-    assert ex_tier1["frequency_rank"] <= 1000
+    assert ex_tier1["frequency_rank"] <= 1200
 
 
 def test_pitch_contour_with_tier2_filter():

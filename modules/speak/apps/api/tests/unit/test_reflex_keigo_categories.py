@@ -1,113 +1,87 @@
-"""Unit tests for Keigo Word Blitz (reflex_keigo_vocab) categories, formulas, subject ownership cues, and keyword search."""
-
 import pytest
 from app.domains.reflex.exercise_factory import ReflexExerciseFactory
-from app.domains.keigo.keigo_vocab_pool import (
-    get_all_keigo_vocab,
-    get_sonkeigo_pool,
-    get_kenjougo_pool,
-    get_rule_based_pool,
-    get_business_vocab_pool,
-    search_keigo,
-)
+from app.domains.keigo.keigo_vocab_pool import ALL_KEIGO_WORDS
 
-
-def test_keigo_pool_categories():
-    """Verify that Keigo pool contains entries for all 4 practical categories."""
-    all_words = get_all_keigo_vocab()
-    assert len(all_words) >= 30
-
-    sonkeigo = get_sonkeigo_pool()
-    assert len(sonkeigo) >= 10
-
-    kenjougo = get_kenjougo_pool()
-    assert len(kenjougo) >= 10
-
-    rule_based = get_rule_based_pool()
-    assert len(rule_based) >= 5
-
-    business = get_business_vocab_pool()
-    assert len(business) >= 10
-
-
-def test_keigo_search():
-    """Verify keyword search finds matching keigo pairs."""
-    results_eat = search_keigo("ăn")
-    assert len(results_eat) >= 2
-    assert any(k.canonical == "召し上がる" for k in results_eat)
-    assert any(k.canonical == "いただく" for k in results_eat)
-
-    results_biz = search_keigo("弊社")
-    assert len(results_biz) >= 1
-
-
-def test_generate_keigo_vocabulary_enriched():
-    """Verify that generate_keigo_vocabulary outputs formula, subject_hint_vi, and example sentences."""
+def test_all_keigo_formulas_have_sufficient_candidates():
     factory = ReflexExerciseFactory()
+    formula_ids = [
+        "sonkeigo_irregular",
+        "sonkeigo_o_ni_naru",
+        "sonkeigo_passive",
+        "sonkeigo_go_ni_naru",
+        "sonkeigo_kudasai",
+        "kenjougo_irregular",
+        "kenjougo_o_suru",
+        "kenjougo_go_suru",
+        "kenjougo_moushiageru",
+        "kenjougo_permissive",
+        "bikago_prefix_o",
+        "bikago_prefix_go",
+        "teineigo_desu_masu",
+        "business_pronouns",
+        "business_time_adverbs",
+        "business_phrases",
+    ]
+    for fid in formula_ids:
+        # Every single formula should generate exercises with strictly that formula_id
+        for _ in range(3):
+            ex = factory.generate_keigo_vocabulary(keigo_category=fid)
+            assert ex["formula_id"] == fid, f"Expected formula_id {fid}, but got {ex.get('formula_id')} for word {ex.get('prompt')}"
 
-    # 1. Sonkeigo category
-    ex_sonkei = factory.generate_keigo_vocabulary(keigo_category="sonkeigo")
-    assert "👑" in ex_sonkei["title"]
-    assert ex_sonkei["target_type"] == "sonkeigo"
-    assert "subject_hint_vi" in ex_sonkei
-    assert "example_ja" in ex_sonkei
-    assert "example_vi" in ex_sonkei
-    assert "formula" in ex_sonkei
+def test_keigo_multi_select_filtering():
+    factory = ReflexExerciseFactory()
+    selected_formulas = ["sonkeigo_o_ni_naru", "kenjougo_permissive"]
+    filter_str = ",".join(selected_formulas)
+    for _ in range(10):
+        ex = factory.generate_keigo_vocabulary(keigo_category=filter_str)
+        assert ex["formula_id"] in selected_formulas
 
-    # 2. Kenjougo category
-    ex_kenjou = factory.generate_keigo_vocabulary(keigo_category="kenjougo")
-    assert "🙇" in ex_kenjou["title"]
-    assert ex_kenjou["target_type"] == "kenjougo"
-    assert "subject_hint_vi" in ex_kenjou
+def test_keigo_group_presets():
+    factory = ReflexExerciseFactory()
+    for _ in range(5):
+        ex_sonkei = factory.generate_keigo_vocabulary(keigo_category="sonkeigo_all")
+        assert ex_sonkei["target_type"] == "sonkeigo"
 
-    # 3. Custom Keyword Search Filter
-    ex_custom = factory.generate_keigo_vocabulary(keigo_category="ăn")
-    assert ex_custom["canonical"] in ("召し上がる", "いただく", "お食事", "お料理")
-
-    # 4. Noun prefixes category
-    ex_prefix = factory.generate_keigo_vocabulary(keigo_category="prefix")
-    assert "お" in ex_prefix["canonical"] or "ご" in ex_prefix["canonical"]
+    for _ in range(5):
+        ex_kenjou = factory.generate_keigo_vocabulary(keigo_category="kenjougo_all")
+        assert ex_kenjou["target_type"] == "kenjougo"
 
 
-def test_keigo_engine_formulas_and_passive():
-    """Verify KeigoTransformationEngine generates both regular formulas and passive honorific forms."""
-    from app.domains.keigo.transformation_engine import KeigoTransformationEngine, get_honorific_prefix
-    from app.domains.keigo.social_context import Register
+def test_keigo_dataset_scale_and_variants():
+    assert len(ALL_KEIGO_WORDS) >= 250, f"Expected at least 250 words, got {len(ALL_KEIGO_WORDS)}"
+    
+    # Check each formula has >= 14 entries
+    formula_counts: dict[str, int] = {}
+    for entry in ALL_KEIGO_WORDS:
+        formula_counts[entry.formula_id] = formula_counts.get(entry.formula_id, 0) + 1
+        # Check that acceptable_variants contains the canonical and reading
+        assert entry.canonical in entry.acceptable_variants
+        if entry.canonical_reading:
+            assert entry.canonical_reading in entry.acceptable_variants
+        # Check that example and hints are not empty
+        assert entry.example_ja, f"Missing example_ja for {entry.source_word}"
+        assert entry.example_vi, f"Missing example_vi for {entry.source_word}"
+        assert entry.subject_hint_vi, f"Missing subject_hint_vi for {entry.source_word}"
 
-    engine = KeigoTransformationEngine()
+    expected_formulas = [
+        "sonkeigo_irregular",
+        "sonkeigo_o_ni_naru",
+        "sonkeigo_passive",
+        "sonkeigo_go_ni_naru",
+        "sonkeigo_kudasai",
+        "kenjougo_irregular",
+        "kenjougo_o_suru",
+        "kenjougo_go_suru",
+        "kenjougo_moushiageru",
+        "kenjougo_permissive",
+        "bikago_prefix_o",
+        "bikago_prefix_go",
+        "teineigo_desu_masu",
+        "business_pronouns",
+        "business_time_adverbs",
+        "business_phrases",
+    ]
+    for fid in expected_formulas:
+        count = formula_counts.get(fid, 0)
+        assert count >= 14, f"Formula {fid} has only {count} entries, expected >= 14"
 
-    # 1. Sonkeigo: 書く should generate お書きになる / お書きになります AND 書かれる / 書かれます
-    res_kaku = engine._get_sonkeigo_variants("書く", "書く", None)
-    assert any("お書きになる" in v for v in res_kaku)
-    assert any("お書きになります" in v for v in res_kaku)
-    assert any("書かれる" in v for v in res_kaku)
-    assert any("書かれます" in v for v in res_kaku)
-
-    # 2. Sonkeigo: する should have なさる/なさいます and される/されます
-    res_suru = engine._get_sonkeigo_variants("する", "する", {"sonkeigo": "なさる"})
-    assert any("なさる" in v for v in res_suru)
-    assert any("なさいます" in v for v in res_suru)
-    assert any("される" in v for v in res_suru)
-
-    # 3. Kenjougo: 連絡する (Nhóm 3) should generate ご連絡いたします / ご連絡します
-    res_renraku = engine._get_kenjougo_variants("連絡する", "連絡する", None)
-    assert any("ご連絡いたします" in v for v in res_renraku)
-    assert any("ご連絡します" in v for v in res_renraku)
-
-    # 4. Kenjougo: 待つ (Nhóm 1) should generate お待ちいたします / お待ちします
-    res_matsu = engine._get_kenjougo_variants("待つ", "待つ", None)
-    assert any("お待ちいたします" in v for v in res_matsu)
-    assert any("お待ちします" in v for v in res_matsu)
-
-    # 5. Honorific prefix algorithm:
-    p_name = get_honorific_prefix("名前")
-    assert p_name["result"] == "お名前"
-    assert p_name["prefix"] == "お"
-
-    p_kazoku = get_honorific_prefix("家族")
-    assert p_kazoku["result"] == "ご家族"
-    assert p_kazoku["prefix"] == "ご"
-
-    p_denwa = get_honorific_prefix("電話")  # Kango exception taking お
-    assert p_denwa["result"] == "お電話"
-    assert p_denwa["prefix"] == "お"

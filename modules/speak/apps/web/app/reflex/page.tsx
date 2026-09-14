@@ -1,10 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { usePathname } from "next/navigation";
 import { GlobalKeybindingsModal } from "@/components/layout/global-keybindings-modal";
-import { CoachPanel } from "@/features/coach";
-import { useCoachCore } from "@/features/coach/hooks/useCoachCore";
 import { useSystemKeybindings } from "@/hooks/use-system-keybindings";
 import { speakJapaneseText, speakVietnameseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
 import { useReflexSession } from "@/features/reflex/hooks/useReflexSession";
@@ -45,7 +42,6 @@ export default function ReflexPage() {
   const [sessionRemainingSec, setSessionRemainingSec] = useState(duration * 60);
   const [sessionElapsedSec, setSessionElapsedSec] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
-  const [coachOpen, setCoachOpen] = useState(false);
 
   const sessionEndTimestampRef = useRef<number | null>(null);
   const sessionPausedRemainingMsRef = useRef<number>(duration * 60 * 1000);
@@ -130,17 +126,6 @@ export default function ReflexPage() {
 
   const timerMs = PRESSURE_LEVELS.find((p) => p.id === pressure)?.ms ?? 4000;
   const activeExercise = session.exercise;
-  const pathname = usePathname();
-  const coach = useCoachCore();
-
-  const handleCoachSelect = useCallback((prompt: string) => {
-    setCoachOpen(true);
-    setTimeout(
-      () => coach.ask(prompt, { route: pathname || "/reflex", exerciseId: (activeExercise as any)?.id }),
-      300
-    );
-  }, [activeExercise, coach, pathname]);
-
   const playedPromptExerciseIdRef = useRef<string | null>(null);
 
   const playPromptAudio = useCallback(
@@ -336,8 +321,6 @@ export default function ReflexPage() {
       if (e.key === "Escape") {
         if (showHelp) {
           setShowHelp(false);
-        } else if (coachOpen) {
-          setCoachOpen(false);
         } else if (filters.showFormFilterModal) {
           filters.setShowFormFilterModal(false);
         } else if (filters.showQnaTopicFilterModal) {
@@ -383,7 +366,6 @@ export default function ReflexPage() {
           timerMs={timerMs}
           onStartSession={() => session.startSession()}
           onOpenHelp={() => setShowHelp(true)}
-          onCoachSelect={handleCoachSelect}
         />
       ) : (
         <ReflexArenaView
@@ -419,23 +401,6 @@ export default function ReflexPage() {
 
       {/* Global Keybindings Modal */}
       <GlobalKeybindingsModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
-
-      {/* Floating AI Coach Panel & Trigger */}
-      <CoachPanel
-        open={coachOpen}
-        onClose={() => setCoachOpen(false)}
-        route={pathname || "/reflex"}
-        exerciseId={(activeExercise as any)?.id}
-      />
-      <button
-        onClick={() => setCoachOpen(true)}
-        className="fixed bottom-20 right-4 z-30 md:bottom-5 px-3 py-2 rounded-2xl bg-card border border-border shadow-xl text-xs font-bold flex items-center gap-1.5 hover:border-primary/40 transition-all cursor-pointer"
-      >
-        <span className="h-5 w-5 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs">
-          🤖
-        </span>
-        <span>AI Coach</span>
-      </button>
     </>
   );
 }

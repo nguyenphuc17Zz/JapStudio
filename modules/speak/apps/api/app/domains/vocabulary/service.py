@@ -371,6 +371,6 @@ class VocabularyService:
         return SaveVocabularyNotebookResponse(
             success=True,
             item_id=item.id,
-            message=f"Đã lưu từ 「{payload.expression}」 vào Sổ tay từ vựng & Lộ trình học thành công!",
+            message=f"Đã lưu từ 「{payload.expression}」 vào Sổ tay từ vựng thành công!",
             created_at=now.isoformat(),
         )

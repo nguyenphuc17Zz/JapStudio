@@ -18,7 +18,7 @@ const shippori = { variable: "" } as const;
 export const metadata: Metadata = {
   title: "Hanasu AI — Luyện nói tiếng Nhật cùng AI",
   description:
-    "Nền tảng luyện nói tiếng Nhật với hội thoại thời gian thực, Shadowing YouTube và lộ trình cá nhân hóa.",
+    "Nền tảng luyện nói tiếng Nhật với hội thoại thời gian thực, Phản xạ tức thì và Shadowing YouTube.",
   icons: {
     icon: "/icon.svg",
   },

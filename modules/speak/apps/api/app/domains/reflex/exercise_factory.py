@@ -664,7 +664,10 @@ class ReflexExerciseFactory:
         if tier_filter:
             try:
                 t_int = int(tier_filter)
-                candidates = [w for w in candidates if getattr(w, "tier", 1) == t_int] or candidates
+                if t_int == 1:
+                    candidates = [w for w in candidates if getattr(w, "tier", 1) == 1 and getattr(w, "rank", 1000) <= 1000] or candidates
+                else:
+                    candidates = [w for w in candidates if getattr(w, "tier", 1) == t_int] or candidates
             except Exception:
                 pass
 
@@ -746,28 +749,38 @@ class ReflexExerciseFactory:
         candidates = None
         if category_filter and category_filter != "all":
             tokens = [c.strip().lower() for c in category_filter.split(",") if c.strip()]
-            candidates = [
-                k for k in get_all_keigo_vocab()
-                if k.category.lower() in tokens
-                or k.target_type.lower() in tokens
-                or any(tok in k.source_word.lower() for tok in tokens)
-                or any(tok in k.source_reading.lower() for tok in tokens)
-                or any(tok in k.canonical.lower() for tok in tokens)
-                or any(tok in k.canonical_reading.lower() for tok in tokens)
-                or any(tok in k.meaning_vi.lower() for tok in tokens)
-                or any(tok in syn.lower() for syn in k.acceptable_variants for tok in tokens)
-                or any(tok in (k.triplet_sonkeigo or "").lower() for tok in tokens)
-                or any(tok in (k.triplet_kenjougo or "").lower() for tok in tokens)
-            ]
-            if not candidates:
+            matched = []
+            for tok in tokens:
+                if tok in ("sonkeigo", "sonkeigo_all"):
+                    matched.extend([k for k in get_all_keigo_vocab() if k.target_type == "sonkeigo"])
+                elif tok in ("kenjougo", "kenjougo_all"):
+                    matched.extend([k for k in get_all_keigo_vocab() if k.target_type == "kenjougo"])
+                elif tok in ("bikago", "bikago_teineigo"):
+                    matched.extend([k for k in get_all_keigo_vocab() if k.category == "noun_prefixes" or k.formula_id.startswith("bikago") or k.formula_id == "teineigo_desu_masu"])
+                elif tok in ("business", "business_all", "business_words"):
+                    matched.extend([k for k in get_all_keigo_vocab() if k.category == "business_words"])
+                else:
+                    matched.extend([
+                        k for k in get_all_keigo_vocab()
+                        if k.formula_id.lower() == tok or k.category.lower() == tok or k.target_type.lower() == tok
+                    ])
+
+            seen_keys = set()
+            deduped = []
+            for item in matched:
+                key = (item.source_word, item.canonical, item.formula_id)
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    deduped.append(item)
+
+            if deduped:
+                candidates = deduped
+            else:
+                # Text-based query fallback if non-formula tokens passed
                 candidates = [
                     k for k in get_all_keigo_vocab()
-                    if any(tok in k.example_ja.lower() for tok in tokens)
-                    or any(tok in k.example_vi.lower() for tok in tokens)
-                    or any(tok in k.explanation_vi.lower() for tok in tokens)
-                ]
-            if not candidates:
-                candidates = get_all_keigo_vocab()
+                    if any(tok in k.source_word.lower() or tok in k.canonical.lower() or tok in k.meaning_vi.lower() for tok in tokens)
+                ] or get_all_keigo_vocab()
 
         entry = _get_next_keigo_vocab(candidate_pool=candidates, target_type=category_filter or "all", difficulty=difficulty)
 
@@ -798,6 +811,7 @@ class ReflexExerciseFactory:
             "explanation_vi": entry.explanation_vi,
             "subject_hint_vi": entry.subject_hint_vi,
             "formula": entry.formula,
+            "formula_id": entry.formula_id,
             "example_ja": entry.example_ja,
             "example_vi": entry.example_vi,
             "category": entry.category,
@@ -812,6 +826,7 @@ class ReflexExerciseFactory:
                 "type": "keigo_vocab_recall",
                 "source": entry.source_word,
                 "target_type": entry.target_type,
+                "formula_id": entry.formula_id,
                 "answer": entry.canonical,
             },
             "estimated_minutes": 3,

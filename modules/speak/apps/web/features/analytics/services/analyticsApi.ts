@@ -1,10 +1,5 @@
 import {
   AnalyticsDashboardDTO,
-  CoachAnswerDTO,
-  CoachAskRequest,
-  CoachFeedbackRequest,
-  CoachQuickCardDTO,
-  DailyBriefingDTO,
   GoalProgressDTO,
   InsightDTO,
   MetricValueDTO,
@@ -58,27 +53,6 @@ export const analyticsApi = {
     fetchJson<{ status: string; snapshot_date: string }>("/analytics/snapshot/refresh", {
       method: "POST",
     }),
-
-  // Personal AI Coach
-  askCoach: (req: CoachAskRequest): Promise<CoachAnswerDTO> =>
-    fetchJson<CoachAnswerDTO>("/coach/ask", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
-
-  getCoachHistory: (limit = 20): Promise<any[]> =>
-    fetchJson<any[]>(`/coach/history?limit=${limit}`),
-
-  submitCoachFeedback: (req: CoachFeedbackRequest): Promise<{ status: string; id: string }> =>
-    fetchJson<{ status: string; id: string }>("/coach/feedback", {
-      method: "POST",
-      body: JSON.stringify(req),
-    }),
-
-  getDailyBriefing: (): Promise<DailyBriefingDTO> => fetchJson<DailyBriefingDTO>("/coach/briefing"),
-
-  getCoachQuickCards: (): Promise<CoachQuickCardDTO[]> =>
-    fetchJson<CoachQuickCardDTO[]>("/coach/quick-cards"),
 
   getDiagnostic: (period = "30d"): Promise<any> =>
     fetchJson<any>(`/analytics/diagnostic?period=${period}`),

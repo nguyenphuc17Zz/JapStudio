@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { usePathname } from "next/navigation";
 import {
   Mic,
   Square,
@@ -32,8 +31,6 @@ import { RampScaffoldPanel } from "@/features/speaking/components/RampScaffoldPa
 import { RampFeedbackCard } from "@/features/speaking/components/RampFeedbackCard";
 import { RampSessionSummaryCard } from "@/features/speaking/components/RampSessionSummary";
 import { RampLobby } from "@/features/speaking/components/RampLobby";
-import { CoachQuickActions } from "@/features/coach";
-import { CoachInsightCard } from "@/features/coach/components/CoachInsightCard";
 
 const RampCheatsheetModal = dynamic(
   () => import("@/features/speaking/components/RampCheatsheetModal").then((m) => m.RampCheatsheetModal),
@@ -43,12 +40,6 @@ const GlobalKeybindingsModal = dynamic(
   () => import("@/components/layout/global-keybindings-modal").then((m) => m.GlobalKeybindingsModal),
   { ssr: false }
 );
-const CoachPanel = dynamic(
-  () => import("@/features/coach").then((m) => m.CoachPanel),
-  { ssr: false }
-);
-import { useCoachProactive } from "@/features/coach/hooks/useCoachProactive";
-import { useCoachCore } from "@/features/coach/hooks/useCoachCore";
 import { useSystemKeybindings } from "@/hooks/use-system-keybindings";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
@@ -92,12 +83,8 @@ const EXERCISE_TYPE_LABEL: Record<string, string> = {
 export default function RampPage() {
   const ramp = useRamp();
   const recorder = useAudioRecorder();
-  const pathname = usePathname();
 
-  // Coach integration
-  const coach = useCoachCore();
-  const { insights, dismiss } = useCoachProactive();
-  const [coachOpen, setCoachOpen] = useState(false);
+
 
   // Modals & configuration
   const [selectedMinutes, setSelectedMinutes] = usePersistedState<number>(
@@ -309,11 +296,6 @@ export default function RampPage() {
   const handlePlayAudio = (text: string) => {
     stopWebSpeech();
     speakJapaneseText(text);
-  };
-
-  const handleCoachSelect = (prompt: string) => {
-    setCoachOpen(true);
-    setTimeout(() => coach.ask(prompt, { route: pathname || "/ramp", sessionId: ramp.session?.id }), 300);
   };
 
   // Keyboard navigation listener
@@ -831,30 +813,9 @@ export default function RampPage() {
                     hintRevealed={ramp.usedHint}
                   />
 
-                  {/* Studio Sidekick Card (AI Coach & Shortcuts) */}
-                  <div className="p-4 rounded-2xl bg-card border border-border/80 washi-texture space-y-3 shadow-xs">
-                    <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
-                      <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5 text-primary" />
-                        AI Coach Đồng Hành
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCoachOpen(true)}
-                        className="h-6 px-2 text-[10px] text-primary hover:text-primary/80 font-bold"
-                      >
-                        Mở Chat ➔
-                      </Button>
-                    </div>
-
-                    <CoachQuickActions
-                      route={pathname || "/ramp"}
-                      onSelect={handleCoachSelect}
-                    />
-
-                    {/* 1-Line Clean Keybindings Bar */}
-                    <div className="pt-2 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-1">
+                  {/* Studio Shortcuts Card */}
+                  <div className="p-3.5 rounded-2xl bg-card border border-border/80 washi-texture space-y-2 shadow-xs">
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground flex-wrap gap-1">
                       <span>
                         <kbd className="font-mono font-bold text-foreground bg-muted px-1.5 py-0.5 rounded border">Space</kbd> Nói/Nộp
                       </span>
@@ -893,13 +854,6 @@ export default function RampPage() {
       <GlobalKeybindingsModal
         isOpen={showKeybindingsModal}
         onClose={() => setShowKeybindingsModal(false)}
-      />
-
-      <CoachPanel
-        open={coachOpen}
-        onClose={() => setCoachOpen(false)}
-        route={pathname || "/ramp"}
-        sessionId={ramp.session?.id}
       />
     </div>
   );

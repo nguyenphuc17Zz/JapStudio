@@ -1,49 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { StatCard } from "@/components/dashboard/stat-card";
 import { SkillRadarCard } from "@/components/dashboard/skill-radar-card";
 import { RecentSessions } from "@/components/dashboard/recent-sessions";
-import { SpeakingHeatmap } from "@/components/dashboard/speaking-heatmap";
-import { EmaGoalCard } from "@/components/dashboard/ema-goal-card";
 import { StudioModesHub } from "@/components/dashboard/StudioModesHub";
 import { CrossStudioBanner } from "@/components/dashboard/CrossStudioBanner";
 import { RecommendedPersonasSection } from "@/components/dashboard/recommended-personas-section";
-import { DailySenseiBriefingCard } from "@/features/coach";
 import { Button } from "@/components/ui/button";
 import { usePersonas } from "@/hooks/use-personas";
-import {
-  useGameProfile,
-  useQuests,
-  useStreak,
-  XPBar,
-  QuestCard,
-} from "@/features/gamification";
 import { OnboardingModal } from "@/features/onboarding";
 import {
-  Flame,
-  Clock,
-  Award,
-  Swords,
-  ArrowRight,
   Mic,
-  Target,
-  Compass,
+  Zap,
 } from "lucide-react";
 
 export default function DashboardPage() {
   const { personas, loading: personasLoading } = usePersonas();
-  const { profile, loading: profileLoading } = useGameProfile();
-  const { dailyQuests, loading: questsLoading } = useQuests();
-  const { streak } = useStreak();
-
-  const currentLevel = profile?.level || 1;
-  const currentRank = profile?.rank || "Beginner (初学者)";
-  const currentStreakDays = streak?.current_streak ?? profile?.current_streak ?? 0;
 
   return (
-    <div className="space-y-4 max-w-6xl mx-auto pb-8 animate-in fade-in duration-200">
+    <div className="space-y-5 max-w-6xl mx-auto pb-8 animate-in fade-in duration-200">
       {/* 1. Hero chào mừng — Kyoto Clean Glass */}
       <div className="rounded-[24px] border border-border/70 bg-card/65 backdrop-blur-2xl p-6 md:p-7 shadow-glass-card hover:shadow-glass-hover transition-all duration-300 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-primary/10 via-sakura-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
@@ -66,10 +42,10 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-3 shrink-0 flex-wrap">
-            <Link href="/learning">
+            <Link href="/reflex">
               <Button variant="outline" size="md" className="gap-2 font-semibold rounded-full border-border/80 bg-muted/30 hover:bg-card">
-                <Compass className="h-4 w-4 text-muted-foreground" />
-                <span>Lộ trình học</span>
+                <Zap className="h-4 w-4 text-amber-500" />
+                <span>Luyện phản xạ</span>
               </Button>
             </Link>
 
@@ -82,108 +58,18 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
-
-        {profile && (
-          <div className="mt-5 pt-4 border-t border-border/60 relative z-10">
-            <XPBar levelProgress={profile.level_progress} />
-          </div>
-        )}
       </div>
 
-      {/* 2. Daily Sensei Briefing */}
-      <DailySenseiBriefingCard />
-
-      {/* 3. Studio Modes Quick Hub (5 Phòng Luyện Studio Thực Chiến) */}
+      {/* 2. Studio Modes Quick Hub (Phòng Luyện Studio Thực Chiến) */}
       <StudioModesHub />
 
-      {/* 3.5 Chuyển sang JapWrite Studio */}
+      {/* 3. Chuyển sang JapWrite Studio */}
       <CrossStudioBanner />
 
-      {/* 4. Thống kê nhanh */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
-        <StatCard
-          title="Cấp độ"
-          jaTitle="レベル"
-          value={`Lv. ${currentLevel}`}
-          subtext={currentRank}
-          icon={Swords}
-          color="kintsugi"
-        />
-        <StatCard
-          title="Chuỗi ngày"
-          jaTitle="連続日数"
-          value={`${currentStreakDays} ngày`}
-          subtext={
-            streak?.is_qualified_today
-              ? "Đã giữ chuỗi hôm nay"
-              : "Luyện ngay để giữ chuỗi"
-          }
-          icon={Flame}
-          color="matcha"
-        />
-        <StatCard
-          title="Điểm hôm nay"
-          jaTitle="本日獲得"
-          value={profile?.today_xp ? `+${profile.today_xp} XP` : "0 XP"}
-          subtext="Tích luỹ hôm nay"
-          icon={Clock}
-          color="aizome"
-        />
-        <StatCard
-          title="Nhiệm vụ"
-          jaTitle="本日の目標"
-          value={`${profile?.today_completed_quests || 0} / 3`}
-          subtext="Mục tiêu hoàn thành"
-          icon={Award}
-          color="matcha"
-        />
-      </div>
-
-      {/* 5. Ma Trận Giọng Nói Thực Tế & Thẻ Mục Tiêu */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <SpeakingHeatmap currentStreak={currentStreakDays} />
-        </div>
-        <div>
-          <EmaGoalCard />
-        </div>
-      </div>
-
-      {/* 6. Nhiệm vụ hôm nay */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <span className="h-6 w-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-              <Target className="h-3.5 w-3.5" />
-            </span>
-            <span>Nhiệm vụ hôm nay</span>
-            <span className="text-xs font-normal text-muted-foreground font-jp">本日のクエスト</span>
-          </h2>
-          <Link
-            href="/quests"
-            className="text-xs font-medium text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
-          >
-            Xem tất cả <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {questsLoading ? (
-            <div className="col-span-3 p-6 text-center text-sm text-muted-foreground">Đang tải nhiệm vụ…</div>
-          ) : dailyQuests.length === 0 ? (
-            <div className="col-span-3 p-6 text-center text-sm text-muted-foreground">Chưa có nhiệm vụ hôm nay.</div>
-          ) : (
-            dailyQuests.slice(0, 3).map((quest) => (
-              <QuestCard key={quest.id} quest={quest} />
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* 7. Đối tác hội thoại gợi ý */}
+      {/* 4. Đối tác hội thoại gợi ý */}
       <RecommendedPersonasSection personas={personas} loading={personasLoading} />
 
-      {/* 8. Analytics & Recent Activity */}
+      {/* 5. Analytics & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <SkillRadarCard />
         <RecentSessions />

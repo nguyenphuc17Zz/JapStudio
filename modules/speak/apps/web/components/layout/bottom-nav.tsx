@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Mic, Zap, Crown, Music, Compass, GraduationCap, Swords, Settings } from "lucide-react";
+import { LayoutDashboard, Mic, Zap, Crown, Music, Compass, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -13,8 +13,6 @@ const TABS = [
   { href: "/keigo", label: "Kính ngữ", icon: Crown },
   { href: "/pitch", label: "Cao độ", icon: Music },
   { href: "/situations", label: "Tình huống", icon: Compass },
-  { href: "/learning", label: "Học tập", icon: GraduationCap },
-  { href: "/game", label: "Dojo", icon: Swords },
 ];
 
 export function BottomNav() {
@@ -28,7 +26,7 @@ export function BottomNav() {
           const active =
             t.href === "/speaking"
               ? pathname === "/speaking" || (pathname.startsWith("/speaking/") && !["/speaking/speech", "/speaking/reflex", "/speaking/pronunciation"].some((p) => pathname.startsWith(p)))
-              : pathname === t.href || (t.href !== "/dashboard" && pathname.startsWith(t.href)) || (t.href === "/game" && ["/quests", "/skills", "/bosses", "/achievements", "/unlocks"].some((p) => pathname.startsWith(p)));
+              : pathname === t.href || (t.href !== "/dashboard" && pathname.startsWith(t.href));
           return (
             <Link
               key={t.href}

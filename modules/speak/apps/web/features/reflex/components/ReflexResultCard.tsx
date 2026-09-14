@@ -16,8 +16,6 @@ import {
   Play,
   Pause,
   Mic,
-  Check,
-  Crown,
   Eye,
   EyeOff,
 } from "lucide-react";
@@ -106,16 +104,13 @@ export function ReflexResultCard({
   const isCorrect = result?.success ?? false;
   const latency = result?.reactionLatencyMs;
   const timerLimit = result?.timerLimitMs || 3000;
-  const latencyRatio = latency != null ? Math.min(1, latency / timerLimit) : 1;
   const isBlurred = isPending && !isRevealed;
 
   // Resolve Canonical Answer & Vocabulary Context
   const isVocab = exercise?.exercise_type === "reflex_vocabulary" || result?.direction !== undefined;
   const isKeigoVocab = exercise?.exercise_type === "reflex_keigo_vocab";
   const rc = exercise?.extra_metadata?.reflex_config || {};
-  const vocabDirection = result?.direction || rc.direction || "ja_to_vi";
   const promptText = result?.promptText || rc.prompt || exercise?.prompt || "";
-  const wordReading = result?.promptReading || rc.word_reading || rc.prompt_reading || "";
   const wordMeaningVi = result?.promptTranslation || rc.word_meaning_vi || rc.prompt_translation || "";
   const vocabCollocationJa = result?.collocationJa || rc.collocation_ja || exercise?.collocationJa || "";
   const vocabCollocationVi = result?.collocationVi || rc.collocation_vi || exercise?.collocationVi || "";
@@ -127,11 +122,10 @@ export function ReflexResultCard({
   const keigoTargetLabel = result?.targetLabel || rc.target_label_vi || "Kính ngữ";
   const tripletSonkeigo = result?.tripletSonkeigo || rc.triplet_sonkeigo || "";
   const tripletKenjougo = result?.tripletKenjougo || rc.triplet_kenjougo || "";
-  const explanationVi = result?.explanationVi || rc.explanation_vi || "";
   const keigoFormula = rc.formula || exercise?.formula || "";
   const keigoExampleJa = rc.example_ja || exercise?.exampleJa || result?.exampleJa || "";
   const keigoExampleVi = rc.example_vi || exercise?.exampleVi || result?.exampleVi || "";
-  const keigoSubjectHint = rc.subject_hint_vi || exercise?.subjectHintVi || "";
+
   const isTransformation = exercise?.exercise_type === "reflex_transformation" || rc.sub_mode === "reflex_transformation";
   const transformSource = exercise?.source || rc.source || promptText || "";
   const transformTargetLabel = exercise?.targetLabel || rc.target_label || rc.targetLabel || exercise?.task || rc.task || "";
@@ -139,10 +133,6 @@ export function ReflexResultCard({
   const transformGrammarNote = exercise?.grammarNote || rc.grammar_note || rc.grammarNote || "";
 
   const isContext = exercise?.exercise_type === "reflex_context" || rc.sub_mode === "reflex_context";
-  const contextRole = exercise?.role || rc.role || rc.relationship || exercise?.relationship || "Đối phương";
-  const contextSpeakerJa = exercise?.speakerJa || rc.speaker_ja || promptText || "";
-  const contextSpeakerVi = exercise?.speakerVi || rc.speaker_vi || "";
-  const contextIntent = exercise?.intent || rc.intent || "";
   const contextCulturalNote = exercise?.culturalNote || rc.cultural_note || rc.culturalNote || "";
 
   const isQna = exercise?.exercise_type === "reflex_qna" || rc.sub_mode === "reflex_qna";
@@ -303,7 +293,7 @@ export function ReflexResultCard({
   return (
     <div
       className={cn(
-        "rounded-3xl border p-3.5 sm:p-4 shadow-lg transition-all animate-in fade-in zoom-in-95 duration-200 washi-texture h-full flex flex-col justify-between overflow-y-auto space-y-2.5",
+        "rounded-3xl border p-3 sm:p-3.5 shadow-lg transition-all animate-in fade-in zoom-in-95 duration-200 washi-texture h-full flex flex-col justify-between overflow-hidden gap-2",
         statusConfig.borderClass,
         className
       )}
@@ -331,12 +321,12 @@ export function ReflexResultCard({
         />
       )}
 
-      {/* 1. Status, Score & Latency Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2">
+      {/* 1. COMPACT STUDIO TOP BAR: Status, Score, Latency & Quick Actions */}
+      <div className="flex items-center justify-between gap-2 shrink-0 pb-1 border-b border-border/50">
+        <div className="flex items-center gap-2 min-w-0">
           <span
             className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-2xs whitespace-nowrap shrink-0",
+              "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border shadow-2xs whitespace-nowrap shrink-0",
               statusConfig.badgeClass
             )}
           >
@@ -347,7 +337,7 @@ export function ReflexResultCard({
           {!isPending && result?.score != null && (
             <span
               className={cn(
-                "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono font-black border shadow-2xs whitespace-nowrap shrink-0",
+                "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-mono font-black border shadow-2xs whitespace-nowrap shrink-0",
                 statusConfig.badgeClass
               )}
             >
@@ -357,574 +347,481 @@ export function ReflexResultCard({
           )}
         </div>
 
-        {isPending ? (
-          <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-muted-foreground whitespace-nowrap shrink-0">
-            <Clock className="h-3.5 w-3.5 text-primary" />
-            <span>Chờ câu trả lời...</span>
-          </div>
-        ) : latency != null ? (
-          <div className="flex items-center gap-2 text-xs font-mono font-bold text-foreground whitespace-nowrap shrink-0">
-            <Zap className="h-3.5 w-3.5 text-amber-500" />
-            <span>Phản xạ: {Math.round(latency)}ms</span>
-            <span className="text-muted-foreground font-normal">/ {timerLimit > 0 ? `${timerLimit / 1000}s` : "∞"}</span>
-          </div>
-        ) : null}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {!isPending && latency != null ? (
+            <div className="flex items-center gap-1.5 text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-muted/60 border border-border/60 shrink-0">
+              <Zap className="h-3 w-3 text-amber-500" />
+              <span>{Math.round(latency)}ms</span>
+              <span className="text-muted-foreground font-normal text-[10px]">
+                / {timerLimit > 0 ? `${timerLimit / 1000}s` : "∞"}
+              </span>
+            </div>
+          ) : isPending ? (
+            <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-muted-foreground px-2 py-0.5 rounded-full bg-muted/40 border border-border/40 shrink-0">
+              <Clock className="h-3 w-3 text-primary animate-pulse" />
+              <span>Chờ phản xạ...</span>
+            </div>
+          ) : null}
+
+          {isPending && (
+            <button
+              type="button"
+              onClick={() => setIsRevealed((v) => !v)}
+              className="text-[10px] px-2 py-0.5 rounded-full bg-card/80 border border-primary/30 text-primary font-bold hover:bg-primary/10 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-2xs"
+              title={isRevealed ? "Làm mờ đáp án (Phím V)" : "Xem trước đáp án mẫu (Phím V)"}
+            >
+              {isRevealed ? (
+                <>
+                  <EyeOff className="h-3 w-3 shrink-0" />
+                  <span>Mờ</span>
+                  <kbd className="text-[9px] font-mono px-1 rounded bg-primary/10 border border-primary/25 font-bold">V</kbd>
+                </>
+              ) : (
+                <>
+                  <Eye className="h-3 w-3 shrink-0" />
+                  <span>Xem</span>
+                  <kbd className="text-[9px] font-mono px-1 rounded bg-primary/10 border border-primary/25 font-bold">V</kbd>
+                </>
+              )}
+            </button>
+          )}
+
+          {ttsText && (
+            <button
+              type="button"
+              onClick={handlePlayModelTTS}
+              className="p-1 px-2 rounded-lg bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 shrink-0 shadow-2xs transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer whitespace-nowrap"
+              title="Nghe phát âm chuẩn của câu mẫu (Phím A)"
+            >
+              <Volume2 className={cn("h-3 w-3 shrink-0", isTTSPlaying && "animate-bounce")} />
+              <span>{isTTSPlaying ? "Đang đọc..." : "Nghe mẫu"}</span>
+              <kbd className="text-[9px] font-mono px-1 rounded bg-primary/15 border border-primary/25 text-primary font-bold ml-0.5">A</kbd>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Latency Speed Bar Indicator */}
-      {!isPending && latency != null && (
-        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden border border-border/50">
-          <div
-            className={cn(
-              "h-full rounded-full transition-all duration-500",
-              latencyRatio < 0.5
-                ? "bg-emerald-500"
-                : latencyRatio < 0.75
-                ? "bg-amber-500"
-                : "bg-rose-500"
-            )}
-            style={{ width: `${latencyRatio * 100}%` }}
-          />
+      {/* 2. USER VOICE STRIP: Compact Horizontal Banner */}
+      <div className="px-3 py-2 rounded-2xl bg-card/90 dark:bg-black/30 border border-border/80 shadow-2xs flex items-center justify-between gap-2.5 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="p-1 rounded-md bg-primary/10 text-primary">
+            <Mic className="h-3.5 w-3.5" />
+          </span>
+          <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground hidden sm:inline">
+            {isPending ? "Bạn nói" : "Bạn đã nói"}:
+          </span>
         </div>
-      )}
 
-      {/* 3. DUAL CORE COMPARISON: User Voice Audio vs Model Answer (Đáp Án Mẫu) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-        {/* CARD A: Bản Thu Âm & Giọng Của Bạn */}
-        <div className="p-4 rounded-2xl bg-card border border-border/80 shadow-xs space-y-3 flex flex-col justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-border/60">
-              <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                <Mic className="h-3.5 w-3.5 text-primary shrink-0" />
-                <span>{isPending ? "Giọng của bạn (Live)" : "Bạn đã nói"}</span>
+        <div className="flex-1 min-w-0 px-1 text-left">
+          {isPending ? (
+            liveTranscript ? (
+              <span className="text-sm sm:text-base font-bold font-jp text-foreground block truncate">
+                <UniversalFurigana text={liveTranscript} fontSize="sm" />
               </span>
-              {!isPending && result?.isWhisperRescued ? (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold flex items-center gap-1 whitespace-nowrap shrink-0">
-                  <Sparkles className="h-3 w-3 text-amber-500" />
-                  <span>Whisper AI cứu</span>
-                </span>
-              ) : (!isPending && result?.transcript) || liveTranscript ? (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-mono font-bold whitespace-nowrap shrink-0">
-                  STT ja-JP
-                </span>
-              ) : null}
-            </div>
+            ) : (
+              <span className="text-xs text-muted-foreground italic font-sans flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-primary animate-ping shrink-0" />
+                Đang lắng nghe giọng bạn...
+              </span>
+            )
+          ) : result?.transcript ? (
+            <span className="text-sm sm:text-base font-bold font-jp text-foreground block truncate">
+              <UniversalFurigana text={result.transcript} fontSize="sm" />
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground italic">
+              {isTimeout ? "Hết giờ (chưa ghi nhận âm thanh)" : "Không có âm thanh thu âm"}
+            </span>
+          )}
+        </div>
 
-            <div className="rounded-xl bg-muted/40 dark:bg-black/25 p-3 border border-border/60 min-h-[3.5rem] flex items-center justify-center text-center shadow-inner">
-              {isPending ? (
-                liveTranscript ? (
-                  <span className="text-base sm:text-lg font-black font-jp text-foreground tracking-wide leading-snug">
-                    <UniversalFurigana text={liveTranscript} fontSize="normal" />
-                  </span>
-                ) : (
-                  <span className="text-xs text-muted-foreground italic font-sans font-medium flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-primary animate-ping shrink-0" />
-                    Đang lắng nghe giọng bạn nói...
-                  </span>
-                )
-              ) : result?.transcript ? (
-                <span className="text-base sm:text-lg font-black font-jp text-foreground tracking-wide leading-snug">
-                  <UniversalFurigana text={result.transcript} fontSize="normal" />
-                </span>
-              ) : (
-                <span className="text-xs text-muted-foreground italic font-sans">
-                  {isTimeout ? "Không ghi nhận giọng nói (Hết giờ)" : "Không có âm thanh thu âm"}
-                </span>
-              )}
-            </div>
-          </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {!isPending && result?.isWhisperRescued ? (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 font-bold shrink-0">
+              Whisper AI
+            </span>
+          ) : null}
 
-          {/* User Audio Player Widget */}
-          {!isPending && result?.userAudioUrl ? (
-            <div className="p-2.5 px-3 rounded-xl bg-muted/50 border border-border/70 flex items-center justify-between gap-3 shadow-xs">
+          {!isPending && result?.userAudioUrl && (
+            <div className="flex items-center gap-1.5 bg-muted/60 px-2 py-1 rounded-xl border border-border/60 shadow-2xs">
               <button
                 type="button"
                 onClick={togglePlayUserAudio}
                 className={cn(
-                  "h-8 w-8 rounded-full flex items-center justify-center transition-all shadow-xs shrink-0 cursor-pointer",
+                  "h-6 w-6 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0",
                   isUserAudioPlaying
-                    ? "bg-primary text-primary-foreground animate-pulse ring-2 ring-primary/30"
+                    ? "bg-primary text-white animate-pulse ring-2 ring-primary/30"
                     : "bg-primary/10 text-primary hover:bg-primary/20"
                 )}
                 title={isUserAudioPlaying ? "Tạm dừng audio của bạn" : "Nghe lại giọng nói của bạn"}
               >
                 {isUserAudioPlaying ? (
-                  <Pause className="h-4 w-4" />
+                  <Pause className="h-3 w-3" />
                 ) : (
-                  <Play className="h-4 w-4 fill-current ml-0.5" />
+                  <Play className="h-3 w-3 fill-current ml-0.5" />
                 )}
               </button>
-
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center justify-between text-[10px] font-mono text-muted-foreground font-bold">
-                  <span>{isUserAudioPlaying ? "Đang phát giọng bạn..." : "Bản thu âm của bạn"}</span>
-                  <span>
-                    {formatAudioTime(userAudioCurrentTime)} / {formatAudioTime(userAudioDuration || 0)}
-                  </span>
-                </div>
-
-                {/* Animated Waveform / Progress Slider */}
-                <div className="flex items-center gap-1 h-2">
-                  <div className="flex-1 h-1.5 bg-muted-foreground/20 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all duration-100"
-                      style={{
-                        width: userAudioDuration > 0
-                          ? `${(userAudioCurrentTime / userAudioDuration) * 100}%`
-                          : "0%",
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : isPending ? (
-            <div className="p-2 rounded-xl bg-muted/20 border border-dashed border-border/70 text-[11px] text-muted-foreground text-center italic">
-              Bản ghi âm giọng bạn sẽ hiển thị tại đây sau khi nộp
-            </div>
-          ) : (
-            <div className="p-2 rounded-xl bg-muted/20 border border-dashed border-border/70 text-[11px] text-muted-foreground text-center italic">
-              Không có file ghi âm cho câu này
+              <span className="text-[10px] font-mono text-muted-foreground font-semibold">
+                {formatAudioTime(userAudioCurrentTime)} / {formatAudioTime(userAudioDuration || 0)}
+              </span>
             </div>
           )}
         </div>
+      </div>
 
-        {/* CARD B: Đáp Án Chuẩn Mẫu (Model Answer & Native TTS) */}
-        <div className="p-4 rounded-2xl bg-primary/[0.03] dark:bg-primary/[0.06] border border-primary/25 shadow-xs space-y-3 flex flex-col justify-between relative overflow-hidden">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-primary/20">
-              <span className="text-[11px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                <Check className="h-3.5 w-3.5 stroke-[3] shrink-0" />
-                <span>Đáp án chuẩn</span>
+      {/* 3. MODEL ANSWER DECK: Full Width, High-Density Zero-Scroll Studio Deck */}
+      <div
+        className={cn(
+          "flex-1 min-h-0 flex flex-col justify-between rounded-2xl bg-primary/[0.02] dark:bg-primary/[0.04] border border-primary/20 p-2.5 sm:p-3 relative overflow-hidden transition-all duration-300",
+          isBlurred && "filter blur-sm select-none pointer-events-none"
+        )}
+      >
+        {/* SUB-MODE BRANCH 1: SPEED Q&A & CONTEXT (Compact 3-Row Multi-Angle List) */}
+        {(isQna || isContext) && effectiveMultiAnswers ? (
+          <div className="flex flex-col justify-between h-full gap-1.5">
+            <div className="flex items-center justify-between pb-1 border-b border-primary/15">
+              <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                <span>{isContext ? "3 Hướng Phản Hồi Thực Tế:" : "3 Hướng Trả Lời Đa Chiều:"}</span>
               </span>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {isPending && (
-                  <button
-                    type="button"
-                    onClick={() => setIsRevealed((v) => !v)}
-                    className="text-[10px] px-2.5 py-0.5 rounded-full bg-card/80 border border-primary/30 text-primary font-bold hover:bg-primary/10 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-2xs"
-                    title={isRevealed ? "Làm mờ đáp án (Phím V)" : "Xem trước đáp án mẫu (Phím V)"}
-                  >
-                    {isRevealed ? (
-                      <>
-                        <EyeOff className="h-3 w-3 shrink-0" />
-                        <span>Làm mờ</span>
-                        <kbd className="text-[9px] font-mono px-1 rounded bg-primary/10 border border-primary/25 font-bold">V</kbd>
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-3 w-3 shrink-0" />
-                        <span>Xem trước</span>
-                        <kbd className="text-[9px] font-mono px-1 rounded bg-primary/10 border border-primary/25 font-bold">V</kbd>
-                      </>
-                    )}
-                  </button>
+              <span className="text-[10px] text-muted-foreground font-semibold">Bấm 🔈 để Shadowing</span>
+            </div>
+
+            {/* Row 1: Positive */}
+            {effectiveMultiAnswers.positive && (
+              <div className="p-2 rounded-xl bg-emerald-500/8 hover:bg-emerald-500/12 border border-emerald-500/20 transition-all flex items-center justify-between gap-2 text-left shadow-2xs">
+                <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 shrink-0 self-start sm:self-auto">
+                    {isContext ? "🟢 Khẳng định" : "🟢 Tích cực"}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold font-jp text-foreground truncate">
+                    <UniversalFurigana text={effectiveMultiAnswers.positive.ja} fontSize="sm" />
+                  </span>
+                  {effectiveMultiAnswers.positive.vi && (
+                    <span className="text-[11px] text-muted-foreground truncate shrink-0">
+                      ({effectiveMultiAnswers.positive.vi})
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => speakJapaneseText(effectiveMultiAnswers.positive.ja, { rate: 0.95 })}
+                  className="p-1 rounded-lg bg-card border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 shrink-0 shadow-2xs transition-colors cursor-pointer"
+                  title="Nghe câu trả lời khẳng định"
+                >
+                  <Volume2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Row 2: Negative / Refusal */}
+            {(effectiveMultiAnswers.negative || (effectiveMultiAnswers as any).negotiation) && (
+              <div className="p-2 rounded-xl bg-rose-500/8 hover:bg-rose-500/12 border border-rose-500/20 transition-all flex items-center justify-between gap-2 text-left shadow-2xs">
+                <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-700 dark:text-rose-300 shrink-0 self-start sm:self-auto">
+                    {isContext ? "🟡 Từ chối khéo" : "🔴 Phủ định"}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold font-jp text-foreground truncate">
+                    <UniversalFurigana
+                      text={(effectiveMultiAnswers as any).negotiation?.ja || effectiveMultiAnswers.negative?.ja}
+                      fontSize="sm"
+                    />
+                  </span>
+                  {((effectiveMultiAnswers as any).negotiation?.vi || effectiveMultiAnswers.negative?.vi) && (
+                    <span className="text-[11px] text-muted-foreground truncate shrink-0">
+                      ({(effectiveMultiAnswers as any).negotiation?.vi || effectiveMultiAnswers.negative?.vi})
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    speakJapaneseText(
+                      (effectiveMultiAnswers as any).negotiation?.ja || effectiveMultiAnswers.negative?.ja,
+                      { rate: 0.95 }
+                    )
+                  }
+                  className="p-1 rounded-lg bg-card border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 shrink-0 shadow-2xs transition-colors cursor-pointer"
+                  title="Nghe câu trả lời từ chối/đàm phán"
+                >
+                  <Volume2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Row 3: Extended */}
+            {effectiveMultiAnswers.extended && (
+              <div className="p-2 rounded-xl bg-indigo-500/8 hover:bg-indigo-500/12 border border-indigo-500/20 transition-all flex items-center justify-between gap-2 text-left shadow-2xs">
+                <div className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 shrink-0 self-start sm:self-auto">
+                    {isContext ? "🔵 Mở rộng" : "🔵 Mở rộng lý do"}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold font-jp text-foreground truncate">
+                    <UniversalFurigana text={effectiveMultiAnswers.extended.ja} fontSize="sm" />
+                  </span>
+                  {effectiveMultiAnswers.extended.vi && (
+                    <span className="text-[11px] text-muted-foreground truncate shrink-0">
+                      ({effectiveMultiAnswers.extended.vi})
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => speakJapaneseText(effectiveMultiAnswers.extended.ja, { rate: 0.95 })}
+                  className="p-1 rounded-lg bg-card border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 shrink-0 shadow-2xs transition-colors cursor-pointer"
+                  title="Nghe câu trả lời mở rộng"
+                >
+                  <Volume2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Cultural Note Takeaway */}
+            {isContext && contextCulturalNote && (
+              <div className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-left text-[11px] text-amber-800 dark:text-amber-200 flex items-center gap-1.5 shrink-0">
+                <span className="font-bold text-amber-600 dark:text-amber-400 shrink-0">💡 Văn hóa:</span>
+                <span className="truncate">{contextCulturalNote}</span>
+              </div>
+            )}
+          </div>
+        ) : isKeigoVocab ? (
+          /* SUB-MODE BRANCH 2: KEIGO WORD BLITZ */
+          <div className="flex flex-col justify-between h-full gap-2 text-left">
+            <div className="flex items-center justify-between gap-2 pb-1 border-b border-primary/15 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <span
+                  className={cn(
+                    "text-[10px] font-bold px-2 py-0.5 rounded-md border",
+                    keigoTargetType === "sonkeigo"
+                      ? "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                      : keigoTargetType === "kenjougo"
+                      ? "bg-indigo-500/15 border-indigo-500/30 text-indigo-600 dark:text-indigo-400"
+                      : "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                  )}
+                >
+                  {keigoTargetLabel}
+                </span>
+                {rc.jlpt_level && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground">
+                    JLPT {rc.jlpt_level}
+                  </span>
                 )}
-                {ttsText && (
-                  <button
-                    type="button"
-                    onClick={handlePlayModelTTS}
-                    className="p-1 px-2.5 rounded-lg bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 shrink-0 shadow-2xs transition-colors flex items-center gap-1.5 text-[11px] font-bold cursor-pointer whitespace-nowrap"
-                    title="Nghe phát âm chuẩn của câu mẫu (Phím A)"
-                  >
-                    <Volume2 className={cn("h-3.5 w-3.5 shrink-0", isTTSPlaying && "animate-bounce")} />
-                    <span>{isTTSPlaying ? "Đang đọc..." : "Nghe mẫu"}</span>
-                    <kbd className="text-[9px] font-mono px-1 py-0.2 rounded bg-primary/15 border border-primary/25 text-primary font-bold ml-0.5">A</kbd>
-                  </button>
+                {keigoFormula && (
+                  <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">
+                    • Công thức: <strong className="text-foreground">{keigoFormula}</strong>
+                  </span>
                 )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => speakJapaneseText(canonical, { rate: 0.95 })}
+                className="p-1 px-2 rounded-lg bg-card border border-border/80 text-foreground hover:bg-muted shrink-0 shadow-2xs transition-colors flex items-center gap-1 text-[10px] font-bold cursor-pointer"
+                title="Nghe từ kính ngữ"
+              >
+                <Volume2 className="h-3 w-3 text-primary" />
+                <span>Nghe từ</span>
+              </button>
+            </div>
+
+            {/* Triplet Grid (3 thể ngang hàng) */}
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="p-2 rounded-xl bg-muted/40 border border-border/70 space-y-0.5">
+                <span className="text-[9px] font-bold text-muted-foreground block">Từ gốc (Plain)</span>
+                <p className="font-bold font-jp text-foreground text-sm truncate">
+                  <UniversalFurigana text={promptText} fontSize="sm" />
+                </p>
+                {wordMeaningVi && <p className="text-[10px] text-muted-foreground truncate">{wordMeaningVi}</p>}
+              </div>
+
+              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-0.5">
+                <span className="text-[9px] font-bold text-amber-700 dark:text-amber-300 block">
+                  👑 Tôn kính (Sếp/Khách)
+                </span>
+                <p className="font-black font-jp text-amber-800 dark:text-amber-200 text-sm truncate">
+                  {tripletSonkeigo ? <UniversalFurigana text={tripletSonkeigo} fontSize="sm" /> : canonical || "—"}
+                </p>
+              </div>
+
+              <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/25 space-y-0.5">
+                <span className="text-[9px] font-bold text-indigo-700 dark:text-indigo-300 block">
+                  🙇 Khiêm nhường (Mình)
+                </span>
+                <p className="font-black font-jp text-indigo-800 dark:text-indigo-200 text-sm truncate">
+                  {tripletKenjougo ? <UniversalFurigana text={tripletKenjougo} fontSize="sm" /> : "—"}
+                </p>
               </div>
             </div>
 
-            {targetLabel && (
-              <div className="pt-0.5">
-                <span className="text-[10px] font-bold tracking-wide bg-primary/10 text-primary px-2.5 py-0.5 rounded-full border border-primary/20 whitespace-nowrap inline-flex items-center gap-1">
-                  <Zap className="h-2.5 w-2.5" />
-                  <span>{targetLabel}</span>
+            {/* Business Example Sentence with Native TTS */}
+            {keigoExampleJa && (
+              <div className="p-2 rounded-xl bg-muted/30 border border-border/70 flex items-center justify-between gap-2 shadow-2xs">
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                    <span>💬 Ví dụ công sở:</span>
+                  </div>
+                  <p className="text-xs font-bold font-jp text-foreground truncate">
+                    <UniversalFurigana text={keigoExampleJa} fontSize="sm" />
+                  </p>
+                  {keigoExampleVi && (
+                    <p className="text-[10px] text-muted-foreground truncate">{keigoExampleVi}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => speakJapaneseText(keigoExampleJa, { rate: 0.95 })}
+                  className="px-2 py-1 rounded-lg bg-card border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15 text-[10px] font-bold shadow-2xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                  title="Nghe câu ví dụ"
+                >
+                  <Volume2 className="h-3 w-3" />
+                  <span>Shadowing</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : isVocab ? (
+          /* SUB-MODE BRANCH 3: VOCABULARY RECALL */
+          <div className="flex flex-col justify-between h-full gap-2 text-left">
+            <div className="flex items-center justify-between gap-2 pb-1 border-b border-primary/15">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-lg sm:text-xl font-black font-jp text-primary leading-tight">
+                  <UniversalFurigana text={canonical || vocabWord || "—"} fontSize="lg" />
+                </span>
+                <span className="text-xs font-bold text-foreground">
+                  = {wordMeaningVi ? wordMeaningVi : <UniversalFurigana text={promptText} fontSize="sm" />}
                 </span>
               </div>
-            )}
-
-            {/* Model Answers Wrapped in Blur/Reveal Container */}
-            <div className={cn("relative transition-all duration-300", isBlurred && "filter blur-sm select-none pointer-events-none")}>
-              {/* 1. SPEED Q&A & CONTEXTUAL REACTION: 3-Way Multi-Angle Model Answers */}
-              {(isQna || isContext) && effectiveMultiAnswers ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                    <span>{isContext ? "3 Hướng Phản Hồi Thực Tế (Multi-Angle):" : "3 Hướng Trả Lời Đa Chiều (Multi-Angle):"}</span>
+              <div className="flex items-center gap-1.5">
+                {((exercise as any)?.rank || rc.rank) && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 border border-amber-500/30">
+                    Top #{(exercise as any)?.rank || rc.rank}
                   </span>
-                  <span className="text-[10px] text-muted-foreground font-semibold">Bấm 🔈 để Shadowing</span>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2">
-                  {/* Positive / Direct Answer */}
-                  {effectiveMultiAnswers.positive && (
-                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-start justify-between gap-2 text-left shadow-2xs">
-                      <div className="space-y-0.5 min-w-0">
-                        <span className="inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                          {isContext ? "🟢 Nhận lời / Khẳng định chuẩn mực" : "🟢 Khẳng định / Tích cực (Positive)"}
-                        </span>
-                        <p className="text-xs md:text-sm font-bold font-jp text-foreground leading-snug">
-                          <UniversalFurigana text={effectiveMultiAnswers.positive.ja} fontSize="normal" />
-                        </p>
-                        {effectiveMultiAnswers.positive.vi && (
-                          <p className="text-[11px] text-muted-foreground">
-                            {effectiveMultiAnswers.positive.vi}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => speakJapaneseText(effectiveMultiAnswers.positive.ja, { rate: 0.95 })}
-                        className="p-1.5 rounded-lg bg-card border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 shrink-0 shadow-2xs transition-colors"
-                        title="Nghe câu trả lời khẳng định"
-                      >
-                        <Volume2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Negative / Polite Refusal / Negotiation */}
-                  {(effectiveMultiAnswers.negative || (effectiveMultiAnswers as any).negotiation) && (
-                    <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25 flex items-start justify-between gap-2 text-left shadow-2xs">
-                      <div className="space-y-0.5 min-w-0">
-                        <span className="inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-700 dark:text-rose-300">
-                          {isContext ? "🟡 Từ chối khéo / Đàm phán lùi hạn" : "🔴 Phủ định / Khéo léo từ chối (Refusal)"}
-                        </span>
-                        <p className="text-xs md:text-sm font-bold font-jp text-foreground leading-snug">
-                          <UniversalFurigana text={(effectiveMultiAnswers as any).negotiation?.ja || effectiveMultiAnswers.negative?.ja} fontSize="normal" />
-                        </p>
-                        {((effectiveMultiAnswers as any).negotiation?.vi || effectiveMultiAnswers.negative?.vi) && (
-                          <p className="text-[11px] text-muted-foreground">
-                            {(effectiveMultiAnswers as any).negotiation?.vi || effectiveMultiAnswers.negative?.vi}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => speakJapaneseText((effectiveMultiAnswers as any).negotiation?.ja || effectiveMultiAnswers.negative?.ja, { rate: 0.95 })}
-                        className="p-1.5 rounded-lg bg-card border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 shrink-0 shadow-2xs transition-colors"
-                        title="Nghe câu trả lời từ chối/đàm phán"
-                      >
-                        <Volume2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Extended / Reason */}
-                  {effectiveMultiAnswers.extended && (
-                    <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-start justify-between gap-2 text-left shadow-2xs">
-                      <div className="space-y-0.5 min-w-0">
-                        <span className="inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-700 dark:text-indigo-300">
-                          {isContext ? "🔵 Mở rộng / Báo cáo giải trình" : "🔵 Mở rộng tự nhiên / Thêm lý do (Extended)"}
-                        </span>
-                        <p className="text-xs md:text-sm font-bold font-jp text-foreground leading-snug">
-                          <UniversalFurigana text={effectiveMultiAnswers.extended.ja} fontSize="normal" />
-                        </p>
-                        {effectiveMultiAnswers.extended.vi && (
-                          <p className="text-[11px] text-muted-foreground">
-                            {effectiveMultiAnswers.extended.vi}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => speakJapaneseText(effectiveMultiAnswers.extended.ja, { rate: 0.95 })}
-                        className="p-1.5 rounded-lg bg-card border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 shrink-0 shadow-2xs transition-colors"
-                        title="Nghe câu trả lời mở rộng"
-                      >
-                        <Volume2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Cultural Nuance Takeaway */}
-                {isContext && contextCulturalNote && (
-                  <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-left shadow-2xs space-y-1">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-300 flex items-center gap-1">
-                      💡 Bí quyết ứng xử văn hóa Nhật:
-                    </span>
-                    <p className="text-[11px] font-medium text-amber-900 dark:text-amber-200 leading-relaxed">
-                      {contextCulturalNote}
-                    </p>
-                  </div>
                 )}
+                {vocabTypeLabel && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-600 border border-violet-500/20">
+                    {vocabTypeLabel}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => speakJapaneseText(canonical || vocabWord, { rate: 0.95 })}
+                  className="p-1 rounded-lg bg-card border border-border text-foreground hover:bg-muted transition-colors cursor-pointer"
+                  title="Nghe từ vựng"
+                >
+                  <Volume2 className="h-3.5 w-3.5 text-primary" />
+                </button>
               </div>
-            ) : isKeigoVocab ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-md border ${
-                      keigoTargetType === "sonkeigo"
-                        ? "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400"
-                        : keigoTargetType === "kenjougo"
-                        ? "bg-indigo-500/15 border-indigo-500/30 text-indigo-600 dark:text-indigo-400"
-                        : "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                    }`}>
-                      {keigoTargetLabel}
-                    </span>
-                    {rc.jlpt_level && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-muted text-muted-foreground">
-                        JLPT {rc.jlpt_level}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => speakJapaneseText(canonical, { rate: 0.95 })}
-                    className="p-1.5 rounded-lg bg-card border border-border/80 text-foreground hover:bg-muted shrink-0 shadow-2xs transition-colors flex items-center gap-1 text-[11px] font-bold"
-                    title="Nghe phát âm từ kính ngữ"
-                  >
-                    <Volume2 className="h-3.5 w-3.5 text-primary" />
-                    <span>Nghe từ</span>
-                  </button>
-                </div>
+            </div>
 
-                <div className="p-3 rounded-2xl bg-card border border-border/80 space-y-2 shadow-2xs">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xl md:text-2xl font-black font-jp text-primary leading-tight">
-                      <UniversalFurigana text={canonical || "—"} fontSize="xl" />
-                    </span>
-                  </div>
-
-                  <div className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5 flex-wrap">
-                    <span>Từ gốc (Plain Form):</span>
-                    <span className="font-bold text-foreground font-jp">
-                      <UniversalFurigana text={promptText} fontSize="sm" />
-                    </span>
-                    {wordMeaningVi && (
-                      <span>• Ý nghĩa: <strong className="text-foreground">{wordMeaningVi}</strong></span>
-                    )}
-                  </div>
-
-                  {keigoFormula && (
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-muted/60 border border-border/60 text-[11px] font-mono text-muted-foreground">
-                      <span className="font-sans font-bold text-amber-600 dark:text-amber-400 text-[10px]">Công thức:</span>
-                      <span className="font-bold font-jp text-foreground">
-                        <UniversalFurigana text={keigoFormula} fontSize="sm" />
-                      </span>
-                    </div>
+            {/* Collocation Strip */}
+            {vocabCollocationJa && (
+              <div className="p-2 rounded-xl bg-violet-500/8 border border-violet-500/20 flex items-center justify-between gap-2 shadow-2xs">
+                <div className="flex items-center gap-1.5 text-xs truncate">
+                  <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 shrink-0">
+                    🔗 Cụm Collocation:
+                  </span>
+                  <span className="font-bold font-jp text-foreground truncate">
+                    <UniversalFurigana text={vocabCollocationJa} fontSize="sm" />
+                  </span>
+                  {vocabCollocationVi && (
+                    <span className="text-muted-foreground truncate">({vocabCollocationVi})</span>
                   )}
                 </div>
-
-                {/* 3-Way Triplet Comparison */}
-                {(tripletSonkeigo || tripletKenjougo) && (
-                  <div className="p-2.5 rounded-2xl bg-card border border-border/80 grid grid-cols-2 gap-2 text-xs shadow-2xs">
-                    <div className="space-y-0.5 p-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                      <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1">
-                        👑 Tôn kính (Sếp / Khách)
-                      </span>
-                      <p className="font-bold font-jp text-foreground">
-                        {tripletSonkeigo ? <UniversalFurigana text={tripletSonkeigo} fontSize="sm" /> : "—"}
-                      </p>
-                    </div>
-                    <div className="space-y-0.5 p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                      <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
-                        🙇 Khiêm nhường (Bản thân)
-                      </span>
-                      <p className="font-bold font-jp text-foreground">
-                        {tripletKenjougo ? <UniversalFurigana text={tripletKenjougo} fontSize="sm" /> : "—"}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Business Example Sentence with Native TTS Shadowing */}
-                {keigoExampleJa && (
-                  <div className="p-3 rounded-2xl bg-muted/40 border border-border/80 space-y-1.5 text-left shadow-2xs">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                        💬 Câu ví dụ giao tiếp công sở:
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => speakJapaneseText(keigoExampleJa, { rate: 0.95 })}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-card border border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15 text-[10px] font-bold shadow-2xs transition-colors"
-                        title="Nghe câu ví dụ để Shadowing"
-                      >
-                        <Volume2 className="h-3 w-3" />
-                        <span>Shadowing</span>
-                      </button>
-                    </div>
-                    <p className="text-xs md:text-sm font-bold font-jp text-foreground leading-snug">
-                      <UniversalFurigana text={keigoExampleJa} fontSize="normal" />
-                    </p>
-                    {keigoExampleVi && (
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        {keigoExampleVi}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {explanationVi && (
-                  <p className="text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl">
-                    💡 {explanationVi}
-                  </p>
-                )}
-              </div>
-            ) : isVocab ? (
-              <div className="space-y-3">
-                {/* Header: Word + Furigana reading + Word Type + Audio */}
-                <div className="p-3 rounded-2xl bg-card border border-border/80 space-y-2 shadow-2xs">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl md:text-2xl font-black font-jp text-primary leading-tight">
-                        <UniversalFurigana text={canonical || vocabWord || "—"} fontSize="xl" />
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {((exercise as any)?.rank || rc.rank) && (
-                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1 shadow-2xs">
-                          <Sparkles className="w-3 h-3 text-amber-500" />
-                          Top #{(exercise as any)?.rank || rc.rank}
-                        </span>
-                      )}
-                      {((exercise as any)?.tier || rc.tier) && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-                          Tier {(exercise as any)?.tier || rc.tier}
-                        </span>
-                      )}
-                      {vocabTypeLabel && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20">
-                          {vocabTypeLabel}
-                        </span>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => speakJapaneseText(canonical || vocabWord, { rate: 0.95 })}
-                        className="p-1.5 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 border border-violet-500/30 transition-colors shadow-2xs"
-                        title="Nghe phát âm từ vựng"
-                      >
-                        <Volume2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="text-xs text-muted-foreground font-semibold flex items-center gap-1.5 flex-wrap">
-                    <span>Nghĩa tiếng Việt:</span>
-                    <span className="font-bold text-foreground">
-                      {wordMeaningVi ? wordMeaningVi : <UniversalFurigana text={promptText} fontSize="sm" />}
-                    </span>
-                  </div>
-
-                  {/* Collocation Blueprint */}
-                  {vocabCollocationJa && (
-                    <div className="p-2 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                        <span className="text-[10px] font-extrabold uppercase text-violet-600 dark:text-violet-400">
-                          🔗 Cụm Collocation:
-                        </span>
-                        <span className="font-bold font-jp text-foreground">
-                          <UniversalFurigana text={vocabCollocationJa} fontSize="sm" />
-                        </span>
-                        {vocabCollocationVi && (
-                          <span className="text-muted-foreground">({vocabCollocationVi})</span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => speakJapaneseText(vocabCollocationJa, { rate: 0.95 })}
-                        className="p-1 rounded-md bg-card border border-violet-500/30 text-violet-600 dark:text-violet-400 hover:bg-violet-500/20 shrink-0"
-                        title="Nghe cụm collocation"
-                      >
-                        <Volume2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Example Sentence with Native TTS Shadowing */}
-                {vocabExampleJa && (
-                  <div className="p-3 rounded-2xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border/70 space-y-1.5 shadow-2xs">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-                        <Sparkles className="h-3 w-3 text-primary" />
-                        Câu ví dụ đàm thoại thực tế:
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => speakJapaneseText(vocabExampleJa, { rate: 0.95 })}
-                        className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-[10px] font-bold flex items-center gap-1 transition-colors"
-                        title="Nghe câu ví dụ để Shadowing"
-                      >
-                        <Volume2 className="h-3 w-3" />
-                        Shadowing
-                      </button>
-                    </div>
-                    <p className="text-sm font-bold font-jp text-foreground leading-relaxed">
-                      <UniversalFurigana text={vocabExampleJa} fontSize="normal" />
-                    </p>
-                    {vocabExampleVi && (
-                      <p className="text-xs text-muted-foreground font-medium">
-                        {vocabExampleVi}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : isTransformation ? (
-              <div className="space-y-2">
-                {/* Visual Before -> After Diff Box */}
-                <div className="p-3 rounded-2xl bg-card border border-border/80 space-y-2 shadow-2xs">
-                  {/* Before */}
-                  <div className="flex items-start gap-2 text-xs">
-                    <span className="px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 font-bold text-[10px] uppercase shrink-0 mt-0.5">
-                      🔻 Câu gốc
-                    </span>
-                    <span className="font-bold font-jp text-muted-foreground text-sm leading-relaxed">
-                      <UniversalFurigana text={transformSource || promptText} fontSize="normal" />
-                    </span>
-                  </div>
-
-                  {/* After */}
-                  <div className="flex items-start gap-2 text-xs pt-1 border-t border-border/50">
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] uppercase shrink-0 mt-0.5">
-                      🟢 Sau biến đổi
-                    </span>
-                    <span className="font-black font-jp text-primary text-base leading-relaxed">
-                      <UniversalFurigana text={canonical || "—"} fontSize="normal" />
-                    </span>
-                  </div>
-                </div>
-
-                {/* Target & Formula badge if present */}
-                {(transformTargetLabel || transformFormula) && (
-                  <div className="flex items-center gap-1.5 flex-wrap text-xs">
-                    {transformTargetLabel && (
-                      <span className="px-2 py-0.5 rounded-lg bg-primary/10 border border-primary/25 text-primary font-bold text-[11px]">
-                        ⚡ {transformTargetLabel}
-                      </span>
-                    )}
-                    {transformFormula && (
-                      <span className="px-2 py-0.5 rounded-lg bg-muted text-muted-foreground font-mono text-[11px]">
-                        💡 {transformFormula}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Grammar Note Takeaway */}
-                {transformGrammarNote && (
-                  <p className="text-[11px] font-medium text-amber-800 dark:text-amber-300 bg-amber-500/10 border border-amber-500/20 p-2.5 rounded-xl leading-relaxed">
-                    💡 <strong>Điểm ngữ pháp:</strong> {transformGrammarNote}
-                  </p>
-                )}
-              </div>
-            ) : (
-              /* Standard Big Japanese Canonical Text */
-              <div className="rounded-xl bg-card/70 dark:bg-black/25 p-3.5 border border-border/70 text-center shadow-xs flex flex-col items-center justify-center min-h-[3.75rem]">
-                <div className="text-2xl sm:text-3xl font-black font-jp text-primary tracking-tight leading-snug">
-                  <UniversalFurigana text={canonical || "—"} fontSize="xl" />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => speakJapaneseText(vocabCollocationJa, { rate: 0.95 })}
+                  className="p-1 rounded-md bg-card border border-violet-500/30 text-violet-600 hover:bg-violet-500/20 shrink-0 cursor-pointer"
+                  title="Nghe cụm collocation"
+                >
+                  <Volume2 className="h-3 w-3" />
+                </button>
               </div>
             )}
 
-            {/* Acceptable Variants if any */}
+            {/* Example sentence strip */}
+            {vocabExampleJa && (
+              <div className="p-2 rounded-xl bg-muted/30 border border-border/70 flex items-center justify-between gap-2 shadow-2xs">
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <span className="text-[10px] font-bold text-muted-foreground block">💬 Ví dụ thực tế:</span>
+                  <p className="text-xs font-bold font-jp text-foreground truncate">
+                    <UniversalFurigana text={vocabExampleJa} fontSize="sm" />
+                  </p>
+                  {vocabExampleVi && <p className="text-[10px] text-muted-foreground truncate">{vocabExampleVi}</p>}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => speakJapaneseText(vocabExampleJa, { rate: 0.95 })}
+                  className="px-2 py-1 rounded-lg bg-card border border-primary/20 text-primary text-[10px] font-bold shrink-0 flex items-center gap-1 cursor-pointer"
+                  title="Nghe ví dụ"
+                >
+                  <Volume2 className="h-3 w-3" />
+                  <span>Shadowing</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : isTransformation ? (
+          /* SUB-MODE BRANCH 4: SENTENCE TRANSFORMATION */
+          <div className="flex flex-col justify-between h-full gap-2 text-left">
+            <div className="flex items-center justify-between gap-2 pb-1 border-b border-primary/15">
+              <span className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1">
+                <Zap className="h-3.5 w-3.5" />
+                <span>Biến Đổi Câu Chuẩn</span>
+              </span>
+              {(transformTargetLabel || transformFormula) && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  {transformTargetLabel && (
+                    <span className="px-1.5 py-0.5 rounded bg-primary/10 border border-primary/25 text-primary font-bold text-[10px]">
+                      {transformTargetLabel}
+                    </span>
+                  )}
+                  {transformFormula && (
+                    <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono text-[10px]">
+                      {transformFormula}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Before vs After Horizontal Flow */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="p-2.5 rounded-xl bg-rose-500/8 border border-rose-500/20 space-y-1">
+                <span className="text-[9px] font-bold uppercase text-rose-600 dark:text-rose-400 block">🔻 Câu gốc</span>
+                <p className="font-bold font-jp text-foreground text-sm">
+                  <UniversalFurigana text={transformSource || promptText} fontSize="sm" />
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-emerald-500/8 border border-emerald-500/20 space-y-1">
+                <span className="text-[9px] font-bold uppercase text-emerald-600 dark:text-emerald-400 block">🟢 Sau biến đổi</span>
+                <p className="font-black font-jp text-primary text-sm">
+                  <UniversalFurigana text={canonical || "—"} fontSize="sm" />
+                </p>
+              </div>
+            </div>
+
+            {transformGrammarNote && (
+              <div className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-left text-[11px] text-amber-800 dark:text-amber-200 truncate">
+                💡 <strong>Ngữ pháp:</strong> {transformGrammarNote}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* SUB-MODE BRANCH 5: STANDARD / CONJUGATION BLITZ */
+          <div className="flex flex-col items-center justify-center h-full gap-2 text-center">
+            {targetLabel && (
+              <span className="text-[11px] font-bold px-3 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/25 inline-flex items-center gap-1">
+                <Zap className="h-3 w-3" />
+                <span>{targetLabel}</span>
+              </span>
+            )}
+
+            <div className="text-2xl sm:text-3xl font-black font-jp text-primary tracking-tight leading-snug">
+              <UniversalFurigana text={canonical || "—"} fontSize="xl" />
+            </div>
+
             {variants.length > 0 && variants[0] !== canonical && (
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <div className="flex flex-wrap items-center justify-center gap-1.5 text-xs">
                 <span className="text-[10px] text-muted-foreground font-semibold">Các cách khác:</span>
                 {variants.map((v, i) => (
                   <span
@@ -936,56 +833,62 @@ export function ReflexResultCard({
                 ))}
               </div>
             )}
-            </div>
-
-            {isBlurred && (
-              <div className="p-2 rounded-xl bg-primary/10 border border-dashed border-primary/30 text-center">
-                <button
-                  type="button"
-                  onClick={() => setIsRevealed(true)}
-                  className="text-xs font-bold text-primary inline-flex items-center gap-1.5 hover:underline cursor-pointer whitespace-nowrap"
-                >
-                  <Eye className="h-3.5 w-3.5 shrink-0" />
-                  <span>Đáp án đang làm mờ — Bấm để xem trước</span>
-                </button>
-              </div>
-            )}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* 4. 6-Dimension Assessment Pills (Only Shown on Evaluation) */}
+      {/* 4. COMPACT 6-DIMENSION ASSESSMENT STRIP (Single Line Ribbon) */}
       {!isPending && result?.assessment && (
-        <div className="space-y-1.5">
-          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-            <span className="whitespace-nowrap">Phân tích 6 chiều (ReflexAssessment)</span>
-          </span>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            {[
-              { label: "Accuracy", score: result?.assessment?.accuracy?.score ?? (isPending ? 90 : result?.score ?? 85), color: "text-emerald-600 dark:text-emerald-400" },
-              { label: "Reaction", score: result?.assessment?.reaction?.score ?? (isPending ? 85 : 70), color: "text-amber-600 dark:text-amber-400" },
-              { label: "Context", score: result?.assessment?.context_fit?.score ?? (isPending ? 88 : 70), color: "text-sky-600 dark:text-sky-400" },
-              { label: "Natural", score: result?.assessment?.naturalness?.score ?? (isPending ? 85 : 70), color: "text-purple-600 dark:text-purple-400" },
-              { label: "Fluency", score: result?.assessment?.fluency?.score ?? (isPending ? 85 : 70), color: "text-indigo-600 dark:text-indigo-400" },
-              { label: "Complete", score: result?.assessment?.completeness?.score ?? (isPending ? 90 : 85), color: "text-teal-600 dark:text-teal-400" },
-            ].map((dim) => (
-              <div
-                key={dim.label}
-                className="p-2 rounded-xl bg-card border border-border/80 text-center shadow-xs"
-              >
-                <div className="text-[10px] font-bold tracking-tight text-muted-foreground whitespace-nowrap">{dim.label}</div>
-                <div className={cn("text-xs font-black font-mono mt-0.5 whitespace-nowrap", dim.color)}>
-                  {Math.round(dim.score)}
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="flex items-center justify-between gap-1 px-2.5 py-1 rounded-xl bg-card/80 dark:bg-black/30 border border-border/70 shadow-2xs shrink-0">
+          {[
+            {
+              label: "Chuẩn xác",
+              key: "accuracy",
+              score: result?.assessment?.accuracy?.score ?? result?.score ?? 85,
+              color: "text-emerald-600 dark:text-emerald-400",
+            },
+            {
+              label: "Tốc độ",
+              key: "reaction",
+              score: result?.assessment?.reaction?.score ?? 70,
+              color: "text-amber-600 dark:text-amber-400",
+            },
+            {
+              label: "Ngữ cảnh",
+              key: "context",
+              score: result?.assessment?.context_fit?.score ?? 70,
+              color: "text-sky-600 dark:text-sky-400",
+            },
+            {
+              label: "Tự nhiên",
+              key: "natural",
+              score: result?.assessment?.naturalness?.score ?? 70,
+              color: "text-purple-600 dark:text-purple-400",
+            },
+            {
+              label: "Trôi chảy",
+              key: "fluency",
+              score: result?.assessment?.fluency?.score ?? 70,
+              color: "text-indigo-600 dark:text-indigo-400",
+            },
+            {
+              label: "Đầy đủ",
+              key: "complete",
+              score: result?.assessment?.completeness?.score ?? 85,
+              color: "text-teal-600 dark:text-teal-400",
+            },
+          ].map((dim) => (
+            <div key={dim.key} className="flex-1 flex items-center justify-center gap-1 min-w-0 text-[11px] font-bold">
+              <span className="text-[10px] text-muted-foreground font-medium truncate">{dim.label}</span>
+              <span className={cn("font-mono font-black", dim.color)}>{Math.round(dim.score)}</span>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* 5. Action Buttons Strip */}
+      {/* 5. PINNED ACTION FOOTER: Buttons are always visible at bottom */}
       {!isPending && result ? (
-        <div className="flex items-center gap-2 pt-1 shrink-0 overflow-x-auto">
+        <div className="flex items-center gap-2 shrink-0 pt-0.5">
           <Button
             size="md"
             variant="akane"
@@ -996,14 +899,16 @@ export function ReflexResultCard({
             }}
           >
             <span>Câu Tiếp Theo</span>
-            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/20 text-white font-bold">Space / ↵</kbd>
+            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/20 text-white font-bold">
+              Space / ↵
+            </kbd>
             <ArrowRight className="h-4 w-4 shrink-0" />
           </Button>
 
           <Button
             size="md"
             variant="outline"
-            className="h-10 px-3 rounded-xl gap-1.5 font-bold text-xs border-border cursor-pointer whitespace-nowrap shrink-0"
+            className="h-10 px-3 rounded-xl gap-1 font-bold text-xs border-border cursor-pointer whitespace-nowrap shrink-0"
             onClick={() => {
               stopWebSpeech();
               onRetry?.();
@@ -1012,19 +917,23 @@ export function ReflexResultCard({
           >
             <RotateCcw className="h-3.5 w-3.5 shrink-0" />
             <span>Làm lại</span>
-            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground font-bold ml-0.5">R</kbd>
+            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted border border-border text-muted-foreground font-bold ml-0.5">
+              R
+            </kbd>
           </Button>
 
           <Button
             size="md"
             variant="outline"
-            className="h-10 px-3 rounded-xl gap-1.5 font-bold text-xs border-primary/30 text-primary hover:bg-primary/10 cursor-pointer whitespace-nowrap shrink-0"
+            className="h-10 px-3 rounded-xl gap-1 font-bold text-xs border-primary/30 text-primary hover:bg-primary/10 cursor-pointer whitespace-nowrap shrink-0"
             onClick={handlePlayModelTTS}
             title="Nghe lại phát âm mẫu (Phím A)"
           >
             <Volume2 className={cn("h-3.5 w-3.5 text-primary shrink-0", isTTSPlaying && "animate-bounce")} />
             <span>{isTTSPlaying ? "Đang đọc..." : "Nghe mẫu"}</span>
-            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 border border-primary/25 text-primary font-bold ml-0.5">A</kbd>
+            <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 border border-primary/25 text-primary font-bold ml-0.5">
+              A
+            </kbd>
           </Button>
 
           {isTimeout && (
@@ -1038,7 +947,7 @@ export function ReflexResultCard({
               }}
             >
               <Sliders className="h-3.5 w-3.5 shrink-0" />
-              <span>Giảm độ khó</span>
+              <span>Giảm áp lực</span>
             </Button>
           )}
         </div>
@@ -1046,7 +955,9 @@ export function ReflexResultCard({
         <div className="flex items-center justify-between text-xs text-muted-foreground p-2 rounded-xl bg-muted/30 border border-border/60 shrink-0 gap-2">
           <span className="flex items-center gap-1.5 font-medium text-[11px] whitespace-nowrap overflow-hidden text-ellipsis">
             <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-            <span>Nói xong hãy bấm <strong>Nộp câu</strong> hoặc phím <strong>Enter</strong> ở cột Mic</span>
+            <span>
+              Nói xong hãy bấm <strong>Nộp câu</strong> hoặc phím <strong>Enter</strong> ở cột Mic
+            </span>
           </span>
           {onSkip && (
             <Button
@@ -1054,11 +965,13 @@ export function ReflexResultCard({
               variant="outline"
               className="h-7 px-2.5 rounded-lg text-[11px] font-bold border-border text-foreground hover:bg-muted cursor-pointer shrink-0 whitespace-nowrap gap-1"
               onClick={onSkip}
-              title="Bỏ qua và chuyển sang bài tiếp theo không cần nộp bài (Phím →)"
+              title="Bỏ qua và chuyển sang bài tiếp theo (Phím →)"
             >
               <span>Qua bài</span>
               <ArrowRight className="h-3 w-3 text-primary" />
-              <kbd className="text-[9px] font-mono px-1 py-0.2 rounded bg-muted border border-border text-muted-foreground font-bold">→</kbd>
+              <kbd className="text-[9px] font-mono px-1 py-0.2 rounded bg-muted border border-border text-muted-foreground font-bold">
+                →
+              </kbd>
             </Button>
           )}
         </div>
@@ -1066,4 +979,3 @@ export function ReflexResultCard({
     </div>
   );
 }
-

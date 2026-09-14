@@ -25,11 +25,6 @@ import { KeigoCheatsheetModal } from "@/features/keigo/components/KeigoCheatshee
 import { KeigoFormulaFilterModal } from "@/features/keigo/components/KeigoFormulaFilterModal";
 import { KeigoLobby, KEIGO_SUB_MODES, PRESSURE_LEVELS } from "@/features/keigo/components/KeigoLobby";
 import { GlobalKeybindingsModal } from "@/components/layout/global-keybindings-modal";
-import { CoachPanel } from "@/features/coach";
-import { usePathname } from "next/navigation";
-import { useCoachCore } from "@/features/coach/hooks/useCoachCore";
-import { CoachInsightCard } from "@/features/coach/components/CoachInsightCard";
-import { useCoachProactive } from "@/features/coach/hooks/useCoachProactive";
 import { useSystemKeybindings, formatKeyDisplay } from "@/hooks/use-system-keybindings";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
 import { soundFX } from "@/lib/sound-fx";
@@ -169,15 +164,7 @@ export default function KeigoPage() {
 
   const timerMs = PRESSURE_LEVELS.find((p) => p.id === pressure)?.ms ?? 5000;
   const activeExercise = session.exercise;
-  const pathname = usePathname();
-  const { insights, dismiss } = useCoachProactive();
-  const [coachOpen, setCoachOpen] = useState(false);
-  const coach = useCoachCore();
 
-  const handleCoachSelect = (prompt: string) => {
-    setCoachOpen(true);
-    setTimeout(() => coach.ask(prompt, { route: pathname || "/keigo", exerciseId: (activeExercise as any)?.id }), 300);
-  };
 
   const playedPromptExerciseIdRef = useRef<string | null>(null);
 
@@ -496,7 +483,6 @@ export default function KeigoPage() {
                       soundFX.playSuikinkutsu();
                       session.retry();
                     }}
-                    onAskCoach={handleCoachSelect}
                     onCancelAutoNext={session.cancelAutoNext}
                   />
                 </div>
@@ -621,7 +607,6 @@ export default function KeigoPage() {
 
       <KeigoCheatsheetModal isOpen={showCheatsheet} onClose={() => setShowCheatsheet(false)} />
       <GlobalKeybindingsModal isOpen={showKeybindingsModal} onClose={() => setShowKeybindingsModal(false)} />
-      <CoachPanel open={coachOpen} onClose={() => setCoachOpen(false)} />
     </div>
   );
 }

@@ -8,16 +8,13 @@ import { GlobalAudioQuickSettings } from "./global-audio-quick-settings";
 import { GlobalAIQuickSettings } from "./global-ai-quick-settings";
 import { GlobalKeybindingsModal } from "./global-keybindings-modal";
 import { ModeSwitcher } from "./ModeSwitcher";
-import { DynamicIsland } from "./dynamic-island";
 import { Search, Command, Keyboard, Sparkles } from "lucide-react";
 import { soundFX } from "@/lib/sound-fx";
 
 export function TopNav({
   onOpenCommand,
-  onOpenCoach,
 }: {
   onOpenCommand?: () => void;
-  onOpenCoach?: () => void;
 }) {
   // useHealth monitors background connectivity and triggers auto-alerts when an outage occurs
   const { isHealthy, loading } = useHealth();
@@ -59,11 +56,6 @@ export function TopNav({
           <ModeSwitcher />
         </div>
 
-        {/* Center — Dynamic Island (Apple Studio Pro) */}
-        <div className="hidden md:flex flex-1 justify-center max-w-[420px] mx-2">
-          <DynamicIsland onOpenCommand={onOpenCommand} onOpenCoach={onOpenCoach} />
-        </div>
-
         {/* Right */}
         <div className="flex items-center gap-2 shrink-0">
           {/* Mobile search */}
@@ -73,19 +65,6 @@ export function TopNav({
             aria-label="Tìm kiếm"
           >
             <Search className="h-4 w-4" />
-          </button>
-
-          {/* AI Coach clean trigger */}
-          <button
-            onClick={onOpenCoach}
-            className="h-8 px-2.5 rounded-lg border border-border/80 bg-muted/50 hover:bg-card hover:border-primary/40 text-xs font-semibold text-foreground flex items-center gap-1.5 transition-all shadow-xs"
-            title="Mở AI Coach (⌘J)"
-          >
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span className="hidden sm:inline">AI Coach</span>
-            <span className="hidden xl:inline text-[10px] text-muted-foreground font-mono bg-background px-1 py-0.2 rounded border border-border/60">
-              ⌘J
-            </span>
           </button>
 
           {/* AI Provider & Model Quick Switcher */}

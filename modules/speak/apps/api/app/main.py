@@ -5,8 +5,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-# Bootstrap AI Coach Core tools (side-effect registers tools)
-import app.domains.coach.tools_impl  # noqa: F401
 from app.api.router import api_v1_router
 from app.core.config import get_settings
 from app.core.logging import logger

@@ -214,7 +214,7 @@ export function VocabularyLookupProvider({
 
       setIsSaved(true);
       dispatchToast(
-        `Đã lưu 「${bm.expression}」 vào Sổ tay từ vựng & Lộ trình học!`,
+        `Đã lưu 「${bm.expression}」 vào Sổ tay từ vựng!`,
         "success"
       );
       return true;

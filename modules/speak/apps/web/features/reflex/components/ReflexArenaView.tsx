@@ -139,8 +139,8 @@ export function ReflexArenaView({
           label: filters.customKeigoKeywords.trim()
             ? `Kính ngữ: "${filters.customKeigoKeywords.trim()}"`
             : filters.selectedKeigoCategories.length === 0
-            ? "Ngẫu nhiên 80+ cặp"
-            : `${filters.selectedKeigoCategories.length} Kính ngữ`,
+            ? "Ngẫu nhiên 290 cặp"
+            : `${filters.selectedKeigoCategories.length} công thức`,
           onClick: () => filters.setShowKeigoFilterModal(true),
         }
       : undefined;
@@ -199,7 +199,7 @@ export function ReflexArenaView({
                 setShowSummary(false);
                 session.startSession();
               }}
-              onToPlan={() => (window.location.href = "/learning")}
+              onToPlan={() => (window.location.href = "/dashboard")}
             />
           </div>
         ) : session.phase === "loading" || (!activeExercise && !isResult) ? (

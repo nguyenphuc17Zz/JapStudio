@@ -135,7 +135,7 @@ class CoachService:
                     target="weakness_priority_drill",
                     reason=f"Giải quyết điểm nghẽn: {bottleneck.candidate if bottleneck else 'Phản xạ'}",
                     duration_minutes=10,
-                    practice_url="/learning",
+                    practice_url="/reflex",
                 )
             ],
             confidence="high",
@@ -230,7 +230,7 @@ class CoachService:
                     reason=r.get("reason", "Luyện tập theo hướng dẫn"),
                     duration_minutes=r.get("duration_minutes", 10),
                     expected_signal=r.get("expected_signal"),
-                    practice_url="/speaking" if r.get("action_type") == "conversation" else "/learning",
+                    practice_url="/speaking" if r.get("action_type") == "conversation" else "/reflex",
                 )
             )
 
@@ -308,11 +308,14 @@ class CoachService:
         ctx = await self.context_builder.build_context(user_id)
         bottleneck = ctx.dashboard_overview.bottleneck
 
-        # 1. AI Generation if router is available
         if self.ai_router:
             try:
-                from app.domains.coach.prompt_builder import PERSONA_INSTRUCTIONS
-                persona_guide = PERSONA_INSTRUCTIONS.get(persona, PERSONA_INSTRUCTIONS["tanaka"])
+                persona_instructions = {
+                    "tanaka": "You are Tanaka Sensei (田中先生) — Head of Japanese Keigo & Business Etiquette Training. Persona Tone: Dignified, polite, structured, precise.",
+                    "aoi": "You are Aoi-chan (あおい) — Friendly, cheerful, and empathetic Japanese conversation companion. Persona Tone: Warm, energetic, encouraging.",
+                    "kenji": "You are Kenji Senpai (健二先輩) — Pragmatic, sharp, results-oriented speaking mentor. Persona Tone: Direct, energetic, real-world practical.",
+                }
+                persona_guide = persona_instructions.get(persona, persona_instructions["tanaka"])
                 prompt = (
                     f"{persona_guide}\n\n"
                     f"Hãy soạn một bức thư ngắn đầu ngày (Daily Sensei Briefing) gửi cho học viên luyện nói tiếng Nhật:\n"
@@ -354,7 +357,7 @@ class CoachService:
                         target="daily_focus_session",
                         reason=bottleneck.suggested_focus if bottleneck else "10 phút luyện tập",
                         duration_minutes=10,
-                        practice_url="/learning",
+                        practice_url="/speaking",
                     ),
                     streak_status=parsed.get("streak_status", "Cùng giữ vững chuỗi luyện tập hôm nay! 🔥"),
                 )
@@ -372,7 +375,7 @@ class CoachService:
                 target="daily_focus_session",
                 reason=bottleneck.suggested_focus if bottleneck else "10 phút hội thoại tình huống",
                 duration_minutes=10,
-                practice_url="/learning",
+                practice_url="/speaking",
             ),
             streak_status="Tiếp tục chuỗi luyện tập hôm nay! 🔥",
         )
@@ -395,7 +398,7 @@ class CoachService:
                 title="Điểm cần cải thiện",
                 summary=overview.bottleneck.candidate if overview.bottleneck else "Tự nhiên hoá biểu đạt",
                 action_cta="Khắc phục ngay",
-                action_url="/learning",
+                action_url="/reflex",
             ),
             CoachQuickCardDTO(
                 card_type="what_to_practice",
