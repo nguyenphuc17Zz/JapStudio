@@ -1,6 +1,9 @@
 from fastapi import APIRouter
 
 from app.api.v1.ai import router as ai_router
+from app.api.v1.aizuchi import router as aizuchi_router
+from app.api.v1.builder import router as builder_router
+from app.api.v1.interpret import router as interpret_router
 from app.api.v1.analysis import router as analysis_router
 from app.api.v1.analytics import router as analytics_router
 from app.api.v1.audio import router as audio_router
@@ -37,6 +40,9 @@ api_v1_router.include_router(audio_router)
 api_v1_router.include_router(analysis_router)
 api_v1_router.include_router(learning_router)
 api_v1_router.include_router(reflex_router)
+api_v1_router.include_router(aizuchi_router)
+api_v1_router.include_router(builder_router)
+api_v1_router.include_router(interpret_router)
 api_v1_router.include_router(keigo_router)
 api_v1_router.include_router(monologue_router)
 api_v1_router.include_router(pitch_router)

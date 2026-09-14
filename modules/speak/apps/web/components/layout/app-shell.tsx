@@ -19,6 +19,9 @@ import {
   Crown,
   Music,
   Compass,
+  Ear,
+  Blocks,
+  Languages,
   Sparkles,
   Settings,
 } from "lucide-react";
@@ -27,6 +30,9 @@ const MOBILE_NAV = [
   { href: "/dashboard", label: "Trang chủ", ja: "ホーム", icon: LayoutDashboard },
   { href: "/speaking", label: "Luyện nói", ja: "会話", icon: Mic },
   { href: "/reflex", label: "Phản xạ", ja: "瞬発", icon: Zap },
+  { href: "/aizuchi", label: "Phản hồi", ja: "相づち", icon: Ear },
+  { href: "/builder", label: "Xây câu", ja: "文立て", icon: Blocks },
+  { href: "/interpret", label: "Việt-Nhật", ja: "通訳", icon: Languages },
   { href: "/keigo", label: "Kính ngữ", ja: "敬語", icon: Crown },
   { href: "/pitch", label: "Cao độ", ja: "高低", icon: Music },
   { href: "/situations", label: "Tình huống", ja: "場面", icon: Compass },
@@ -81,6 +87,9 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
     { label: "Trang chủ", href: "/dashboard", desc: "Tổng quan & nhiệm vụ hôm nay" },
     { label: "Luyện nói", href: "/speaking", desc: "Phòng hội thoại với AI" },
     { label: "Phản xạ", href: "/reflex", desc: "瞬発力スピーキング — Speed Reflex 4 kiểu" },
+    { label: "Phản hồi", href: "/aizuchi", desc: "相づち道場 — Backchannel & chen ngang như bản xứ" },
+    { label: "Xây câu", href: "/builder", desc: "文立てビルダー — Nối từ thành câu dài N1" },
+    { label: "Việt-Nhật", href: "/interpret", desc: "越日通訳 — Phiên dịch Việt→Nhật giữ đủ ý" },
     { label: "Kính ngữ", href: "/keigo", desc: "敬語・タメ口特訓 — Keigo 7 kiểu, Uchi/Soto" },
     { label: "Cao độ", href: "/pitch", desc: "高低アクセント — Pitch & Mora Lab 5 kiểu" },
     { label: "Tình huống", href: "/situations", desc: "場面ロールプレイ — Scenario Sprint" },
@@ -215,6 +224,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {(() => {
           const isCombatArena =
             pathname?.startsWith("/reflex") ||
+            pathname?.startsWith("/aizuchi") ||
+            pathname?.startsWith("/builder") ||
+            pathname?.startsWith("/interpret") ||
             pathname?.startsWith("/keigo") ||
             pathname?.startsWith("/pitch") ||
             pathname?.startsWith("/situations");

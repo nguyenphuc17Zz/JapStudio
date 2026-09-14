@@ -32,6 +32,9 @@ class ExerciseEvaluator:
         keigo_metrics: dict[str, Any] | None = None,
         pitch_metrics: dict[str, Any] | None = None,
         situational_metrics: dict[str, Any] | None = None,
+        aizuchi_metrics: dict[str, Any] | None = None,
+        builder_metrics: dict[str, Any] | None = None,
+        interpret_metrics: dict[str, Any] | None = None,
     ) -> ExerciseResult:
         """
         Comprehensive assessment combining linguistic correctness, target pattern presence,
@@ -48,8 +51,14 @@ class ExerciseEvaluator:
             indep = IndependenceLevel.INDEPENDENT
 
         # Strict Empty Audio / Missing Speech Check (0% score, no fake points)
-        # Check reflex/keigo/pitch/situational timed_out if provided (alias) — merge all
+        # Check reflex/keigo/pitch/situational/aizuchi timed_out if provided (alias) — merge all
         _reflex: dict[str, Any] = {}
+        if interpret_metrics:
+            _reflex.update(interpret_metrics)
+        if builder_metrics:
+            _reflex.update(builder_metrics)
+        if aizuchi_metrics:
+            _reflex.update(aizuchi_metrics)
         if situational_metrics:
             _reflex.update(situational_metrics)
         if pitch_metrics:
@@ -266,6 +275,181 @@ class ExerciseEvaluator:
                 )
             except Exception as e:
                 logger.warning(f"[ExerciseEvaluator] Situational branch failed, fallback to generic: {e}")
+
+        # Aizuchi branch: delegate to AizuchiEvaluator if aizuchi/warikomi
+        if exercise.exercise_type.startswith(("aizuchi", "warikomi")):
+            try:
+                from app.domains.aizuchi.evaluator import AizuchiEvaluator
+
+                aiz_eval = AizuchiEvaluator(self.db)
+                a_res = await aiz_eval.evaluate(
+                    exercise_type=exercise.exercise_type,
+                    exercise=exercise,
+                    user_transcript=user_transcript,
+                    timer_limit_ms=_reflex.get("timer_limit_ms") or _reflex.get("window_ms"),
+                    reaction_latency_ms=_reflex.get("reaction_latency_ms", response_speed_ms),
+                    speech_confidence=_reflex.get("speech_confidence"),
+                    timed_out=_timed_out,
+                    late_response=_late,
+                    independence=_reflex.get("independence") or ("assisted_hint" if used_hint else "independent"),
+                    window_ms=_reflex.get("window_ms"),
+                    overlap_rude=bool(_reflex.get("overlap_rude", False)),
+                    bc_type=_reflex.get("bc_type"),
+                )
+                _lat = _reflex.get("reaction_latency_ms", response_speed_ms)
+                _aiz_metrics = {
+                    "pattern_found": a_res["success"],
+                    "used_hint": used_hint,
+                    "response_speed_ms": response_speed_ms,
+                    "aizuchi": _reflex,
+                    "reaction_latency_ms": _lat,
+                    "timer_limit_ms": _reflex.get("timer_limit_ms") or _reflex.get("window_ms"),
+                    "window_ms": _reflex.get("window_ms"),
+                    "timed_out": _timed_out,
+                    "late_response": _late,
+                    "overlap_rude": bool(_reflex.get("overlap_rude", False)),
+                    "bc_type": _reflex.get("bc_type"),
+                }
+                return ExerciseResult(
+                    exercise_id=exercise.id,
+                    user_id=exercise.user_id,
+                    score=float(a_res["score"]),
+                    success=bool(a_res["success"]),
+                    confidence=float(a_res["assessment"]["overall"]["confidence"] if a_res.get("assessment") and "overall" in a_res["assessment"] else 0.85) if isinstance(a_res.get("assessment"), dict) else 0.85,
+                    target_mastery_delta={},
+                    feedback=a_res["feedback"],
+                    evidence=a_res["evidence"],
+                    metrics={**_aiz_metrics, "aizuchi_assessment": a_res.get("assessment"), "sample_responses": a_res.get("sample_responses", [])},
+                    independence=IndependenceLevel.ASSISTED_HINT if used_hint else IndependenceLevel.INDEPENDENT,
+                    response_speed_ms=response_speed_ms,
+                    target_usage="correct" if a_res["success"] else "incorrect",
+                    grammar_score=70.0,
+                    naturalness_score=float(a_res["assessment"]["appropriateness"]["score"] if a_res.get("assessment") and "appropriateness" in a_res["assessment"] else 70),
+                    attempt_id=attempt.id,
+                )
+            except Exception as e:
+                logger.warning(f"[ExerciseEvaluator] Aizuchi branch failed, fallback to generic: {e}")
+
+        # Builder branch: delegate to BuilderEvaluator if sentence_*
+        if exercise.exercise_type.startswith("sentence_"):
+            try:
+                from app.domains.builder.evaluator import BuilderEvaluator
+
+                bld_eval = BuilderEvaluator(self.db)
+                b_res = await bld_eval.evaluate(
+                    exercise_type=exercise.exercise_type,
+                    exercise=exercise,
+                    user_transcript=user_transcript,
+                    timer_limit_ms=_reflex.get("timer_limit_ms"),
+                    reaction_latency_ms=_reflex.get("reaction_latency_ms", response_speed_ms),
+                    speech_confidence=_reflex.get("speech_confidence"),
+                    timed_out=_timed_out,
+                    late_response=_late,
+                    independence=_reflex.get("independence") or ("assisted_hint" if used_hint else "independent"),
+                    focus_skill=_reflex.get("focus_skill"),
+                    keywords=_reflex.get("keywords"),
+                    scaffold_level=_reflex.get("scaffold_level"),
+                    blind=bool(_reflex.get("blind", False)),
+                )
+                _lat = _reflex.get("reaction_latency_ms", response_speed_ms)
+                _bld_metrics = {
+                    "pattern_found": b_res["success"],
+                    "used_hint": used_hint,
+                    "response_speed_ms": response_speed_ms,
+                    "builder": _reflex,
+                    "reaction_latency_ms": _lat,
+                    "timer_limit_ms": _reflex.get("timer_limit_ms"),
+                    "timed_out": _timed_out,
+                    "late_response": _late,
+                    "focus_skill": _reflex.get("focus_skill"),
+                    "keywords_used": b_res.get("keywords_used", []),
+                }
+                _bld_cfg = (exercise.extra_metadata or {}).get("builder_config", {}) if exercise.extra_metadata else {}
+                _canonical = _bld_cfg.get("canonical") or (exercise.acceptable_variants[0] if exercise.acceptable_variants else "")
+                _canonical_vi = _bld_cfg.get("canonical_vi", "")
+                return ExerciseResult(
+                    exercise_id=exercise.id,
+                    user_id=exercise.user_id,
+                    score=float(b_res["score"]),
+                    success=bool(b_res["success"]),
+                    confidence=float(b_res["assessment"]["overall"]["confidence"] if b_res.get("assessment") and "overall" in b_res["assessment"] else 0.85) if isinstance(b_res.get("assessment"), dict) else 0.85,
+                    target_mastery_delta={},
+                    feedback=b_res["feedback"],
+                    evidence=b_res["evidence"],
+                    metrics={
+                        **_bld_metrics,
+                        "builder_assessment": b_res.get("assessment"),
+                        "clauses": b_res.get("clauses", []),
+                        "canonical": _canonical,
+                        "canonical_vi": _canonical_vi,
+                    },
+                    independence=IndependenceLevel.ASSISTED_HINT if used_hint else IndependenceLevel.INDEPENDENT,
+                    response_speed_ms=response_speed_ms,
+                    target_usage="correct" if b_res["success"] else "incorrect",
+                    grammar_score=float(b_res["assessment"]["connection"]["score"] if b_res.get("assessment") and "connection" in b_res["assessment"] else 70),
+                    naturalness_score=float(b_res["assessment"]["naturalness"]["score"] if b_res.get("assessment") and "naturalness" in b_res["assessment"] else 70),
+                    attempt_id=attempt.id,
+                )
+            except Exception as e:
+                logger.warning(f"[ExerciseEvaluator] Builder branch failed, fallback to generic: {e}")
+
+        # Interpret branch: delegate to InterpretEvaluator if interpret_*
+        if exercise.exercise_type.startswith("interpret_"):
+            try:
+                from app.domains.interpret.evaluator import InterpretEvaluator
+
+                int_eval = InterpretEvaluator(self.db)
+                i_res = await int_eval.evaluate(
+                    exercise_type=exercise.exercise_type,
+                    exercise=exercise,
+                    user_transcript=user_transcript,
+                    timer_limit_ms=_reflex.get("timer_limit_ms"),
+                    reaction_latency_ms=_reflex.get("reaction_latency_ms", response_speed_ms),
+                    speech_confidence=_reflex.get("speech_confidence"),
+                    timed_out=_timed_out,
+                    late_response=_late,
+                    independence=_reflex.get("independence") or ("assisted_hint" if used_hint else "independent"),
+                    expected_keywords=_reflex.get("expected_keywords"),
+                    blind=bool(_reflex.get("blind", False)),
+                )
+                _lat = _reflex.get("reaction_latency_ms", response_speed_ms)
+                _int_metrics = {
+                    "pattern_found": i_res["success"],
+                    "used_hint": used_hint,
+                    "response_speed_ms": response_speed_ms,
+                    "interpret": _reflex,
+                    "reaction_latency_ms": _lat,
+                    "timer_limit_ms": _reflex.get("timer_limit_ms"),
+                    "timed_out": _timed_out,
+                    "late_response": _late,
+                    "keywords_hit": i_res.get("keywords_hit", []),
+                    "vietglish_flags": i_res.get("vietglish_flags", []),
+                }
+                _ref_ja = (exercise.extra_metadata or {}).get("interpret_config", {}).get("reference_ja", "") or i_res.get("reference_ja", "")
+                return ExerciseResult(
+                    exercise_id=exercise.id,
+                    user_id=exercise.user_id,
+                    score=float(i_res["score"]),
+                    success=bool(i_res["success"]),
+                    confidence=float(i_res["assessment"]["overall"]["confidence"] if i_res.get("assessment") and "overall" in i_res["assessment"] else 0.85) if isinstance(i_res.get("assessment"), dict) else 0.85,
+                    target_mastery_delta={},
+                    feedback=i_res["feedback"],
+                    evidence=i_res["evidence"],
+                    metrics={
+                        **_int_metrics,
+                        "interpret_assessment": i_res.get("assessment"),
+                        "fidelity": i_res.get("fidelity", []),
+                        "reference_ja": _ref_ja,
+                    },
+                    independence=IndependenceLevel.ASSISTED_HINT if used_hint else IndependenceLevel.INDEPENDENT,
+                    response_speed_ms=response_speed_ms,
+                    target_usage="correct" if i_res["success"] else "incorrect",
+                    grammar_score=float(i_res["assessment"]["word_order"]["score"] if i_res.get("assessment") and "word_order" in i_res["assessment"] else 70),
+                    naturalness_score=float(i_res["assessment"]["naturalness"]["score"] if i_res.get("assessment") and "naturalness" in i_res["assessment"] else 70),
+                    attempt_id=attempt.id,
+                )
+            except Exception as e:
+                logger.warning(f"[ExerciseEvaluator] Interpret branch failed, fallback to generic: {e}")
 
         # Reflex vocabulary deterministic branch: evaluate immediately without LLM latency
         is_reflex_vocab = exercise.exercise_type == "reflex_vocabulary"

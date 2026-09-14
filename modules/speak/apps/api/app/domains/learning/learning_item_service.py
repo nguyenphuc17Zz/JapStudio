@@ -185,7 +185,7 @@ class LearningItemService:
         delta_spontaneous = MasteryEngine.calculate_mastery_delta(result, item, dimension="spontaneous")
         delta_production = MasteryEngine.calculate_mastery_delta(result, item, dimension="production")
         # Automaticity: only update for reflex/keigo/pitch/situational timed exercises or when response_speed is available
-        is_timed = context_tag.startswith(("reflex", "keigo", "pitch", "mora", "vowel", "situational")) or (result.response_speed_ms is not None)
+        is_timed = context_tag.startswith(("reflex", "keigo", "pitch", "mora", "vowel", "situational", "aizuchi", "warikomi", "sentence", "interpret")) or (result.response_speed_ms is not None)
         delta_automaticity = 0.0
         if is_timed:
             delta_automaticity = MasteryEngine.calculate_mastery_delta(result, item, dimension="automaticity")

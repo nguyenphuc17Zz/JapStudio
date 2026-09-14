@@ -67,6 +67,26 @@ class MetricKey(str, Enum):
     SITUATIONAL_RECOVERY_RATE = "situational_recovery_rate"
     SITUATIONAL_REACTION_LATENCY = "situational_reaction_latency"
 
+    # Aizuchi Dojo (Mode 7) Metrics
+    AIZUCHI_LATENCY_P50 = "aizuchi_latency_p50"
+    AIZUCHI_VARIETY = "aizuchi_variety"
+    AIZUCHI_APPROPRIATENESS = "aizuchi_appropriateness"
+    AIZUCHI_MISS_RATE = "aizuchi_miss_rate"
+    WARIKOMI_SUCCESS = "warikomi_success"
+    WARIKOMI_RUDE_RATE = "warikomi_rude_rate"
+
+    # Sentence Builder (Mode 8) Metrics
+    BUILDER_COVERAGE = "builder_coverage"
+    BUILDER_CONNECTION = "builder_connection"
+    BUILDER_NATURALNESS = "builder_naturalness"
+    BUILDER_BLIND_SUCCESS = "builder_blind_success"
+
+    # VI-JA Interpretation (Mode 9) Metrics
+    INTERPRET_FIDELITY = "interpret_fidelity"
+    INTERPRET_WORD_ORDER = "interpret_word_order"
+    INTERPRET_VIETGLISH_RATE = "interpret_vietglish_rate"
+    INTERPRET_BLIND_SUCCESS = "interpret_blind_success"
+
     # Speaking Ramp (Mode 6) Metrics
     RAMP_INDEPENDENT_SUCCESS_RATE = "ramp.independent_success_rate"
     RAMP_FULL_SENTENCE_RATE = "ramp.full_sentence_rate"
@@ -518,6 +538,136 @@ METRIC_REGISTRY: dict[MetricKey, MetricDefinition] = {
         category="situational",
         min_sample_size=5,
         comparison_method="inverse_ratio",
+    ),
+    MetricKey.AIZUCHI_LATENCY_P50: MetricDefinition(
+        key=MetricKey.AIZUCHI_LATENCY_P50,
+        name="Backchannel Latency (p50)",
+        ja_name="相づち反応時間",
+        description="Median time from pause-window open to first voiced backchannel frame.",
+        unit="ms",
+        category="aizuchi",
+        min_sample_size=5,
+        comparison_method="inverse_ratio",
+    ),
+    MetricKey.AIZUCHI_VARIETY: MetricDefinition(
+        key=MetricKey.AIZUCHI_VARIETY,
+        name="Backchannel Variety",
+        ja_name="相づち多様性",
+        description="Distinct backchannel types used per session.",
+        unit="types",
+        category="aizuchi",
+        min_sample_size=3,
+    ),
+    MetricKey.AIZUCHI_APPROPRIATENESS: MetricDefinition(
+        key=MetricKey.AIZUCHI_APPROPRIATENESS,
+        name="Backchannel Appropriateness",
+        ja_name="相づち適切さ",
+        description="Share of backchannels fitting the moment and register.",
+        unit="%",
+        category="aizuchi",
+        min_sample_size=5,
+    ),
+    MetricKey.AIZUCHI_MISS_RATE: MetricDefinition(
+        key=MetricKey.AIZUCHI_MISS_RATE,
+        name="Missed Windows",
+        ja_name="聞き逃し率",
+        description="Proportion of pause windows with no backchannel.",
+        unit="%",
+        category="aizuchi",
+        min_sample_size=5,
+        comparison_method="inverse_ratio",
+    ),
+    MetricKey.WARIKOMI_SUCCESS: MetricDefinition(
+        key=MetricKey.WARIKOMI_SUCCESS,
+        name="Clean Interruptions",
+        ja_name="割り込み成功率",
+        description="Share of interruptions landing on breath pauses with polite form.",
+        unit="%",
+        category="aizuchi",
+        min_sample_size=3,
+    ),
+    MetricKey.WARIKOMI_RUDE_RATE: MetricDefinition(
+        key=MetricKey.WARIKOMI_RUDE_RATE,
+        name="Rude Overlaps",
+        ja_name="割り込み失敗率",
+        description="Share of interruptions talking over the NPC mid-word.",
+        unit="%",
+        category="aizuchi",
+        min_sample_size=3,
+        comparison_method="inverse_ratio",
+    ),
+    MetricKey.BUILDER_COVERAGE: MetricDefinition(
+        key=MetricKey.BUILDER_COVERAGE,
+        name="Keyword Coverage",
+        ja_name="網羅率",
+        description="Share of required keywords/clauses included in the built sentence.",
+        unit="%",
+        category="builder",
+        min_sample_size=5,
+    ),
+    MetricKey.BUILDER_CONNECTION: MetricDefinition(
+        key=MetricKey.BUILDER_CONNECTION,
+        name="Clause Connection",
+        ja_name="接続力",
+        description="Correct use of clause-chaining markers (te-form, relative clause, conditionals).",
+        unit="%",
+        category="builder",
+        min_sample_size=5,
+    ),
+    MetricKey.BUILDER_NATURALNESS: MetricDefinition(
+        key=MetricKey.BUILDER_NATURALNESS,
+        name="Built Sentence Naturalness",
+        ja_name="文立て自然さ",
+        description="Colloquial naturalness of assembled sentences (contractions, endings, register).",
+        unit="%",
+        category="builder",
+        min_sample_size=5,
+    ),
+    MetricKey.BUILDER_BLIND_SUCCESS: MetricDefinition(
+        key=MetricKey.BUILDER_BLIND_SUCCESS,
+        name="Blind Build Success",
+        ja_name="自力文立て率",
+        description="Success rate building sentences without keywords or starters.",
+        unit="%",
+        category="builder",
+        min_sample_size=3,
+    ),
+    MetricKey.INTERPRET_FIDELITY: MetricDefinition(
+        key=MetricKey.INTERPRET_FIDELITY,
+        name="Interpretation Fidelity",
+        ja_name="通訳忠実度",
+        description="Share of source ideas preserved in the Japanese rendition.",
+        unit="%",
+        category="interpret",
+        min_sample_size=5,
+    ),
+    MetricKey.INTERPRET_WORD_ORDER: MetricDefinition(
+        key=MetricKey.INTERPRET_WORD_ORDER,
+        name="SOV Word Order",
+        ja_name="語順正確さ",
+        description="Correct Japanese word order, particles, and relative clauses (no SVO carryover).",
+        unit="%",
+        category="interpret",
+        min_sample_size=5,
+    ),
+    MetricKey.INTERPRET_VIETGLISH_RATE: MetricDefinition(
+        key=MetricKey.INTERPRET_VIETGLISH_RATE,
+        name="Vietglish Rate",
+        ja_name="ベトナム語直訳率",
+        description="Share of attempts with literal Vietnamese-carryover errors.",
+        unit="%",
+        category="interpret",
+        min_sample_size=3,
+        comparison_method="inverse_ratio",
+    ),
+    MetricKey.INTERPRET_BLIND_SUCCESS: MetricDefinition(
+        key=MetricKey.INTERPRET_BLIND_SUCCESS,
+        name="Blind Interpretation",
+        ja_name="自力通訳率",
+        description="Success rate interpreting without Japanese keyword hints.",
+        unit="%",
+        category="interpret",
+        min_sample_size=3,
     ),
 }
 

@@ -174,6 +174,15 @@ TASK_FEATURE_MAP: dict[AITask, str] = {
     AITask.SHADOWING_ANALYSIS: "shadowing",
     AITask.SHADOWING_RECOMMENDATION: "shadowing",
     AITask.TRANSLATION: "shadowing",
+    # 8. Aizuchi Dojo (Mode 7)
+    AITask.AIZUCHI_GENERATION: "aizuchi",
+    AITask.AIZUCHI_EVALUATION: "aizuchi",
+    # 9. Sentence Builder (Mode 8)
+    AITask.BUILDER_GENERATION: "builder",
+    AITask.BUILDER_EVALUATION: "builder",
+    # 10. VI-JA Interpretation (Mode 9)
+    AITask.INTERPRET_GENERATION: "interpret",
+    AITask.INTERPRET_EVALUATION: "interpret",
 }
 
 

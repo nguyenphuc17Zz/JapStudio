@@ -37,7 +37,21 @@ def _extract_text_for_signature(exercise_dict: dict[str, Any]) -> str:
         exercise_dict.get("situation_title"),
         exercise_dict.get("word"),
         exercise_dict.get("question"),
+        exercise_dict.get("scenario"),
+        exercise_dict.get("canonical"),
+        exercise_dict.get("reference_ja"),
+        exercise_dict.get("prompt_vi"),
+        exercise_dict.get("situation_vi"),
+        exercise_dict.get("source_sentence"),
     ]
+    # For Aizuchi: include all NPC turn texts
+    if isinstance(exercise_dict.get("npc_turns"), list):
+        for turn in exercise_dict["npc_turns"][:4]:
+            if isinstance(turn, dict) and turn.get("text"):
+                candidates.append(turn["text"])
+    # For Builder: include keywords
+    if isinstance(exercise_dict.get("keywords"), list):
+        candidates.append(" ".join(str(k) for k in exercise_dict["keywords"]))
     parts = [str(c) for c in candidates if c]
     return " ".join(parts).strip()
 

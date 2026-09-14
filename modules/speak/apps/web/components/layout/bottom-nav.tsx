@@ -3,13 +3,16 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Mic, Zap, Crown, Music, Compass, Settings } from "lucide-react";
+import { LayoutDashboard, Mic, Zap, Ear, Blocks, Languages, Crown, Music, Compass, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/dashboard", label: "Trang chủ", icon: LayoutDashboard },
   { href: "/speaking", label: "Hội thoại", icon: Mic },
   { href: "/reflex", label: "Phản xạ", icon: Zap },
+  { href: "/aizuchi", label: "Phản hồi", icon: Ear },
+  { href: "/builder", label: "Xây câu", icon: Blocks },
+  { href: "/interpret", label: "V-Nhật", icon: Languages },
   { href: "/keigo", label: "Kính ngữ", icon: Crown },
   { href: "/pitch", label: "Cao độ", icon: Music },
   { href: "/situations", label: "Tình huống", icon: Compass },

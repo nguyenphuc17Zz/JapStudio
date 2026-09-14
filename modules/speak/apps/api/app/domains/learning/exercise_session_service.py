@@ -65,6 +65,9 @@ class ExerciseSessionService:
         keigo_metrics: dict[str, Any] | None = None,
         pitch_metrics: dict[str, Any] | None = None,
         situational_metrics: dict[str, Any] | None = None,
+        aizuchi_metrics: dict[str, Any] | None = None,
+        builder_metrics: dict[str, Any] | None = None,
+        interpret_metrics: dict[str, Any] | None = None,
         # Flattened reflex/keigo/pitch/situational timing (alternative to reflex_metrics)
         reaction_latency_ms: float | None = None,
         semantic_latency_ms: float | None = None,
@@ -100,8 +103,14 @@ class ExerciseSessionService:
         if not attempt:
             attempt = await self.start_exercise(exercise_id, user_id)
 
-        # Build normalized reflex/keigo/pitch/situational metrics dict from either nested or flattened inputs (alias)
+        # Build normalized reflex/keigo/pitch/situational/aizuchi metrics dict from either nested or flattened inputs (alias)
         _reflex_metrics: dict[str, Any] = {}
+        if interpret_metrics:
+            _reflex_metrics.update(interpret_metrics)
+        if builder_metrics:
+            _reflex_metrics.update(builder_metrics)
+        if aizuchi_metrics:
+            _reflex_metrics.update(aizuchi_metrics)
         if situational_metrics:
             _reflex_metrics.update(situational_metrics)
         if pitch_metrics:
@@ -149,6 +158,9 @@ class ExerciseSessionService:
             keigo_metrics=_reflex_metrics,
             pitch_metrics=_reflex_metrics,
             situational_metrics=_reflex_metrics,
+            aizuchi_metrics=_reflex_metrics,
+            builder_metrics=_reflex_metrics,
+            interpret_metrics=_reflex_metrics,
         )
 
         # 2. Update Learning Item Masteries
@@ -189,6 +201,15 @@ class ExerciseSessionService:
                 attempt.metrics_json.setdefault("reflex", _reflex_metrics)
             elif exercise.exercise_type.startswith("situational"):
                 attempt.metrics_json.setdefault("situational", _reflex_metrics)
+                attempt.metrics_json.setdefault("reflex", _reflex_metrics)
+            elif exercise.exercise_type.startswith(("aizuchi", "warikomi")):
+                attempt.metrics_json.setdefault("aizuchi", _reflex_metrics)
+                attempt.metrics_json.setdefault("reflex", _reflex_metrics)
+            elif exercise.exercise_type.startswith("sentence_"):
+                attempt.metrics_json.setdefault("builder", _reflex_metrics)
+                attempt.metrics_json.setdefault("reflex", _reflex_metrics)
+            elif exercise.exercise_type.startswith("interpret_"):
+                attempt.metrics_json.setdefault("interpret", _reflex_metrics)
                 attempt.metrics_json.setdefault("reflex", _reflex_metrics)
             else:
                 attempt.metrics_json.setdefault("reflex", _reflex_metrics)

@@ -119,6 +119,33 @@ SituationalMetrics = ReflexMetrics  # alias for situational (same timing + inten
 SpeechMetrics = ReflexMetrics  # alias for speech monologue (same timing + speech_duration)
 
 
+class AizuchiMetrics(ReflexMetrics):
+    """Aizuchi-specific metrics: pause window + backchannel type + overlap politeness."""
+
+    window_ms: int | None = None
+    overlap_rude: bool = False
+    bc_type: str | None = None  # surprise|empathy|continuer|followup|polite_interrupt|other
+
+
+class BuilderMetrics(ReflexMetrics):
+    """Sentence Builder metrics: focus clause skill + scaffold tracking."""
+
+    focus_skill: str | None = None  # te_chain|relative_clause|conditional|nominalization|contraction
+    keywords: list[str] = []
+    keywords_used: list[str] = []
+    scaffold_level: str | None = None  # none|keyword_hint|sentence_starter|structured_options
+    blind: bool = False
+
+
+class InterpretMetrics(ReflexMetrics):
+    """VI-JA interpretation metrics: fidelity keyword tracking + Vietglish flags."""
+
+    expected_keywords: list[str] = []
+    keywords_hit: list[str] = []
+    blind: bool = False
+    vietglish_flags: list[str] = []
+
+
 class ExerciseSubmitRequest(BaseModel):
     user_transcript: str = ""
     turn_analysis_score: float | None = None
@@ -131,6 +158,9 @@ class ExerciseSubmitRequest(BaseModel):
     pitch_metrics: ReflexMetrics | None = None
     situational_metrics: ReflexMetrics | None = None
     speech_metrics: SpeechMetrics | None = None
+    aizuchi_metrics: AizuchiMetrics | None = None
+    builder_metrics: BuilderMetrics | None = None
+    interpret_metrics: InterpretMetrics | None = None
     # Raw audio for server-side STT (monologue authoritative)
     audio_base64: str | None = None
     speech_duration_ms: int | None = None

@@ -123,22 +123,46 @@ export function stopWebSpeech(): void {
 }
 
 export function getVietnameseWebVoices(): SpeechSynthesisVoice[] {
-  const allVoices = cachedVoices.length > 0 ? cachedVoices : loadVoices();
+  // Always try fresh getVoices() — Chrome loads voices async and cachedVoices may still be empty on first call
+  let allVoices: SpeechSynthesisVoice[] = [];
+  try {
+    allVoices = window.speechSynthesis?.getVoices?.() || [];
+    if (allVoices.length > 0 && allVoices.length !== cachedVoices.length) {
+      cachedVoices = allVoices;
+    }
+  } catch {}
+  if (allVoices.length === 0) {
+    allVoices = cachedVoices.length > 0 ? cachedVoices : loadVoices();
+  }
   return allVoices.filter((v) => {
     const lang = (v.lang || "").toLowerCase().replace("_", "-");
     const name = (v.name || "").toLowerCase();
-    return lang.includes("vi") || name.includes("vietnam") || name.includes("tiếng việt");
+    return lang === "vi-vn" || lang.startsWith("vi-") || lang === "vi" || name.includes("vietnam") || name.includes("tiếng việt") || name.includes("tien viet");
   });
 }
 
 export function getPreferredVietnameseVoice(): SpeechSynthesisVoice | null {
   const voices = getVietnameseWebVoices();
   if (voices.length === 0) return null;
-  const googleVoice = voices.find((v) => v.name.toLowerCase().includes("google"));
+  // Prefer exact vi-VN lang match first (most accurate)
+  const exactVi = voices.find((v) => (v.lang || "").toLowerCase().replace("_", "-") === "vi-vn");
+  if (exactVi) return exactVi;
+  const googleVoice = voices.find((v) => v.name.toLowerCase().includes("google") && v.name.toLowerCase().includes("viet"));
   if (googleVoice) return googleVoice;
-  const msVoice = voices.find((v) => v.name.toLowerCase().includes("microsoft") || v.name.toLowerCase().includes("an"));
-  if (msVoice) return msVoice;
+  // Windows: "Microsoft An" is the only offline vi-VN voice — match narrowly, not loose "an"
+  const msAn = voices.find((v) => {
+    const n = v.name.toLowerCase();
+    return n.includes("microsoft an") || n === "an" || n.includes(" an ") || n.endsWith(" an");
+  });
+  if (msAn) return msAn;
+  // Any vi voice with localService preferred
+  const local = voices.find((v) => (v as any).localService);
+  if (local) return local;
   return voices[0];
+}
+
+export function isVietnameseVoiceAvailable(): boolean {
+  return getVietnameseWebVoices().length > 0;
 }
 
 /**
@@ -175,6 +199,9 @@ export function extractJapaneseSpokenText(text: string): string {
 
 /**
  * Speaks Vietnamese text cleanly using official Vietnamese system voices (vi-VN).
+ * IMPORTANT: if no vi-VN voice is installed, we do NOT fall back to English
+ * (which sounds very weird) — we skip TTS and call onEnd immediately.
+ * Caller can show text-only fallback.
  */
 export function speakVietnameseText(text: string, options: WebSpeechOptions = {}): boolean {
   if (!isWebSpeechSupported() || !text?.trim()) {
@@ -185,6 +212,15 @@ export function speakVietnameseText(text: string, options: WebSpeechOptions = {}
   const cleanText = text.trim();
   if (!cleanText) {
     options.onEnd?.();
+    return false;
+  }
+
+  // Guard: never pronounce Vietnamese with an English voice
+  const voice = getPreferredVietnameseVoice();
+  if (!voice) {
+    console.warn("[WebSpeech] No Vietnamese voice (vi-VN) found — skipping TTS to avoid English-voice fallback. Text:", cleanText.slice(0, 60));
+    // Immediately continue flow ( caller’s onEnd will open answering phase )
+    setTimeout(() => options.onEnd?.(), 0);
     return false;
   }
 
@@ -213,11 +249,7 @@ export function speakVietnameseText(text: string, options: WebSpeechOptions = {}
       utterance.lang = "vi-VN";
       utterance.rate = options.rate ?? 1.0;
       utterance.pitch = options.pitch ?? 1.0;
-
-      const voice = getPreferredVietnameseVoice();
-      if (voice) {
-        utterance.voice = voice;
-      }
+      utterance.voice = voice;
 
       utterance.onstart = () => {
         options.onStart?.();

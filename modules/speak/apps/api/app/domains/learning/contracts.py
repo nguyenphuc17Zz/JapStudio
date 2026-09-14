@@ -77,6 +77,14 @@ class ExerciseType(str, Enum):
     RAPID_RESPONSE = "rapid_response"
     SENTENCE_GENERATION = "sentence_generation"
     SENTENCE_TRANSFORMATION = "sentence_transformation"
+    # Mode 8 — Sentence Builder (clause-chaining assembly/expansion/repair)
+    SENTENCE_ASSEMBLE = "sentence_assemble"
+    SENTENCE_EXPAND = "sentence_expand"
+    SENTENCE_REPAIR = "sentence_repair"
+    # Mode 9 — VI-JA Interpretation Bridge (word/sentence/situation)
+    INTERPRET_WORD = "interpret_word"
+    INTERPRET_SENTENCE = "interpret_sentence"
+    INTERPRET_SITUATION = "interpret_situation"
     TRANSLATION_SPEAKING = "translation_speaking"
     PRONUNCIATION_REPEAT = "pronunciation_repeat"
     SHADOWING = "shadowing"
@@ -106,6 +114,9 @@ class ExerciseType(str, Enum):
     PITCH_RECOGNITION = "pitch_recognition"
     SITUATIONAL_ROLEPLAY = "situational_roleplay"
     SITUATIONAL_SCENARIO = "situational_scenario"
+    # Mode 7 — Aizuchi Dojo (Native Backchannel & Interruption)
+    AIZUCHI_REACTION = "aizuchi_reaction"
+    WARIKOMI_INTERRUPT = "warikomi_interrupt"
     SPEECH_MONOLOGUE = "speech_monologue"
     # Mode 6 — Speaking Ramp (Output Rehabilitation)
     SPEAK_ECHO = "speak_echo"

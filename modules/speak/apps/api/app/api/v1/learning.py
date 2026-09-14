@@ -420,6 +420,9 @@ async def submit_exercise(
     keigo_metrics = None
     pitch_metrics = None
     situational_metrics = None
+    aizuchi_metrics = None
+    builder_metrics = None
+    interpret_metrics = None
     if payload.reflex_metrics:
         reflex_metrics = payload.reflex_metrics.model_dump()
     if payload.keigo_metrics:
@@ -428,7 +431,13 @@ async def submit_exercise(
         pitch_metrics = payload.pitch_metrics.model_dump()
     if payload.situational_metrics:
         situational_metrics = payload.situational_metrics.model_dump()
-    elif payload.reflex_metrics is None and payload.keigo_metrics is None and payload.pitch_metrics is None and payload.situational_metrics is None and any(v is not None for v in [payload.reaction_latency_ms, payload.timer_limit_ms, payload.timed_out, payload.pitch_confidence, payload.audio_quality]):
+    if payload.aizuchi_metrics:
+        aizuchi_metrics = payload.aizuchi_metrics.model_dump()
+    if payload.builder_metrics:
+        builder_metrics = payload.builder_metrics.model_dump()
+    if payload.interpret_metrics:
+        interpret_metrics = payload.interpret_metrics.model_dump()
+    elif payload.reflex_metrics is None and payload.keigo_metrics is None and payload.pitch_metrics is None and payload.situational_metrics is None and payload.aizuchi_metrics is None and payload.builder_metrics is None and payload.interpret_metrics is None and any(v is not None for v in [payload.reaction_latency_ms, payload.timer_limit_ms, payload.timed_out, payload.pitch_confidence, payload.audio_quality]):
         reflex_metrics = {
             "reaction_latency_ms": payload.reaction_latency_ms,
             "semantic_latency_ms": payload.semantic_latency_ms,
@@ -440,6 +449,12 @@ async def submit_exercise(
             "audio_quality": payload.audio_quality,
         }
         keigo_metrics = pitch_metrics = situational_metrics = reflex_metrics
+    if aizuchi_metrics is None and reflex_metrics is not None:
+        aizuchi_metrics = reflex_metrics
+    if builder_metrics is None and reflex_metrics is not None:
+        builder_metrics = reflex_metrics
+    if interpret_metrics is None and reflex_metrics is not None:
+        interpret_metrics = reflex_metrics
     result = await session_svc.submit_exercise_attempt(
         exercise_id=exercise_id,
         user_id=user_id,
@@ -453,6 +468,9 @@ async def submit_exercise(
         keigo_metrics=keigo_metrics,
         pitch_metrics=pitch_metrics,
         situational_metrics=situational_metrics,
+        aizuchi_metrics=aizuchi_metrics,
+        builder_metrics=builder_metrics,
+        interpret_metrics=interpret_metrics,
         reaction_latency_ms=payload.reaction_latency_ms,
         semantic_latency_ms=payload.semantic_latency_ms,
         timer_limit_ms=payload.timer_limit_ms,

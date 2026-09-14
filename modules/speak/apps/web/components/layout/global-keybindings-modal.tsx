@@ -14,6 +14,9 @@ import {
   Crown,
   Music,
   Compass,
+  Ear,
+  Blocks,
+  Languages,
   Settings,
   Activity,
 } from "lucide-react";
@@ -36,6 +39,9 @@ interface GlobalKeybindingsModalProps {
 function getCategoryFromPath(pathname: string | null): KeybindingCategory {
   if (!pathname) return "system";
   if (pathname.startsWith("/reflex")) return "reflex";
+  if (pathname.startsWith("/aizuchi")) return "aizuchi";
+  if (pathname.startsWith("/builder")) return "builder";
+  if (pathname.startsWith("/interpret")) return "interpret";
   if (pathname.startsWith("/keigo")) return "keigo";
   if (pathname.startsWith("/pitch")) return "pitch";
   if (pathname.startsWith("/situations")) return "situations";
@@ -47,6 +53,9 @@ function getCategoryFromPath(pathname: string | null): KeybindingCategory {
 
 const MODAL_TABS: { id: KeybindingCategory; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "reflex", label: "Phản Xạ", icon: Zap },
+  { id: "aizuchi", label: "Phản Hồi", icon: Ear },
+  { id: "builder", label: "Xây Câu", icon: Blocks },
+  { id: "interpret", label: "Việt-Nhật", icon: Languages },
   { id: "keigo", label: "Kính Ngữ", icon: Crown },
   { id: "pitch", label: "Cao Độ", icon: Music },
   { id: "situations", label: "Tình Huống", icon: Compass },

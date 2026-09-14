@@ -17,6 +17,12 @@ class LearningPrompts:
     PITCH_EVAL_PROMPT_VERSION = "pitch.eval.v1"
     SITUATIONAL_GEN_PROMPT_VERSION = "situational.gen.v1"
     SITUATIONAL_EVAL_PROMPT_VERSION = "situational.eval.v1"
+    AIZUCHI_GEN_PROMPT_VERSION = "aizuchi.gen.v1"
+    AIZUCHI_EVAL_PROMPT_VERSION = "aizuchi.eval.v1"
+    BUILDER_GEN_PROMPT_VERSION = "builder.gen.v1"
+    BUILDER_EVAL_PROMPT_VERSION = "builder.eval.v1"
+    INTERPRET_GEN_PROMPT_VERSION = "interpret.gen.v1"
+    INTERPRET_EVAL_PROMPT_VERSION = "interpret.eval.v1"
 
     @classmethod
     def build_exercise_generation_prompt(

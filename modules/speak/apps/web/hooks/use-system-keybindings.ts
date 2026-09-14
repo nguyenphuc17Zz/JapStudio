@@ -7,6 +7,9 @@ export type KeybindingCategory =
   | "keigo"
   | "pitch"
   | "situations"
+  | "aizuchi"
+  | "builder"
+  | "interpret"
   | "ramp"
   | "speaking"
   | "shadowing"
@@ -86,6 +89,45 @@ export interface SystemKeybindings {
   rampNext: string;
   rampHint: string;
   rampCheatsheet: string;
+
+  // 8. Aizuchi Dojo (/aizuchi)
+  aizuchiSubmitOrNext: string;
+  aizuchiListenPrompt: string;
+  aizuchiReplayModel: string;
+  aizuchiToggleReveal: string;
+  aizuchiRetry: string;
+  aizuchiSkip: string;
+  aizuchiOpenCheatsheet: string;
+  aizuchiStartVoice: string;
+  aizuchiToggleHelp: string;
+  aizuchiPauseOrResume: string;
+  aizuchiToggleInputMode: string;
+
+  // 9. Sentence Builder (/builder)
+  builderSubmitOrNext: string;
+  builderListenPrompt: string;
+  builderReplayModel: string;
+  builderToggleReveal: string;
+  builderRetry: string;
+  builderSkip: string;
+  builderOpenCheatsheet: string;
+  builderStartVoice: string;
+  builderToggleHelp: string;
+  builderPauseOrResume: string;
+  builderToggleInputMode: string;
+
+  // 10. VI-JA Interpretation (/interpret)
+  interpretSubmitOrNext: string;
+  interpretListenPrompt: string;
+  interpretReplayModel: string;
+  interpretToggleReveal: string;
+  interpretRetry: string;
+  interpretSkip: string;
+  interpretOpenCheatsheet: string;
+  interpretStartVoice: string;
+  interpretToggleHelp: string;
+  interpretPauseOrResume: string;
+  interpretToggleInputMode: string;
 
   // Generic Drills Aliases (for backward compatibility)
   drillSubmitOrNext: string;
@@ -182,6 +224,45 @@ export const DEFAULT_KEYBINDINGS: SystemKeybindings = {
   rampHint: "h",
   rampCheatsheet: "c",
 
+  // Aizuchi Dojo
+  aizuchiSubmitOrNext: "enter",
+  aizuchiListenPrompt: "l",
+  aizuchiReplayModel: "a",
+  aizuchiToggleReveal: "v",
+  aizuchiRetry: "r",
+  aizuchiSkip: "n",
+  aizuchiOpenCheatsheet: "c",
+  aizuchiStartVoice: "space",
+  aizuchiToggleHelp: "?",
+  aizuchiPauseOrResume: "p",
+  aizuchiToggleInputMode: "t",
+
+  // Sentence Builder
+  builderSubmitOrNext: "enter",
+  builderListenPrompt: "l",
+  builderReplayModel: "a",
+  builderToggleReveal: "v",
+  builderRetry: "r",
+  builderSkip: "n",
+  builderOpenCheatsheet: "c",
+  builderStartVoice: "space",
+  builderToggleHelp: "?",
+  builderPauseOrResume: "p",
+  builderToggleInputMode: "t",
+
+  // VI-JA Interpretation
+  interpretSubmitOrNext: "enter",
+  interpretListenPrompt: "l",
+  interpretReplayModel: "a",
+  interpretToggleReveal: "v",
+  interpretRetry: "r",
+  interpretSkip: "n",
+  interpretOpenCheatsheet: "c",
+  interpretStartVoice: "space",
+  interpretToggleHelp: "?",
+  interpretPauseOrResume: "p",
+  interpretToggleInputMode: "t",
+
   // Generic Drills Aliases
   drillSubmitOrNext: "enter",
   drillReplayAudio: "space",
@@ -274,6 +355,45 @@ export const ACTION_CATEGORIES: Record<keyof SystemKeybindings, KeybindingCatego
   rampNext: "ramp",
   rampHint: "ramp",
   rampCheatsheet: "ramp",
+
+  // Aizuchi Dojo
+  aizuchiSubmitOrNext: "aizuchi",
+  aizuchiListenPrompt: "aizuchi",
+  aizuchiReplayModel: "aizuchi",
+  aizuchiToggleReveal: "aizuchi",
+  aizuchiRetry: "aizuchi",
+  aizuchiSkip: "aizuchi",
+  aizuchiOpenCheatsheet: "aizuchi",
+  aizuchiStartVoice: "aizuchi",
+  aizuchiToggleHelp: "aizuchi",
+  aizuchiPauseOrResume: "aizuchi",
+  aizuchiToggleInputMode: "aizuchi",
+
+  // Sentence Builder
+  builderSubmitOrNext: "builder",
+  builderListenPrompt: "builder",
+  builderReplayModel: "builder",
+  builderToggleReveal: "builder",
+  builderRetry: "builder",
+  builderSkip: "builder",
+  builderOpenCheatsheet: "builder",
+  builderStartVoice: "builder",
+  builderToggleHelp: "builder",
+  builderPauseOrResume: "builder",
+  builderToggleInputMode: "builder",
+
+  // VI-JA Interpretation
+  interpretSubmitOrNext: "interpret",
+  interpretListenPrompt: "interpret",
+  interpretReplayModel: "interpret",
+  interpretToggleReveal: "interpret",
+  interpretRetry: "interpret",
+  interpretSkip: "interpret",
+  interpretStartVoice: "interpret",
+  interpretOpenCheatsheet: "interpret",
+  interpretToggleHelp: "interpret",
+  interpretPauseOrResume: "interpret",
+  interpretToggleInputMode: "interpret",
 
   // Generic Drills Aliases
   drillSubmitOrNext: "reflex",
