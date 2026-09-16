@@ -48,3 +48,13 @@ def test_seed_pool_routing():
     assert len(get_seed_pool("sentence_assemble")) == 12
     assert len(get_seed_pool("sentence_expand")) == 9
     assert len(get_seed_pool("sentence_repair")) == 9
+
+
+def test_generator_force_ai_parameter():
+    import inspect
+    from app.domains.builder.dynamic_generator import AIBuilderGenerator
+
+    sig = inspect.signature(AIBuilderGenerator.generate_dynamic_exercise)
+    assert "force_ai" in sig.parameters
+    assert sig.parameters["force_ai"].default is False
+

@@ -70,6 +70,7 @@ export function VoiceSettingsHub() {
   const [isTestingMic, setIsTestingMic] = useState(false);
   const [micAudioLevel, setMicAudioLevel] = useState(0);
   const [micTestResult, setMicTestResult] = useState<string | null>(null);
+  const [showAdvancedAudio, setShowAdvancedAudio] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -737,17 +738,40 @@ export function VoiceSettingsHub() {
         </div>
       </div>
 
-      {/* SECTION 4: SOFTWARE MIC GAIN PRE-AMP STUDIO */}
-      <MicGainStudioCard />
+      {/* SECTION 4: ADVANCED AUDIO & ENGINE CONFIGURATION DRAWER */}
+      <div className="rounded-2xl border border-border/70 bg-card/75 backdrop-blur-xl overflow-hidden shadow-glass-sm">
+        <button
+          type="button"
+          onClick={() => setShowAdvancedAudio((prev) => !prev)}
+          className="w-full p-4 flex items-center justify-between text-left hover:bg-muted/40 transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <Sliders className="h-4 w-4" />
+            </span>
+            <div>
+              <h4 className="text-xs sm:text-sm font-bold text-foreground">
+                Cấu hình Chuyên sâu & Engine (Voicevox, Faster-Whisper, Web Speech, Pre-Amp)
+              </h4>
+              <p className="text-[11px] text-muted-foreground">
+                Quản lý cổng Voicevox Engine Server, tải model Whisper offline, bộ khuếch đại Mic Gain
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-semibold text-primary px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 shrink-0">
+            {showAdvancedAudio ? "Thu gọn ▲" : "Mở rộng ▼"}
+          </span>
+        </button>
 
-      {/* SECTION 5: FASTER-WHISPER STT MODEL MANAGER */}
-      <STTModelManagerCard />
-
-      {/* SECTION 5: WEB SPEECH NATIVE JAPANESE STUDIO */}
-      <WebSpeechStudioCard />
-
-      {/* SECTION 6: VOICEVOX ENGINE CARD */}
-      <VoicevoxEngineCard onEngineReload={loadData} />
+        {showAdvancedAudio && (
+          <div className="p-4 sm:p-5 pt-2 space-y-4 border-t border-border/60">
+            <MicGainStudioCard />
+            <STTModelManagerCard />
+            <WebSpeechStudioCard />
+            <VoicevoxEngineCard onEngineReload={loadData} />
+          </div>
+        )}
+      </div>
 
       {/* Modal: Save Custom Profile */}
       {showSaveProfileModal && (

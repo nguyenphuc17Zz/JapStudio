@@ -196,6 +196,10 @@ class RampScaffold(BaseModel):
     support_level: int = 0
     topic: str | None = None
     keywords: list[str] = Field(default_factory=list)
+    vocab_items: list[dict[str, Any]] = Field(default_factory=list)
+    answer_angles: list[dict[str, Any]] = Field(default_factory=list)
+    sentence_frames: list[dict[str, Any]] = Field(default_factory=list)
+    sample_answers: list[dict[str, Any]] = Field(default_factory=list)
     guided_questions: list[str] = Field(default_factory=list)
     sentence_starter: str | None = None
     structure_outline: list[str] = Field(default_factory=list)
@@ -232,6 +236,7 @@ class RampTaskSpec(BaseModel):
     task_signature: str | None = None
     provider: str | None = None
     model: str | None = None
+    source: str = Field(default="bank", description="'ai' | 'bank' | 'mock'")
 
 
 class RampGenerationInput(BaseModel):
@@ -253,6 +258,7 @@ class RampGenerationInput(BaseModel):
     session_topic_context: str | None = None
     mastery: dict[str, float] = Field(default_factory=dict)
     is_retry: bool = False
+    force_ai: bool = False
 
 
 class ElaborationPrompt(BaseModel):
@@ -363,6 +369,7 @@ class RampAttemptFeedback(BaseModel):
     followup: FollowUpSpec | None = None
     sample_answers: list[RampSampleAnswer] = Field(default_factory=list)
     coaching_advice: RampCoachingAdvice | None = None
+    evaluation_source: str = Field(default="ai_router", description="'fast_pass' | 'ai_router' | 'mock'")
 
 
 class RampProgressSnapshot(BaseModel):

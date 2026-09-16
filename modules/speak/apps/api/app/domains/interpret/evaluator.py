@@ -8,7 +8,6 @@ with a non-empty transcript and decent STT confidence.
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession

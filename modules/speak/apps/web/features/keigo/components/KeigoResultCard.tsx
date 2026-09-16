@@ -25,8 +25,6 @@ import {
   ShieldAlert,
   AlertCircle,
   Scale,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import type { KeigoResult, KeigoExercise } from "../services/keigo-api";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
@@ -61,31 +59,19 @@ export function KeigoResultCard({
   const [userAudioCurrentTime, setUserAudioCurrentTime] = useState(0);
   const [userAudioDuration, setUserAudioDuration] = useState(0);
   const [isTTSPlaying, setIsTTSPlaying] = useState(false);
-  const [isRevealed, setIsRevealed] = useState(false);
 
   const userAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    setIsRevealed(false);
-  }, [exercise?.id]);
 
   const handlePlayModelTTSRef = useRef<(() => void) | null>(null);
 
   // Keyboard shortcut listener:
-  // - V: toggle reveal text (when isPending)
-  // - A: play model audio (works anytime, even before pressing V when answer is blurred)
+  // - A: play model audio
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       if (tag === "input" || tag === "textarea") return;
 
-      if (e.key.toLowerCase() === "v" && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        if (isPending) {
-          e.preventDefault();
-          soundFX.playFurin();
-          setIsRevealed((prev) => !prev);
-        }
-      } else if (e.key.toLowerCase() === "a" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (e.key.toLowerCase() === "a" && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         e.stopImmediatePropagation();
         handlePlayModelTTSRef.current?.();
@@ -93,7 +79,7 @@ export function KeigoResultCard({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isPending]);
+  }, []);
 
   useEffect(() => {
     setIsUserAudioPlaying(false);
@@ -109,7 +95,6 @@ export function KeigoResultCard({
   const latency = result?.reactionLatencyMs;
   const timerLimit = result?.timerLimitMs || 5000;
   const latencyRatio = latency != null ? Math.min(1, latency / timerLimit) : 1;
-  const isBlurred = isPending && !isRevealed;
 
   const canonical =
     result?.canonicalAnswer ||
@@ -435,28 +420,6 @@ export function KeigoResultCard({
                 <span>Đáp án Kính ngữ chuẩn</span>
               </span>
               <div className="flex items-center gap-1.5 shrink-0">
-                {isPending && (
-                  <button
-                    type="button"
-                    onClick={() => setIsRevealed(!isRevealed)}
-                    className="text-[10px] px-2.5 py-0.5 rounded-full bg-card/80 border border-primary/30 text-primary font-bold hover:bg-primary/10 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-2xs"
-                    title={isRevealed ? "Ẩn đáp án (Phím V)" : "Hiện đáp án (Phím V)"}
-                  >
-                    {isRevealed ? (
-                      <>
-                        <EyeOff className="h-3 w-3 shrink-0" />
-                        <span>Làm mờ</span>
-                        <kbd className="text-[9px] font-mono px-1 rounded bg-primary/10 border border-primary/25 font-bold">V</kbd>
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-3 w-3 shrink-0" />
-                        <span>Xem trước</span>
-                        <kbd className="text-[9px] font-mono px-1 rounded bg-primary/10 border border-primary/25 font-bold">V</kbd>
-                      </>
-                    )}
-                  </button>
-                )}
                 {canonical && (
                   <button
                     type="button"
@@ -473,12 +436,7 @@ export function KeigoResultCard({
             </div>
 
             <div className="relative min-h-[3.5rem]">
-              <div
-                className={cn(
-                  "rounded-xl bg-card/70 dark:bg-black/25 p-3.5 border border-border/70 text-center shadow-xs flex flex-col items-center justify-center min-h-[3.5rem] transition-all duration-300",
-                  isBlurred && "filter blur-sm select-none pointer-events-none"
-                )}
-              >
+              <div className="rounded-xl bg-card/70 dark:bg-black/25 p-3.5 border border-border/70 text-center shadow-xs flex flex-col items-center justify-center min-h-[3.5rem]">
                 {canonical ? (
                   <div className="text-xl sm:text-2xl font-black font-jp text-primary tracking-tight leading-snug">
                     <UniversalFurigana text={canonical} fontSize="xl" />
@@ -489,30 +447,12 @@ export function KeigoResultCard({
                   </span>
                 )}
               </div>
-
-              {isBlurred && (
-                <div className="absolute inset-0 flex items-center justify-center bg-card/60 backdrop-blur-[2px] rounded-xl z-10">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5 text-xs font-bold border-primary/40 bg-background/90 text-primary shadow-xs hover:bg-background cursor-pointer whitespace-nowrap"
-                    onClick={() => setIsRevealed(true)}
-                  >
-                    <Eye className="h-3.5 w-3.5 shrink-0" />
-                    <span>Xem trước đáp án</span>
-                    <kbd className="text-[10px] font-mono px-1 py-0.2 rounded bg-primary/10 border border-primary/25 ml-1 font-bold">V</kbd>
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
 
           {variants.length > 1 && (
             <div
-              className={cn(
-                "text-[10px] text-muted-foreground text-center pt-0.5 font-jp transition-all duration-300 whitespace-nowrap",
-                isBlurred && "filter blur-xs select-none"
-              )}
+              className="text-[10px] text-muted-foreground text-center pt-0.5 font-jp whitespace-nowrap"
               title={variants.join(" / ")}
             >
               +{variants.length - 1} cách nói khác
@@ -567,10 +507,7 @@ export function KeigoResultCard({
       {/* 4.5 PRAGMATICS & SOCIAL POLITENESS MATRIX (Only Shown on Evaluation) */}
       {!isPending && result?.pragmatics && (
         <div
-          className={cn(
-            "p-4 rounded-2xl bg-muted/40 border border-border/80 space-y-3 transition-all duration-300",
-            isBlurred && "filter blur-xs select-none pointer-events-none"
-          )}
+          className="p-4 rounded-2xl bg-muted/40 border border-border/80 space-y-3"
         >
           <div className="flex items-center justify-between text-xs font-bold text-foreground">
             <span className="flex items-center gap-1.5">

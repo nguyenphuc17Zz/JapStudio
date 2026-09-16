@@ -64,4 +64,23 @@ export const conversationApi = {
   async getSessionSummary(sessionId: string): Promise<SessionSummary> {
     return apiClient.get<SessionSummary>(`/conversations/${sessionId}/summary`);
   },
+
+  async getRecentSessions(limit = 5): Promise<RecentSessionItem[]> {
+    return apiClient.get<RecentSessionItem[]>(`/conversations/recent?limit=${limit}`);
+  },
 };
+
+export interface RecentSessionItem {
+  id: string;
+  persona_id: string;
+  persona_name: string;
+  persona_avatar_url?: string | null;
+  mode: string;
+  status: string;
+  started_at: string;
+  ended_at?: string | null;
+  duration_seconds: number;
+  turns_count: number;
+  score?: number | null;
+  topic?: string | null;
+}

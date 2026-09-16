@@ -14,28 +14,7 @@ class PersonaService:
         self.session = session
 
     async def seed_system_personas(self) -> None:
-        """Seeds standard built-in personas into the database only if the table is completely empty."""
-        result = await self.session.execute(select(Persona))
-        has_any = result.scalars().first() is not None
-        if not has_any:
-            for p_data in SYSTEM_PERSONAS_SEED:
-                persona = Persona(
-                    id=p_data["id"],
-                    name=p_data["name"],
-                    description=p_data["description"],
-                    role=p_data["role"],
-                    personality=p_data["personality"],
-                    speaking_style=p_data["speaking_style"],
-                    difficulty=p_data["difficulty"],
-                    is_system=True,
-                    avatar_url=p_data.get("avatar_url"),
-                    system_prompt=p_data.get("system_prompt"),
-                )
-                self.session.add(persona)
-            await self.session.commit()
-
-    async def restore_default_personas(self) -> list[Persona]:
-        """Restores missing standard built-in personas into the database on user request."""
+        """Seeds standard built-in personas into the database, adding any missing system personas."""
         for p_data in SYSTEM_PERSONAS_SEED:
             result = await self.session.execute(
                 select(Persona).where(Persona.id == p_data["id"])
@@ -55,6 +34,38 @@ class PersonaService:
                     system_prompt=p_data.get("system_prompt"),
                 )
                 self.session.add(persona)
+        await self.session.commit()
+
+    async def restore_default_personas(self) -> list[Persona]:
+        """Restores missing standard built-in personas and syncs system defaults."""
+        for p_data in SYSTEM_PERSONAS_SEED:
+            result = await self.session.execute(
+                select(Persona).where(Persona.id == p_data["id"])
+            )
+            existing = result.scalar_one_or_none()
+            if not existing:
+                persona = Persona(
+                    id=p_data["id"],
+                    name=p_data["name"],
+                    description=p_data["description"],
+                    role=p_data["role"],
+                    personality=p_data["personality"],
+                    speaking_style=p_data["speaking_style"],
+                    difficulty=p_data["difficulty"],
+                    is_system=True,
+                    avatar_url=p_data.get("avatar_url"),
+                    system_prompt=p_data.get("system_prompt"),
+                )
+                self.session.add(persona)
+            else:
+                existing.name = p_data["name"]
+                existing.description = p_data["description"]
+                existing.role = p_data["role"]
+                existing.personality = p_data["personality"]
+                existing.speaking_style = p_data["speaking_style"]
+                existing.difficulty = p_data["difficulty"]
+                existing.avatar_url = p_data.get("avatar_url")
+                existing.system_prompt = p_data.get("system_prompt")
         await self.session.commit()
         return await self.list_personas()
 
@@ -118,28 +129,39 @@ class PersonaService:
         from app.domains.ai.contracts import AIMessage, AIMessageRole, AIRequest, AITask
         from app.domains.ai.router import AIRouter
 
-        difficulty = (req.difficulty or "N3").upper().strip()
-        if difficulty not in ["N5", "N4", "N3", "N2", "N1"]:
+        raw_diff = (req.difficulty or "N3").upper().strip()
+        if raw_diff in ["NATIVE", "BUSINESS", "BẢN XỨ", "DOANH NGHIỆP"]:
+            difficulty = "NATIVE"
+            level_desc = "Native Japanese speaker (bản ngữ tự nhiên, thương mại cao cấp, tự nhiên chuẩn Nhật)"
+        elif raw_diff in ["ADAPTIVE", "ALL", "TỰ THÍCH ỨNG", "TẤT CẢ"]:
+            difficulty = "ADAPTIVE"
+            level_desc = "Adaptive level (tự động điều chỉnh linh hoạt theo trình độ và phản xạ của người học)"
+        elif raw_diff in ["N5", "N4", "N3", "N2", "N1"]:
+            difficulty = raw_diff
+            level_desc = f"JLPT Level {raw_diff}"
+        else:
             difficulty = "N3"
+            level_desc = "JLPT Level N3"
 
         theme_hint = (req.theme or "").strip()
 
         system = (
-            "You are an expert Japanese conversation persona designer for language learners. "
-            "Generate ONE Japanese conversation partner (persona) formatted strictly as a JSON object with keys: "
-            "name (Japanese name with kanji/kana and romaji, e.g., 'Haruto (ハルト)'), "
-            "role (Role or occupation in Vietnamese, e.g., 'Chủ quán ramen tại Tokyo'), "
-            "description (1-2 sentences in Vietnamese describing context and background), "
-            "personality (Vietnamese description of personality traits), "
-            "speaking_style (Vietnamese description of speech style, mentioning politeness/keigo/casual), "
-            "difficulty (One of 'N5', 'N4', 'N3', 'N2', 'N1'), "
-            "system_prompt (System prompt in English instructing the AI how to roleplay this persona naturally, keeping responses concise 1-3 sentences suitable for learner JLPT level). "
+            "You are an expert Japanese conversation persona designer for immersive speaking training. "
+            "Generate ONE highly realistic, engaging Japanese conversation partner (persona) tailored to the requested scenario or theme. "
+            "Format the output strictly as a JSON object with keys: "
+            "name (Japanese name with kanji/kana and romaji, e.g., 'Kenji Sato (佐藤 健司)'), "
+            "role (Role, profession, or relationship in Vietnamese, e.g., 'Trưởng nhóm phát triển phần mềm tại Shibuya'), "
+            "description (1-2 sentences in Vietnamese describing the exact situation, physical setting, and scenario context), "
+            "personality (Vietnamese description of personality traits, temperament, and friendliness), "
+            "speaking_style (Vietnamese description of speech style, tone, politeness/keigo/casual), "
+            "difficulty (One of 'N5', 'N4', 'N3', 'N2', 'N1', 'ADAPTIVE', or 'NATIVE'), "
+            "system_prompt (Comprehensive system prompt in English instructing the AI how to roleplay this persona naturally, opening the dialogue with a natural initial greeting in Japanese, and keeping responses concise in 1-3 sentences suitable for spoken interaction). "
             "Return ONLY raw valid JSON, no markdown formatting."
         )
 
-        user_content = f"Generate a unique conversation partner. Target JLPT Level: {difficulty}."
+        user_content = f"Generate a vivid Japanese conversation partner. Target Level: {level_desc}."
         if theme_hint:
-            user_content += f" Specific theme/scenario: {theme_hint}."
+            user_content += f" Specific situation / scenario / context: {theme_hint}."
 
         try:
             ai_router = AIRouter(self.session)
@@ -147,7 +169,7 @@ class PersonaService:
                 messages=[AIMessage(role=AIMessageRole.USER, content=user_content)],
                 system_instruction=system,
                 temperature=0.85,
-                max_output_tokens=600,
+                max_output_tokens=650,
                 response_format=None,
             )
             resp = await ai_router.generate(task=AITask.GENERAL, request=ai_req, user_id=user_id)
@@ -165,7 +187,7 @@ class PersonaService:
                     raise ValidationException(f"AI generated incomplete persona: missing '{k}'")
 
             diff = str(obj.get("difficulty", difficulty)).upper().strip()
-            if diff not in ["N5", "N4", "N3", "N2", "N1"]:
+            if diff not in ["N5", "N4", "N3", "N2", "N1", "NATIVE", "ADAPTIVE"]:
                 diff = difficulty
 
             return PersonaGenerateResponse(

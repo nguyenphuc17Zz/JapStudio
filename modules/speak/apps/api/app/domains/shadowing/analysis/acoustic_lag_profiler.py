@@ -13,7 +13,7 @@ from typing import Any
 
 import numpy as np
 
-from app.domains.pitch.acoustic.dtw_pitch import DTWPitchEngine
+from app.domains.shadowing.analysis.dtw_pitch import DTWPitchEngine
 
 
 class ShadowingLagProfiler:

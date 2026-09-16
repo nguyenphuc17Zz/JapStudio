@@ -48,31 +48,19 @@ export function SituationsResultCard({
   className,
 }: SituationsResultCardProps) {
   const [isTTSPlaying, setIsTTSPlaying] = useState(false);
-  const [isRevealed, setIsRevealed] = useState(false);
-
-  useEffect(() => {
-    setIsRevealed(false);
-  }, [exercise?.id]);
 
   const sc = exercise?.extra_metadata?.situational_config || {};
   const sData = exercise?.situationalData || sc.situational_data || {};
   const canonical = sc.canonical || exercise?.canonical || "";
 
   // Keyboard shortcut listener:
-  // - V: toggle reveal text (when isPending)
-  // - A: play model audio (works anytime, even before pressing V when answer is blurred)
+  // - A: play model audio
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       if (tag === "input" || tag === "textarea") return;
 
-      if (e.key.toLowerCase() === "v" && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        if (isPending) {
-          e.preventDefault();
-          soundFX.playFurin();
-          setIsRevealed((prev) => !prev);
-        }
-      } else if (e.key.toLowerCase() === "a" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (e.key.toLowerCase() === "a" && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         e.stopImmediatePropagation();
         if (canonical) {
@@ -83,7 +71,7 @@ export function SituationsResultCard({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isPending, canonical]);
+  }, [canonical]);
 
   if (!result && !exercise) return null;
 
@@ -92,7 +80,6 @@ export function SituationsResultCard({
   const isTimeout = result?.timedOut ?? false;
   const score = result?.score ?? 0;
   const latency = result?.reactionLatencyMs ?? 0;
-  const isBlurred = isPending && !isRevealed;
   const metrics = result?.metrics || {};
   const culturalTip = result?.culturalTip || sc.cultural_tip || sData.cultural_tip || exercise?.culturalTip || "";
 
@@ -287,29 +274,6 @@ export function SituationsResultCard({
               </span>
 
               <div className="flex items-center gap-1.5 shrink-0">
-                {isPending && (
-                  <button
-                    type="button"
-                    onClick={() => setIsRevealed(!isRevealed)}
-                    className="text-[10px] px-2.5 py-0.5 rounded-full bg-card/80 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold hover:bg-emerald-500/10 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-2xs"
-                    title={isRevealed ? "Ẩn đáp án (Phím V)" : "Hiện đáp án (Phím V)"}
-                  >
-                    {isRevealed ? (
-                      <>
-                        <EyeOff className="h-3 w-3 shrink-0" />
-                        <span>Ẩn</span>
-                        <kbd className="text-[9px] font-mono px-1 rounded bg-emerald-500/10 border border-emerald-500/25 font-bold">V</kbd>
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-3 w-3 shrink-0" />
-                        <span>Xem</span>
-                        <kbd className="text-[9px] font-mono px-1 rounded bg-emerald-500/10 border border-emerald-500/25 font-bold">V</kbd>
-                      </>
-                    )}
-                  </button>
-                )}
-
                 {canonical && (
                   <button
                     type="button"
@@ -328,33 +292,13 @@ export function SituationsResultCard({
               </div>
             </div>
 
-            {/* Model Text in Speech Bubble Container with Blur/Reveal */}
+            {/* Model Text in Speech Bubble Container */}
             <div className="relative min-h-[3.5rem]">
-              <div
-                className={cn(
-                  "p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/25 min-h-[3.5rem] flex items-center justify-center text-center shadow-inner transition-all duration-300",
-                  isBlurred && "filter blur-sm select-none pointer-events-none"
-                )}
-              >
+              <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/25 min-h-[3.5rem] flex items-center justify-center text-center shadow-inner">
                 <span className="text-base sm:text-lg font-black font-jp text-foreground tracking-wide leading-snug">
                   <UniversalFurigana text={canonical || "すみません、これをお願いします。"} fontSize="normal" />
                 </span>
               </div>
-
-              {isBlurred && (
-                <div className="absolute inset-0 flex items-center justify-center bg-card/75 backdrop-blur-[2px] rounded-xl z-10">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5 text-xs font-bold border-emerald-500/40 bg-background/95 text-emerald-600 dark:text-emerald-400 shadow-xs hover:bg-background cursor-pointer whitespace-nowrap"
-                    onClick={() => setIsRevealed(true)}
-                  >
-                    <Eye className="h-3.5 w-3.5 shrink-0" />
-                    <span>Xem trước câu đối đáp</span>
-                    <kbd className="text-[10px] font-mono px-1 py-0.2 rounded bg-emerald-500/10 border border-emerald-500/25 ml-1 font-bold">V</kbd>
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -362,12 +306,7 @@ export function SituationsResultCard({
 
       {/* Cultural Nuance Pragmatics Tip */}
       {!isPending && culturalTip && (
-        <div
-          className={cn(
-            "p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300 transition-all duration-300",
-            isBlurred && "filter blur-xs select-none pointer-events-none"
-          )}
-        >
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2 text-xs text-amber-800 dark:text-amber-300">
           <Lightbulb className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <span className="font-bold">Mẹo văn hóa thực chiến Nhật Bản:</span>

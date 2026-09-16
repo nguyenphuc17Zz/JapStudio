@@ -49,6 +49,7 @@ async def generate_aizuchi_exercise_get(
     num_turns: int = Query(default=3, ge=1, le=5),
     window_ms: int | None = Query(default=None, ge=0, le=10000),
     learning_item_key: str | None = Query(default=None),
+    force_ai: bool = Query(default=False, description="Force fresh AI generation bypassing DB cache"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -61,6 +62,7 @@ async def generate_aizuchi_exercise_get(
         num_turns=num_turns,
         window_ms=window_ms,
         learning_item_key=learning_item_key,
+        force_ai=force_ai,
         user_id=user_id,
         db=db,
     )
@@ -76,6 +78,7 @@ async def generate_aizuchi_exercise(
     num_turns: int = Query(default=3, ge=1, le=5),
     window_ms: int | None = Query(default=None, ge=0, le=10000),
     learning_item_key: str | None = Query(default=None),
+    force_ai: bool = Query(default=False, description="Force fresh AI generation bypassing DB cache"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -104,6 +107,7 @@ async def generate_aizuchi_exercise(
         speed=speed,
         num_turns=num_turns,
         user_id=user_id,
+        force_ai=force_ai,
     )
 
     # Resolve learning item key (fluency for reaction, naturalness for interrupt)

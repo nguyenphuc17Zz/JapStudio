@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Mic, Zap, Ear, Blocks, Languages, Crown, Music, Compass, Settings } from "lucide-react";
+import { LayoutDashboard, Mic, Zap, Ear, Blocks, Languages, Crown, Compass, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -14,7 +14,6 @@ const TABS = [
   { href: "/builder", label: "Xây câu", icon: Blocks },
   { href: "/interpret", label: "V-Nhật", icon: Languages },
   { href: "/keigo", label: "Kính ngữ", icon: Crown },
-  { href: "/pitch", label: "Cao độ", icon: Music },
   { href: "/situations", label: "Tình huống", icon: Compass },
 ];
 
@@ -28,7 +27,7 @@ export function BottomNav() {
           const Icon = t.icon;
           const active =
             t.href === "/speaking"
-              ? pathname === "/speaking" || (pathname.startsWith("/speaking/") && !["/speaking/speech", "/speaking/reflex", "/speaking/pronunciation"].some((p) => pathname.startsWith(p)))
+              ? pathname === "/speaking" || (pathname.startsWith("/speaking/") && !["/speaking/speech", "/speaking/pronunciation"].some((p) => pathname.startsWith(p)))
               : pathname === t.href || (t.href !== "/dashboard" && pathname.startsWith(t.href));
           return (
             <Link

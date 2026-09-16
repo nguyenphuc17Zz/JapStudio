@@ -68,6 +68,7 @@ export interface ReflexExercise {
   ai_generated?: boolean;
   fallback_reason?: string;
   generation_source?: string;
+  generationSource?: string;
 }
 
 export interface ReflexResult {
@@ -193,6 +194,8 @@ export async function generateExercise(opts: GenerateOpts): Promise<ReflexExerci
     tier: rc.tier ?? ex.tier,
     frequencyScore: rc.frequency_score ?? ex.frequency_score,
     frequencyBadge: rc.frequency_badge || ex.frequency_badge,
+    generation_source: ex.generation_source || rc.generation_source || ex.extra_metadata?.generation_source || "ai",
+    generationSource: ex.generation_source || rc.generation_source || ex.extra_metadata?.generation_source || "ai",
   };
 }
 

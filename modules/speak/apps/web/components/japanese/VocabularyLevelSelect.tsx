@@ -188,7 +188,7 @@ export function VocabularyLevelSelect({
     );
   }
 
-  // 3. Default Variant: Full, prominent cockpit card for Lobby (Keigo, Pitch, Reflex)
+  // 3. Default Variant: Full, prominent cockpit card for Lobby (Keigo, Reflex)
   const currentTierObj = VOCABULARY_TIERS.find((t) => t.tier === tier) || VOCABULARY_TIERS[0];
 
   return (

@@ -18,7 +18,7 @@ import random
 from datetime import datetime, timezone
 from typing import Any, Callable, Coroutine
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger

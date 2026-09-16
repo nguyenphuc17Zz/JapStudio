@@ -42,3 +42,33 @@ def test_seed_pool_routing():
     assert len(get_seed_pool("interpret_word")) == 12
     assert len(get_seed_pool("interpret_sentence")) == 9
     assert len(get_seed_pool("interpret_situation")) == 9
+
+
+import pytest
+from unittest.mock import AsyncMock, MagicMock
+from app.domains.interpret.dynamic_generator import AIInterpretGenerator
+
+
+@pytest.mark.asyncio
+async def test_generator_force_ai_parameter():
+    db = MagicMock()
+    generator = AIInterpretGenerator(db)
+    generator._ai_generate = AsyncMock(return_value={
+        "title": "越日文",
+        "objective": "Dịch Việt→Nhật",
+        "prompt_vi": "Hôm nay tôi bận lắm.",
+        "expected_ja_keywords": ["今日", "忙しい"],
+        "reference_ja": "今日はとても忙しいです。",
+    })
+
+    # When force_ai=True, _ai_generate is called with force_ai=True and generation_source is "ai"
+    result = await generator.generate_dynamic_exercise(
+        sub_mode="interpret_sentence",
+        force_ai=True,
+    )
+    assert result["generation_source"] == "ai"
+    assert result["is_fallback"] is False
+    assert result["prompt_vi"] == "Hôm nay tôi bận lắm."
+    generator._ai_generate.assert_called_once()
+    assert generator._ai_generate.call_args.kwargs.get("force_ai") is True
+

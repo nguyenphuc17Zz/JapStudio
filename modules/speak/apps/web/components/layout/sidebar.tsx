@@ -11,13 +11,13 @@ import {
   Sparkles,
   Zap,
   Crown,
-  Music,
   Compass,
   Ear,
   Blocks,
   Languages,
   PanelLeftClose,
   PanelLeftOpen,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,13 +31,13 @@ interface NavItem {
 const MAIN_ITEMS: NavItem[] = [
   { label: "Trang chủ", jaLabel: "ホーム", href: "/dashboard", icon: LayoutDashboard },
   { label: "Luyện nói", jaLabel: "会話", href: "/speaking", icon: Mic },
-  { label: "Phục hồi nói", jaLabel: "リハビリ", href: "/ramp", icon: Sparkles },
+  { label: "Phục hồi nói", jaLabel: "サバイバル", href: "/survival", icon: ShieldAlert },
+  { label: "Nấc thang nói", jaLabel: "段階", href: "/ramp", icon: Sparkles },
   { label: "Phản xạ", jaLabel: "瞬発", href: "/reflex", icon: Zap },
   { label: "Phản hồi", jaLabel: "相づち", href: "/aizuchi", icon: Ear },
   { label: "Xây câu", jaLabel: "文立て", href: "/builder", icon: Blocks },
   { label: "Việt-Nhật", jaLabel: "通訳", href: "/interpret", icon: Languages },
   { label: "Kính ngữ", jaLabel: "敬語", href: "/keigo", icon: Crown },
-  { label: "Cao độ", jaLabel: "高低", href: "/pitch", icon: Music },
   { label: "Tình huống", jaLabel: "場面", href: "/situations", icon: Compass },
   { label: "Shadowing", jaLabel: "シャドーイング", href: "/shadowing", icon: Tv },
 ];
@@ -46,7 +46,7 @@ const MAIN_ITEMS: NavItem[] = [
 
 function isNavActive(itemHref: string, pathname: string): boolean {
   if (itemHref === "/speaking") {
-    return pathname === "/speaking" || (pathname.startsWith("/speaking/") && !["/speaking/speech", "/speaking/reflex", "/speaking/pronunciation"].some((p) => pathname.startsWith(p)));
+    return pathname === "/speaking" || (pathname.startsWith("/speaking/") && !["/speaking/speech", "/speaking/pronunciation"].some((p) => pathname.startsWith(p)));
   }
   if (itemHref === "/dashboard") {
     return pathname === "/dashboard";

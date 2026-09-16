@@ -70,6 +70,7 @@ export interface GenerateOpts {
   scaffold?: BuilderScaffold;
   timerMs?: number;
   difficulty?: string;
+  force_ai?: boolean;
 }
 
 export const BUILDER_SKILLS: Array<{ id: BuilderSkill; ja: string; label: string; desc: string }> = [
@@ -104,6 +105,7 @@ export async function generateExercise(opts: GenerateOpts): Promise<BuilderExerc
   params.set("scaffold", opts.scaffold || "keyword_hint");
   if (opts.timerMs !== undefined) params.set("timer_limit_ms", String(opts.timerMs));
   if (opts.difficulty) params.set("difficulty", opts.difficulty);
+  if (opts.force_ai) params.set("force_ai", "true");
   params.set("nonce", `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
   const data = (await apiClient.post(`/builder/exercises/generate?${params.toString()}`)) as any;
   const bc = data.extra_metadata?.builder_config || {};

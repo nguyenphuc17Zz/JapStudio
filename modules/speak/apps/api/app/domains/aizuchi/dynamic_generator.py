@@ -13,6 +13,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
+from app.shared.errors.exceptions import ValidationException
 from app.domains.ai.contracts import AIMessage, AIMessageRole, AIRequest, AITask, ResponseFormat, ResponseFormatType
 from app.domains.ai.router import AIRouter
 from app.domains.aizuchi.exercise_factory import AizuchiExerciseFactory
@@ -37,10 +38,11 @@ class AIAizuchiGenerator:
         speed: float = 1.0,
         num_turns: int = 3,
         user_id: str | None = None,
+        force_ai: bool = False,
     ) -> dict[str, Any]:
-        """Tries AI generation first; falls back to Smart Cache DB, then to deterministic pools."""
+        """Generates 100% fresh AI exercise and saves to SQLite pool. Raises explicit error on failure."""
         try:
-            data = await self._ai_generate(sub_mode, relation, difficulty, num_turns, user_id)
+            data = await self._ai_generate(sub_mode, relation, difficulty, num_turns, user_id, force_ai=force_ai)
             if data and data.get("npc_turns"):
                 data.setdefault("window_profile", window_profile)
                 if window_ms is not None:
@@ -69,42 +71,13 @@ class AIAizuchiGenerator:
 
                 asyncio.create_task(_save_bg(dict(data)))
                 return data
+            raise ValidationException("AI không thể tạo đoạn đối thoại phản hồi Aizuchi. Vui lòng thử lại.")
+        except ValidationException:
+            raise
         except Exception as e:
-            logger.warning(f"[AIAizuchiGenerator] AI generation failed ({e}), attempting Smart Cache DB fallback...")
+            logger.error(f"[AIAizuchiGenerator] AI generation failed: {e}")
+            raise ValidationException(f"Lỗi tạo bài tập Aizuchi từ AI: {e}. Vui lòng thử lại.")
 
-        # Tier 2: Try pulling previously learned/generated exercise from database cache pool
-        try:
-            cached = await self.cache_service.get_smart_exercise(
-                domain="aizuchi",
-                sub_mode=sub_mode,
-                difficulty=difficulty,
-            )
-            if cached and cached.get("npc_turns"):
-                cached.setdefault("window_profile", window_profile)
-                if window_ms is not None:
-                    cached["window_ms"] = window_ms
-                    for t in cached["npc_turns"]:
-                        t["pause_window_ms"] = window_ms
-                cached.setdefault("relation", relation)
-                cached.setdefault("speed", speed)
-                cached.setdefault("difficulty", difficulty)
-                cached["generation_source"] = "smart_cache_pool"
-                cached["is_fallback"] = True
-                cached["fallback_reason"] = "ai_unavailable"
-                logger.info("[AIAizuchiGenerator] Successfully served exercise from Smart Cache DB")
-                return cached
-        except Exception as c_err:
-            logger.warning(f"[AIAizuchiGenerator] Smart Cache DB lookup error: {c_err}")
-
-        # Tier 3: Deterministic Factory Seed Pool (Safety Net)
-        if sub_mode == "warikomi_interrupt":
-            fb = self.factory.build_interrupt(relation, window_profile, window_ms, difficulty, speed)
-        else:
-            fb = self.factory.build_reaction(relation, window_profile, window_ms, difficulty, num_turns, speed)
-        fb["generation_source"] = "template_fallback"
-        fb["is_fallback"] = True
-        fb["fallback_reason"] = "ai_and_cache_empty"
-        return fb
 
     async def _ai_generate(
         self,
@@ -113,6 +86,7 @@ class AIAizuchiGenerator:
         difficulty: str,
         num_turns: int,
         user_id: str | None,
+        force_ai: bool = False,
     ) -> dict[str, Any] | None:
         register = "タメ口 casual, contractions, sentence-end じゃん/さ/よ" if relation != "business_polite" else "丁寧語 business polite"
         sys_inst = (
@@ -122,9 +96,10 @@ class AIAizuchiGenerator:
             "\"sample_responses\": [\"2-3 natural Japanese aizuchi sample phrases\"]}], "
             "\"title\": \"...\"}. Keep each turn 1-2 short spoken sentences."
         )
+        nonce_str = f" Fresh dynamic scenario nonce: {asyncio.get_event_loop().time()}." if force_ai else ""
         user_content = (
             f"Mode: {sub_mode}. Register: {register}. Difficulty: {difficulty}. "
-            f"Generate {num_turns} NPC turns forming a tiny funny or relatable story. "
+            f"Generate {num_turns} NPC turns forming a tiny funny or relatable story.{nonce_str} "
             f"For each turn provide natural Japanese sample_responses suitable for the register."
         )
         req = AIRequest(
@@ -132,7 +107,7 @@ class AIAizuchiGenerator:
             system_instruction=sys_inst,
             messages=[AIMessage(role=AIMessageRole.SYSTEM, content=sys_inst), AIMessage(role=AIMessageRole.USER, content=user_content)],
             response_format=ResponseFormat(type=ResponseFormatType.JSON_OBJECT),
-            temperature=0.7,
+            temperature=0.85 if force_ai else 0.7,
             max_output_tokens=900,
             user_id=user_id,
         )

@@ -114,7 +114,6 @@ class ReflexMetrics(BaseModel):
 
 
 KeigoMetrics = ReflexMetrics  # alias for keigo (same timing fields)
-PitchMetrics = ReflexMetrics  # alias for pitch (same timing + pitch_confidence)
 SituationalMetrics = ReflexMetrics  # alias for situational (same timing + intent)
 SpeechMetrics = ReflexMetrics  # alias for speech monologue (same timing + speech_duration)
 
@@ -155,7 +154,6 @@ class ExerciseSubmitRequest(BaseModel):
     plan_item_id: str | None = None
     reflex_metrics: ReflexMetrics | None = None
     keigo_metrics: ReflexMetrics | None = None
-    pitch_metrics: ReflexMetrics | None = None
     situational_metrics: ReflexMetrics | None = None
     speech_metrics: SpeechMetrics | None = None
     aizuchi_metrics: AizuchiMetrics | None = None
@@ -165,14 +163,13 @@ class ExerciseSubmitRequest(BaseModel):
     audio_base64: str | None = None
     speech_duration_ms: int | None = None
     target_duration_ms: int | None = None
-    # Legacy direct reflex/keigo/pitch/situational fields (flattened for frontend convenience)
+    # Legacy direct reflex/keigo/situational fields (flattened for frontend convenience)
     reaction_latency_ms: float | None = None
     semantic_latency_ms: float | None = None
     timer_limit_ms: int | None = None
     timed_out: bool | None = None
     late_response: bool | None = None
     speech_confidence: float | None = None
-    pitch_confidence: float | None = None
     audio_quality: float | None = None
 
 

@@ -5,6 +5,7 @@ import { useMicrophone } from "@/features/speaking/hooks/useMicrophone";
 import { useVoiceActivityDetection } from "@/features/speaking/hooks/useVoiceActivityDetection";
 import { useSpeechPreview } from "@/features/speaking/hooks/useSpeechPreview";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
+import { toast } from "@/lib/toast";
 import { useBuilderTimer } from "./useBuilderTimer";
 import * as builderApi from "../services/builder-api";
 import type {
@@ -28,9 +29,9 @@ export type BuilderPhase =
 
 export interface UseBuilderSessionOptions {
   subMode: BuilderSubMode;
-  focusSkill: BuilderSkill;
-  relation: BuilderRelation;
-  scaffold: BuilderScaffold;
+  focusSkill?: BuilderSkill;
+  relation?: BuilderRelation;
+  scaffold?: BuilderScaffold;
   startTrigger?: "manual" | "auto";
   autoNext?: boolean;
   autoNextDelayMs?: number;
@@ -38,7 +39,16 @@ export interface UseBuilderSessionOptions {
 }
 
 export function useBuilderSession(opts: UseBuilderSessionOptions) {
-  const { subMode, focusSkill, relation, scaffold, startTrigger = "manual", autoNext = true, autoNextDelayMs = 4500, onResult } = opts;
+  const {
+    subMode,
+    focusSkill = "te_chain",
+    relation = "casual_friend",
+    scaffold = "keyword_hint",
+    startTrigger = "manual",
+    autoNext = true,
+    autoNextDelayMs = 2200,
+    onResult,
+  } = opts;
 
   const [phase, setPhase] = useState<BuilderPhase>("idle");
   const [exercise, setExercise] = useState<BuilderExercise | null>(null);
@@ -48,6 +58,7 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
   const [stats, setStats] = useState({ total: 0, success: 0 });
   const [streak, setStreak] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isRegeneratingAI, setIsRegeneratingAI] = useState(false);
 
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
@@ -289,6 +300,38 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
     void fetchExercise();
   }, [fetchExercise]);
 
+  const regenerateWithAI = useCallback(async () => {
+    if (isRegeneratingAI) return;
+    setIsRegeneratingAI(true);
+    if (autoNextTimerRef.current) {
+      clearTimeout(autoNextTimerRef.current);
+      autoNextTimerRef.current = null;
+    }
+    try {
+      stopWebSpeech();
+    } catch {}
+    timerRef.current.stop();
+    micRef.current.releaseMicrophone();
+    speechPreviewRef.current.stopPreview();
+    setResult(null);
+    try {
+      const ex = await builderApi.generateExercise({
+        subMode: optsRef.current.subMode,
+        focusSkill: optsRef.current.focusSkill,
+        relation: optsRef.current.relation,
+        scaffold: optsRef.current.scaffold,
+        force_ai: true,
+      });
+      setExercise(ex);
+      toast.success("✨ Đã sinh bài tập Xây câu mới từ AI!");
+      setTimeout(() => playPrompt(), 300);
+    } catch (e: any) {
+      toast.error(e?.message || "Không thể gọi AI sinh bài mới.");
+    } finally {
+      setIsRegeneratingAI(false);
+    }
+  }, [isRegeneratingAI, playPrompt]);
+
   const stopSession = useCallback(() => {
     if (autoNextTimerRef.current) {
       clearTimeout(autoNextTimerRef.current);
@@ -404,6 +447,8 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
     isPaused,
     setIsPaused,
     togglePause,
+    isRegeneratingAI,
+    regenerateWithAI,
     startSession,
     stopSession,
     nextExercise,

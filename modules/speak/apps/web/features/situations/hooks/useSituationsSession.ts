@@ -8,6 +8,8 @@ import { useReflexTimer as useSituationsTimer } from "@/features/reflex/hooks/us
 import * as situationsApi from "../services/situations-api";
 import type { SituationsExercise, SituationsResult, SituationsPressureLevel } from "../services/situations-api";
 import { speechApi } from "@/features/speaking/services/speech-api";
+import { stopWebSpeech } from "@/features/speaking/services/web-speech";
+import { toast } from "@/lib/toast";
 
 export type SituationsPhase =
   | "idle"
@@ -54,6 +56,7 @@ export function useSituationsSession(opts: UseSituationsSessionOptions = {}) {
   const [error, setError] = useState<string | null>(null);
   const [prefetched, setPrefetched] = useState<SituationsExercise[]>([]);
   const [isPaused, setIsPaused] = useState(false);
+  const [isRegeneratingAI, setIsRegeneratingAI] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     correct: 0,
@@ -433,6 +436,42 @@ export function useSituationsSession(opts: UseSituationsSessionOptions = {}) {
     }
   }, []);
 
+  // On-demand AI regeneration (bypass cache)
+  const regenerateWithAI = useCallback(
+    async (overrideCategory?: string, overrideTopic?: string) => {
+      if (autoNextTimerRef.current) clearTimeout(autoNextTimerRef.current);
+      if (speechSubmitTimerRef.current) clearTimeout(speechSubmitTimerRef.current);
+      if (promptSafetyTimerRef.current) clearTimeout(promptSafetyTimerRef.current);
+      try {
+        stopWebSpeech();
+      } catch {}
+      timer.stop();
+      setIsPaused(false);
+      setResult(null);
+      setIsRegeneratingAI(true);
+      try {
+        const newEx = await situationsApi.generateExercise({
+          category: overrideCategory ?? category,
+          customTopic: overrideTopic !== undefined ? overrideTopic : customTopic,
+          subMode,
+          pressureLevel,
+          duration,
+          mode,
+          force_ai: true,
+        });
+        setExercise(newEx);
+        toast.success("✨ Đã tạo tình huống thực chiến mới từ AI!");
+        setPhase("ready");
+      } catch (err: any) {
+        toast.error("Không thể tạo tình huống AI lúc này. Vui lòng thử lại!");
+      } finally {
+        setIsRegeneratingAI(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [category, customTopic, subMode, pressureLevel, duration, mode, timer]
+  );
+
   return {
     phase,
     setPhase,
@@ -455,6 +494,8 @@ export function useSituationsSession(opts: UseSituationsSessionOptions = {}) {
     },
     isPaused,
     setIsPaused,
+    isRegeneratingAI,
+    regenerateWithAI,
     error,
     isUserSpeaking,
     startSession,

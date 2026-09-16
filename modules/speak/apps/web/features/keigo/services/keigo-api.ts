@@ -49,6 +49,8 @@ export interface KeigoExercise {
   frequencyRank?: number;
   frequencyTier?: number;
   vocabCategory?: string;
+  generation_source?: string;
+  generationSource?: string;
   extra_metadata?: any;
 }
 
@@ -191,6 +193,8 @@ export async function generateExercise(opts: GenerateOpts): Promise<KeigoExercis
     frequencyRank: rc.frequency_rank || ex.frequency_rank,
     frequencyTier: rc.frequency_tier || ex.frequency_tier || opts.tier,
     vocabCategory: rc.vocab_category || ex.vocab_category || opts.category,
+    generation_source: ex.generation_source || rc.generation_source || ex.extra_metadata?.generation_source || "ai",
+    generationSource: ex.generation_source || rc.generation_source || ex.extra_metadata?.generation_source || "ai",
   };
 }
 

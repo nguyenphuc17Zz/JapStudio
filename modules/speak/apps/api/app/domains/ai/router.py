@@ -165,11 +165,8 @@ TASK_FEATURE_MAP: dict[AITask, str] = {
     AITask.WEEKLY_REVIEW: "coach",
     AITask.INSIGHT_EXPLANATION: "coach",
     AITask.RECOMMENDATION_EXPLANATION: "coach",
-    # 6. Pitch
-    AITask.PITCH_GENERATION: "pitch",
-    AITask.PITCH_EVALUATION: "pitch",
-    AITask.PITCH_FEEDBACK: "pitch",
-    AITask.PRONUNCIATION_ANALYSIS: "pitch",
+    # 6. Pronunciation
+    AITask.PRONUNCIATION_ANALYSIS: "pronunciation",
     # 7. Shadowing
     AITask.SHADOWING_ANALYSIS: "shadowing",
     AITask.SHADOWING_RECOMMENDATION: "shadowing",
@@ -183,6 +180,9 @@ TASK_FEATURE_MAP: dict[AITask, str] = {
     # 10. VI-JA Interpretation (Mode 9)
     AITask.INTERPRET_GENERATION: "interpret",
     AITask.INTERPRET_EVALUATION: "interpret",
+    # 11. Survival Speaking & Recovery (Mode 6 / Survival Gym)
+    AITask.SURVIVAL_GENERATION: "survival",
+    AITask.SURVIVAL_EVALUATION: "survival",
 }
 
 

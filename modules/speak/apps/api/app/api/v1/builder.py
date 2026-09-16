@@ -6,8 +6,6 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.builder.dynamic_generator import AIBuilderGenerator
-from app.domains.builder.exercise_factory import BuilderExerciseFactory
-from app.domains.learning.contracts import ExerciseType
 from app.domains.learning.exercise_session_service import ExerciseSessionService
 from app.domains.learning.learning_item_service import LearningItemService
 from app.domains.learning.models import Exercise
@@ -60,13 +58,14 @@ async def generate_builder_exercise_get(
     timer_limit_ms: int | None = Query(default=None, ge=0, le=120000),
     difficulty: str | None = Query(default=None),
     learning_item_key: str | None = Query(default=None),
+    force_ai: bool = Query(default=False, description="Force fresh AI generation bypassing DB cache"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     return await generate_builder_exercise(
         sub_mode=sub_mode, focus_skill=focus_skill, relation=relation, scaffold=scaffold,
         timer_limit_ms=timer_limit_ms, difficulty=difficulty,
-        learning_item_key=learning_item_key, user_id=user_id, db=db,
+        learning_item_key=learning_item_key, force_ai=force_ai, user_id=user_id, db=db,
     )
 
 
@@ -79,6 +78,7 @@ async def generate_builder_exercise(
     timer_limit_ms: int | None = Query(default=None, ge=0, le=120000),
     difficulty: str | None = Query(default=None),
     learning_item_key: str | None = Query(default=None),
+    force_ai: bool = Query(default=False, description="Force fresh AI generation bypassing DB cache"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -102,7 +102,7 @@ async def generate_builder_exercise(
     data = await ai_gen.generate_dynamic_exercise(
         sub_mode=sub_mode, focus_skill=focus_skill, relation=relation,
         scaffold=scaffold, timer_limit_ms=timer_limit_ms,
-        difficulty=eff_diff, user_id=user_id,
+        difficulty=eff_diff, user_id=user_id, force_ai=force_ai,
     )
 
     item_key = learning_item_key

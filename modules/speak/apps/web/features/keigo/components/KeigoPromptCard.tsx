@@ -6,16 +6,10 @@ import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Crown,
   Volume2,
   Sparkles,
   ArrowRight,
   Headphones,
-  Building,
-  Lightbulb,
-  HelpCircle,
-  Users,
-  ShieldAlert,
 } from "lucide-react";
 import type { KeigoExercise } from "../services/keigo-api";
 import { translateJaToVi } from "@/features/reflex/services/google-translate";
@@ -26,8 +20,6 @@ interface Props {
   subtitleMode?: "hidden" | "japanese" | "japanese_reading" | "vietnamese";
   onPlayAudio?: () => void;
   phase: string;
-  hintLevel?: 0 | 1 | 2;
-  onCycleHint?: () => void;
 }
 
 export function KeigoPromptCard({
@@ -35,8 +27,6 @@ export function KeigoPromptCard({
   subtitleMode = "japanese",
   onPlayAudio,
   phase,
-  hintLevel = 0,
-  onCycleHint,
 }: Props) {
   const [liveTranslation, setLiveTranslation] = useState<string>("");
 
@@ -63,7 +53,6 @@ export function KeigoPromptCard({
   const listenerGroup = socialCtx.listener_group || "SOTO";
   const relationship = socialCtx.relationship || "BUSINESS";
 
-  const hints = exercise?.hints || rc.hints;
   const persona = exercise?.persona || rc.persona;
 
   const staticTranslation =
@@ -142,23 +131,6 @@ export function KeigoPromptCard({
         </div>
 
         <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-          {onCycleHint && (
-            <Button
-              size="sm"
-              variant={hintLevel > 0 ? "akane" : "outline"}
-              onClick={onCycleHint}
-              className={cn(
-                "h-6 px-2 text-[11px] font-bold gap-1 transition-all",
-                hintLevel === 1 && "border-amber-500 text-amber-600 bg-amber-500/10",
-                hintLevel === 2 && "border-rose-500 text-rose-600 bg-rose-500/10"
-              )}
-              title="Mở gợi ý nấc thang (Phím H)"
-            >
-              <Lightbulb className={cn("h-3 w-3", hintLevel > 0 ? "fill-current animate-pulse text-amber-500" : "text-muted-foreground")} />
-              <span>Gợi ý {hintLevel > 0 ? `(C${hintLevel})` : "(H)"}</span>
-            </Button>
-          )}
-
           <span className="px-1.5 py-0.2 rounded bg-background border text-[9px] uppercase font-bold tracking-wider">
             {exercise.difficulty || "Normal"}
           </span>
@@ -228,37 +200,6 @@ export function KeigoPromptCard({
               <p className="text-xs sm:text-sm font-medium text-muted-foreground max-w-lg mx-auto leading-relaxed">
                 🇻🇳 {displayTranslation}
               </p>
-            )}
-          </div>
-        )}
-
-        {/* Multi-Tier Scaffolding Hint Area */}
-        {hintLevel > 0 && hints && (
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/8 dark:bg-amber-950/20 p-4 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1.5">
-                <Lightbulb className="h-4 w-4 text-amber-500 fill-current" />
-                <span>💡 Gợi Ý Nấc Thang {hintLevel === 1 ? "(Cấp 1: Hướng & Động từ)" : "(Cấp 2: Khung câu)"}</span>
-              </span>
-              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                <span>Bấm</span>
-                <kbd className="text-[10px] font-mono px-1 py-0.2 rounded bg-card border border-amber-500/30 text-amber-700 dark:text-amber-300 font-bold">H</kbd>
-                <span>để đổi nấc gợi ý</span>
-              </span>
-            </div>
-
-            {hintLevel >= 1 && hints.tier1 && (
-              <div className="p-2.5 rounded-xl bg-background/90 border border-amber-500/20 text-xs font-medium text-foreground">
-                <span className="font-bold text-amber-600 dark:text-amber-400 mr-1.5">[Nấc 1]:</span>
-                <span>{hints.tier1}</span>
-              </div>
-            )}
-
-            {hintLevel >= 2 && hints.tier2 && (
-              <div className="p-2.5 rounded-xl bg-background/90 border border-amber-500/30 text-xs font-bold text-foreground font-jp">
-                <span className="font-bold text-rose-600 dark:text-rose-400 mr-1.5 font-sans">[Nấc 2]:</span>
-                <UniversalFurigana text={hints.tier2} fontSize="normal" />
-              </div>
             )}
           </div>
         )}

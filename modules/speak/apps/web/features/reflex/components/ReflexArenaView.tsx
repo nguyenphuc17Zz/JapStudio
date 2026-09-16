@@ -1,33 +1,20 @@
 "use client";
 
 import React from "react";
-import {
-  Clock,
-  Zap,
-  Volume2,
-  Sparkles,
-  Activity,
-  Mic,
-  Play,
-  CheckCircle2,
-  SkipForward,
-  RotateCcw,
-  ArrowRight,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ZenLoadingState } from "@/components/ui/zen-loading-state";
-import { ZenUnifiedInputBar } from "@/components/ui/zen-unified-input-bar";
 import { CombatCapsuleHUD } from "./CombatCapsuleHUD";
 import { ReflexTimer } from "./ReflexTimer";
 import { ReflexPromptCard } from "./ReflexPromptCard";
 import { ReflexResultCard } from "./ReflexResultCard";
+import { ReflexCoachPanel } from "./ReflexCoachPanel";
 import { ReflexSessionSummary } from "./ReflexSessionSummary";
+import { StudioSpeakingController } from "./StudioSpeakingController";
 import { DEDICATED_MODES } from "./ReflexLobby";
 import { useReflexFilters } from "../hooks/useReflexFilters";
 import { useReflexSession } from "../hooks/useReflexSession";
 import { formatKeyDisplay } from "@/hooks/use-system-keybindings";
-import { stopWebSpeech } from "@/features/speaking/services/web-speech";
+import { stopWebSpeech, speakJapaneseText } from "@/features/speaking/services/web-speech";
+import { ExerciseSourceBadge } from "@/components/ui/exercise-source-badge";
 import { soundFX } from "@/lib/sound-fx";
 import { cn } from "@/lib/utils";
 
@@ -171,6 +158,10 @@ export function ReflexArenaView({
         }
         setTier={(t) => filters.setSelectedVocabTier(t === 0 ? null : t)}
         filterTrigger={filterTrigger}
+        onNextTask={() => {
+          stopWebSpeech();
+          session.startNext();
+        }}
         onSubmit={() => {
           stopWebSpeech();
           session.recorder.releaseMicrophone();
@@ -187,6 +178,13 @@ export function ReflexArenaView({
           setShowSummary(false);
         }}
         onOpenHelp={onOpenHelp}
+        provenanceBadge={
+          activeExercise ? (
+            <ExerciseSourceBadge
+              source={activeExercise.generationSource || activeExercise.generation_source}
+            />
+          ) : undefined
+        }
       />
 
       {/* 2. Middle Arena Stage */}
@@ -244,272 +242,100 @@ export function ReflexArenaView({
               </div>
             </div>
 
-            {/* COLUMN 2: Model Answer & Result Deck (5 cols ~ 41.7%) - ALWAYS VISIBLE FROM START */}
-            <div className="lg:col-span-5 h-full min-h-0 relative">
-              <ReflexResultCard
-                key={`${session.result?.exerciseId || (activeExercise as any)?.id || "res"}_${session.stats.total}`}
-                result={session.result}
-                exercise={activeExercise as any}
-                isPending={!isResult || !session.result}
+            {/* COLUMN 2: AI Coach Suggestions (Pending) OR Result Deck (Finished) (4 cols ~ 33.3%) */}
+            <div className="lg:col-span-4 h-full min-h-0 relative">
+              {isResult && session.result ? (
+                <ReflexResultCard
+                  key={`${session.result?.exerciseId || (activeExercise as any)?.id || "res"}_${session.stats.total}`}
+                  result={session.result}
+                  exercise={activeExercise as any}
+                  isPending={false}
+                  liveTranscript={session.speech.interimTranscript || session.speech.transcript}
+                  onNext={() => session.startNext()}
+                  onSkip={() => {
+                    stopWebSpeech();
+                    session.skip();
+                  }}
+                  onRetry={() => session.retry()}
+                  onSlowMode={() => setPressure("relaxed")}
+                  onCancelAutoNext={session.cancelAutoNext}
+                />
+              ) : (
+                <ReflexCoachPanel
+                  exercise={activeExercise as any}
+                  subMode={subMode}
+                  onInsertText={(text) => {
+                    setTranscriptInput(text);
+                  }}
+                  onPlayAudio={(text) => {
+                    stopWebSpeech();
+                    speakJapaneseText(text, { rate: 0.95 });
+                  }}
+                />
+              )}
+            </div>
+
+            {/* COLUMN 3: Studio Speaking Controller (Chuẩn EnglishSpeaking Ergonomics - 4 cols ~ 33.3%) */}
+            <div className="lg:col-span-4 h-full min-h-0">
+              <StudioSpeakingController
+                phase={
+                  isEvaluating
+                    ? "evaluating"
+                    : isRecording || isWaiting
+                    ? "recording"
+                    : isPromptPlaying
+                    ? "prompt_playing"
+                    : isReady
+                    ? "ready"
+                    : isResult
+                    ? "result"
+                    : "idle"
+                }
                 liveTranscript={session.speech.interimTranscript || session.speech.transcript}
-                onNext={() => session.startNext()}
+                onStartRecord={() => {
+                  stopWebSpeech();
+                  session.startQuestionNow();
+                }}
+                onStopRecord={() => {
+                  handleDirectSubmit(true);
+                }}
+                onSubmit={(text) => {
+                  if (text) setTranscriptInput(text);
+                  handleDirectSubmit(true);
+                }}
+                onRetry={() => {
+                  stopWebSpeech();
+                  session.retry();
+                }}
+                onNext={() => {
+                  stopWebSpeech();
+                  session.startNext();
+                }}
                 onSkip={() => {
                   stopWebSpeech();
                   session.skip();
                 }}
-                onRetry={() => session.retry()}
-                onSlowMode={() => setPressure("relaxed")}
-                onCancelAutoNext={session.cancelAutoNext}
+                onResetTranscript={() => {
+                  setTranscriptInput("");
+                  session.speech.resetTranscript();
+                }}
+                isWhisperMode={session.isWhisperMode}
+                onToggleWhisperMode={() => session.toggleWhisperMode?.()}
+                volumeLevel={session.volumeLevel}
+                textInput={transcriptInput}
+                onTextInputChange={setTranscriptInput}
+                placeholder={
+                  session.isPaused
+                    ? "Đang tạm dừng..."
+                    : isWaiting
+                    ? "Nói hoặc gõ tiếng Nhật..."
+                    : isResult
+                    ? "Nhấn Space sang câu mới..."
+                    : "Gõ câu tiếng Nhật..."
+                }
+                promptSpeakerLabel="AI"
+                onPlayPrompt={() => playPromptAudio(false)}
               />
-            </div>
-
-            {/* COLUMN 3: Compact Mic & Action Deck (3 cols ~ 25.0%) */}
-            <div className="lg:col-span-3 h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-3.5 sm:p-4 relative overflow-hidden shadow-lg">
-              {/* Ambient Glow */}
-              <div className="absolute bottom-[-30px] right-[-30px] w-40 h-40 bg-primary/10 blur-3xl rounded-full pointer-events-none -z-10" />
-
-              {/* Status Header */}
-              <div className="flex items-center justify-between gap-2 shrink-0 pb-2 border-b border-border/60 dark:border-white/10">
-                <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                  {isWaiting ? (
-                    <>
-                      <span className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
-                      <span className="text-amber-500">NÓI VÀO MIC!</span>
-                    </>
-                  ) : isRecording ? (
-                    <>
-                      <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
-                      <span className="text-rose-500">ĐANG THU ÂM...</span>
-                    </>
-                  ) : isPromptPlaying ? (
-                    <>
-                      <Volume2 className="h-3.5 w-3.5 text-primary animate-pulse" />
-                      <span className="text-primary">ĐANG ĐỌC ĐỀ...</span>
-                    </>
-                  ) : isReady ? (
-                    <>
-                      <Sparkles className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-primary">SẴN SÀNG</span>
-                    </>
-                  ) : isEvaluating ? (
-                    <>
-                      <Activity className="h-3.5 w-3.5 text-primary animate-spin" />
-                      <span className="text-primary">CHẤM ĐIỂM...</span>
-                    </>
-                  ) : isResult ? (
-                    <>
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                      <span className="text-emerald-500">HOÀN THÀNH</span>
-                    </>
-                  ) : (
-                    <span>TRẠM THU ÂM</span>
-                  )}
-                </span>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      session.toggleWhisperMode?.();
-                      soundFX.playTaiko();
-                    }}
-                    className={cn(
-                      "text-[10px] font-bold px-2 py-0.5 rounded-full transition-all flex items-center gap-1 cursor-pointer border whitespace-nowrap shrink-0",
-                      session.isWhisperMode
-                        ? "bg-amber-500/15 border-amber-500/40 text-amber-500 hover:bg-amber-500/25 ring-1 ring-amber-500/30"
-                        : "bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
-                    )}
-                    title={
-                      session.isWhisperMode
-                        ? "Chế độ Giọng Nhỏ (Whisper Mode) ĐANG BẬT: Khuếch đại x3.5, VAD siêu nhạy. Bấm để tắt."
-                        : "Bật Chế độ Giọng Nhỏ (Whisper Mode): Tăng nhạy cho người nói nhỏ hoặc thì thầm"
-                    }
-                  >
-                    <Zap className={cn("h-2.5 w-2.5 shrink-0", session.isWhisperMode ? "text-amber-500 fill-amber-500" : "text-muted-foreground")} />
-                    <span>{session.isWhisperMode ? "Whisper x3.5" : "Giọng nhỏ"}</span>
-                  </button>
-
-                  <Badge variant="outline" size="sm" className="text-[9px] font-mono border-white/15 bg-white/5 text-primary rounded-full px-1.5 py-0 whitespace-nowrap shrink-0">
-                    Live
-                  </Badge>
-                </div>
-              </div>
-
-              {/* Compact Visualizer & Speech Preview */}
-              <div className="flex-1 min-h-0 flex flex-col items-center justify-center py-2 space-y-3">
-                {/* Dynamic Mini Soundwaves (7 bars) */}
-                <div className="flex items-center gap-1 h-10">
-                  {[0.5, 1.0, 1.5, 1.8, 1.3, 0.9, 0.4].map((scale, i) => {
-                    const activeMultiplier = isRecording || isWaiting ? (session.volumeLevel || 0.08) * 50 : 5;
-                    const height = Math.max(5, Math.min(36, activeMultiplier * scale + 5));
-                    return (
-                      <span
-                        key={i}
-                        className={cn(
-                          "w-1.5 rounded-full transition-all duration-75",
-                          isRecording
-                            ? "bg-gradient-to-t from-rose-500 to-amber-400 shadow-xs shadow-rose-500/30"
-                            : isWaiting
-                            ? "bg-gradient-to-t from-amber-500 to-yellow-300 shadow-xs shadow-amber-500/30"
-                            : isResult
-                            ? "bg-gradient-to-t from-emerald-500 to-teal-400"
-                            : "bg-gradient-to-t from-blue-600 to-primary/60"
-                        )}
-                        style={{ height: `${height}px` }}
-                      />
-                    );
-                  })}
-                </div>
-
-                {/* Compact Live Speech Recognition Bubble */}
-                <div className="w-full p-2.5 rounded-2xl bg-muted/40 dark:bg-black/30 border border-border/80 dark:border-white/10 backdrop-blur-md text-center space-y-1 shadow-inner">
-                  <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-center gap-1">
-                    <Mic className="h-3 w-3 text-primary" />
-                    <span>Giọng bạn:</span>
-                    {session.speech.interimTranscript && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
-                    )}
-                  </div>
-                  <div className="text-xs sm:text-sm font-black font-jp text-foreground min-h-[1.5rem] flex items-center justify-center px-1">
-                    {session.speech.interimTranscript || session.speech.transcript ? (
-                      <span className="line-clamp-2">“{session.speech.interimTranscript || session.speech.transcript}”</span>
-                    ) : (
-                      <span className="text-[11px] text-muted-foreground font-sans font-normal italic">
-                        {isWaiting
-                          ? "Nói to vào mic..."
-                          : isReady
-                          ? "Bấm [Space] để bắt đầu"
-                          : isResult
-                          ? "Đã có kết quả ở Cột 2"
-                          : "Chờ sẵn sàng..."}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Compact Action Buttons */}
-                <div className="flex flex-col gap-1.5 w-full">
-                  {isReady && (
-                    <Button
-                      size="sm"
-                      className="w-full font-black text-xs h-10 rounded-xl shadow-md bg-gradient-to-r from-blue-600 via-primary to-indigo-600 text-white cursor-pointer ring-1 ring-primary/40 gap-1.5"
-                      onClick={() => session.startQuestionNow()}
-                    >
-                      <Mic className="h-3.5 w-3.5" />
-                      <span>Bắt Đầu Nói ({formatKeyDisplay(keybindings.drillStartQuestion)})</span>
-                    </Button>
-                  )}
-
-                  {isPromptPlaying && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full font-bold text-xs h-9 rounded-xl border-primary/40 text-primary hover:bg-primary/10 cursor-pointer gap-1.5"
-                      onClick={() => {
-                        stopWebSpeech();
-                        session.startQuestionNow();
-                      }}
-                    >
-                      <Play className="h-3.5 w-3.5 fill-current" />
-                      <span>Nói Ngay ({formatKeyDisplay(keybindings.drillStartQuestion)})</span>
-                    </Button>
-                  )}
-
-                  {(isWaiting || isRecording) && (
-                    <div className="grid grid-cols-1 gap-1.5 w-full">
-                      <Button
-                        size="sm"
-                        variant="akane"
-                        className="w-full font-bold text-xs h-9 rounded-xl shadow-xs gap-1.5 cursor-pointer bg-gradient-to-r from-blue-600 to-primary text-white whitespace-nowrap"
-                        onClick={() => handleDirectSubmit(true)}
-                        title="Nộp câu trả lời ngay để AI chấm điểm (Enter)"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                        <span>Nộp câu này (Enter)</span>
-                      </Button>
-
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="font-bold text-[11px] h-8 px-2 rounded-xl border-amber-500/40 text-amber-500 hover:bg-amber-500/10 gap-1 cursor-pointer whitespace-nowrap justify-center"
-                          onClick={() => session.togglePause()}
-                          title="Tạm dừng đồng hồ"
-                        >
-                          <Clock className="h-3 w-3 text-amber-500 shrink-0" />
-                          <span>{session.isPaused ? "Tiếp Tục" : "Tạm Dừng"}</span>
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="font-bold text-[11px] h-8 px-2 rounded-xl border-border text-foreground hover:bg-muted gap-1 cursor-pointer flex-1 justify-center whitespace-nowrap"
-                          onClick={() => {
-                            stopWebSpeech();
-                            session.skip();
-                          }}
-                          title="Bỏ qua và chuyển sang bài tiếp theo không cần nộp bài (Phím →)"
-                        >
-                          <span>Qua bài</span>
-                          <ArrowRight className="h-3 w-3 text-primary shrink-0" />
-                          <kbd className="text-[9px] font-mono px-1 rounded bg-muted border border-border text-muted-foreground font-bold">→</kbd>
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {isResult && (
-                    <div className="grid grid-cols-1 gap-1.5 w-full">
-                      <Button
-                        size="sm"
-                        variant="akane"
-                        className="w-full font-black text-xs h-9 rounded-xl gap-1 bg-gradient-to-r from-blue-600 via-primary to-indigo-600 text-white cursor-pointer shadow-sm"
-                        onClick={() => {
-                          stopWebSpeech();
-                          session.startNext();
-                        }}
-                      >
-                        <span>Câu Tiếp Theo</span>
-                        <kbd className="text-[9px] font-mono px-1 rounded bg-black/20 text-white font-bold">Space</kbd>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full font-bold text-[11px] h-8 rounded-xl border-border cursor-pointer gap-1"
-                        onClick={() => {
-                          stopWebSpeech();
-                          session.retry();
-                        }}
-                      >
-                        <RotateCcw className="h-3 w-3" />
-                        <span>Làm lại câu này (R)</span>
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Compact Unified Input Bar */}
-              <div className="shrink-0 pt-2 border-t border-border/60 dark:border-white/10">
-                <ZenUnifiedInputBar
-                  value={transcriptInput || session.speech.transcript || session.speech.interimTranscript}
-                  onChange={setTranscriptInput}
-                  onSubmit={() => handleDirectSubmit(true)}
-                  placeholder={
-                    session.isPaused
-                      ? "Đang tạm dừng..."
-                      : isWaiting
-                      ? "Nói hoặc gõ tiếng Nhật..."
-                      : isResult
-                      ? "Nhấn Space sang câu mới..."
-                      : "Gõ câu tiếng Nhật..."
-                  }
-                  submitButtonText="Nộp"
-                  isEvaluating={isEvaluating}
-                  showOfficeBadge={false}
-                  hintText={isRecording ? "Đang thu âm mic" : undefined}
-                />
-              </div>
             </div>
           </div>
         )}

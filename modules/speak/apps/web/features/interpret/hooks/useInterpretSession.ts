@@ -5,6 +5,7 @@ import { useMicrophone } from "@/features/speaking/hooks/useMicrophone";
 import { useVoiceActivityDetection } from "@/features/speaking/hooks/useVoiceActivityDetection";
 import { useSpeechPreview } from "@/features/speaking/hooks/useSpeechPreview";
 import { isVietnameseVoiceAvailable, speakVietnameseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
+import { toast } from "@/lib/toast";
 import { useInterpretTimer } from "./useInterpretTimer";
 import * as interpretApi from "../services/interpret-api";
 import type {
@@ -47,6 +48,7 @@ export function useInterpretSession(opts: UseInterpretSessionOptions) {
   const [stats, setStats] = useState({ total: 0, success: 0 });
   const [streak, setStreak] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isRegeneratingAI, setIsRegeneratingAI] = useState(false);
 
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
@@ -388,6 +390,38 @@ export function useInterpretSession(opts: UseInterpretSessionOptions) {
     beginAnswering();
   }, [beginAnswering]);
 
+  // On-demand AI regeneration (bypass cache)
+  const regenerateWithAI = useCallback(
+    async (overrideTopic?: string) => {
+      cancelAutoNext();
+      try {
+        stopWebSpeech();
+      } catch {}
+      timerRef.current.stop();
+      setIsPaused(false);
+      setResult(null);
+      setIsRegeneratingAI(true);
+      try {
+        const ex = await interpretApi.generateExercise({
+          subMode: optsRef.current.subMode,
+          relation: optsRef.current.relation,
+          scaffold: optsRef.current.scaffold,
+          topic: overrideTopic ?? optsRef.current.topic,
+          force_ai: true,
+        });
+        setExercise(ex);
+        toast.success("✨ Đã tạo bài tập mới từ AI theo chuyên đề!");
+        setTimeout(() => showPrompt(), 300);
+      } catch (err: any) {
+        toast.error("Không thể tạo bài AI lúc này. Vui lòng thử lại!");
+      } finally {
+        setIsRegeneratingAI(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cancelAutoNext, showPrompt]
+  );
+
   return {
     phase,
     setPhase,
@@ -410,6 +444,8 @@ export function useInterpretSession(opts: UseInterpretSessionOptions) {
     isPaused,
     setIsPaused,
     togglePause,
+    isRegeneratingAI,
+    regenerateWithAI,
     startSession,
     stopSession,
     nextExercise,

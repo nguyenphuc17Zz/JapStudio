@@ -22,6 +22,6 @@ async def test_analytics_diagnostic_endpoint(client: AsyncClient):
     assert "pillars" in data
     assert "reflex" in data["pillars"]
     assert "keigo" in data["pillars"]
-    assert "pitch" in data["pillars"]
     assert "situations" in data["pillars"]
+    assert "pitch" not in data["pillars"]
     assert "diagnostic_report" in data

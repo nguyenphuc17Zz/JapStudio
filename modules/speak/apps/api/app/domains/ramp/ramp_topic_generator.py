@@ -16,6 +16,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
+from app.shared.errors.exceptions import ValidationException
 from app.domains.ai.contracts import (
     AIMessage,
     AIMessageRole,
@@ -101,54 +102,6 @@ class RampTopicGenerator:
         is_explore, pool_size = await self.cache_service.should_explore(
             domain="ramp", sub_mode=sub_mode, difficulty=difficulty
         )
-        if not is_explore:
-            cached = await self.cache_service.get_smart_exercise(
-                domain="ramp", sub_mode=sub_mode, difficulty=difficulty
-            )
-            if cached:
-                try:
-                    from app.domains.ramp.contracts import STAGE_EXERCISE_TYPE, RampExerciseType
-                    ex_type = STAGE_EXERCISE_TYPE.get(inp.current_stage, RampExerciseType.SPEAK_SPONTANEOUS)
-                    try:
-                        topic_domain_val = RampTopicDomain(cached.get("domain", domain))
-                    except ValueError:
-                        topic_domain_val = RampTopicDomain.DAILY_LIFE
-
-                    scaffold = RampScaffold(
-                        support_level=inp.support_level,
-                        topic=cached["topic"],
-                        keywords=cached.get("keywords", []),
-                        sentence_starter=cached.get("sentence_starter"),
-                        example_response=cached.get("example_response"),
-                    )
-                    spec = RampTaskSpec(
-                        exercise_type=ex_type,
-                        stage=inp.current_stage,
-                        topic=cached["topic"],
-                        topic_domain=topic_domain_val,
-                        prompt_jp=cached["prompt_jp"],
-                        prompt_vi=cached.get("prompt_vi"),
-                        target_duration_sec=inp.desired_duration_sec,
-                        support_level=inp.support_level,
-                        scaffold=scaffold,
-                        keywords_for_production=cached.get("keywords", []),
-                        learning_targets=["spontaneous_production"],
-                        is_retry=inp.is_retry,
-                        task_signature=self._make_signature(cached["topic"], inp.current_stage),
-                        provider="smart_cache_pool",
-                        model="gemini_cached",
-                    )
-                    self.cache_service.trigger_background_expansion(
-                        domain="ramp",
-                        sub_mode=sub_mode,
-                        difficulty=difficulty,
-                        generator_coroutine_factory=generator_coro_factory,
-                        category=domain,
-                    )
-                    return spec
-                except Exception as err:
-                    logger.warning(f"[RampTopicGenerator] Error restoring cached ramp topic: {err}")
-
         fresh = await generator_coro_factory()
         if fresh and fresh.prompt_jp:
             cached_item = {
@@ -185,7 +138,7 @@ class RampTopicGenerator:
         inp: RampGenerationInput,
         max_retries: int = 2,
     ) -> RampTaskSpec:
-        """Generate a topic spec. AI path with smart pool cache, deterministic fallback guaranteed."""
+        """Generate a topic spec via 100% fresh AI, saving unique topics to SQLite pool."""
         domain = inp.topic_domain or self._pick_domain(inp.interests, inp.topic_history)
 
         async def _run_ai_with_fallback() -> RampTaskSpec:
@@ -197,14 +150,15 @@ class RampTopicGenerator:
                         return spec
                 except Exception as e:
                     logger.warning(f"[RampTopicGenerator] AI attempt {attempt + 1} failed: {e}")
-            logger.info("[RampTopicGenerator] Using deterministic fallback topic")
-            return self._build_fallback(inp, domain)
+            logger.error("[RampTopicGenerator] AI topic generation failed completely.")
+            raise ValidationException("Không thể tạo chủ đề luyện nói từ AI. Vui lòng thử lại.")
 
         return await self._dispatch_smart_cached_topic(
             inp=inp,
             domain=domain,
             generator_coro_factory=_run_ai_with_fallback,
         )
+
 
     async def _generate_with_ai(
         self,
@@ -226,7 +180,7 @@ class RampTopicGenerator:
             task=AITask.RAMP_TOPIC_GENERATION,
             system_instruction=sys_prompt,
             temperature=0.85,
-            max_output_tokens=600,
+            max_output_tokens=1000,
             response_format=ResponseFormat(type=ResponseFormatType.JSON_OBJECT),
         )
         resp = await self.ai_router.generate(req)
@@ -240,6 +194,10 @@ class RampTopicGenerator:
             support_level=inp.support_level,
             topic=data.get("topic"),
             keywords=data.get("keywords", []),
+            vocab_items=data.get("vocab_items", []),
+            answer_angles=data.get("answer_angles", []),
+            sentence_frames=data.get("sentence_frames", []),
+            sample_answers=data.get("sample_answers", []),
             sentence_starter=data.get("sentence_starter"),
             example_response=data.get("example_response"),
         )
@@ -268,6 +226,7 @@ class RampTopicGenerator:
             task_signature=self._make_signature(data["topic"], inp.current_stage),
             provider=getattr(resp, "provider", None),
             model=getattr(resp, "model", None),
+            source="ai",
         )
 
     def _build_fallback(
@@ -307,6 +266,9 @@ class RampTopicGenerator:
             learning_targets=["spontaneous_production"],
             is_retry=inp.is_retry,
             task_signature=self._make_signature(tpl["topic"], inp.current_stage),
+            provider="offline_template",
+            model="offline_fallback",
+            source="mock",
         )
 
     def _pick_domain(self, interests: list[str], topic_history: list[str]) -> str:

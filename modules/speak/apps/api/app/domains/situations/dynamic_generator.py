@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
 from app.domains.reflex.cache_service import ExerciseCacheService
+from app.shared.errors.exceptions import ValidationException
 from app.domains.ai.contracts import (
     AIMessage,
     AIMessageRole,
@@ -104,8 +105,10 @@ class AISituationsGenerator:
         duration: int = 5,
         mode: str = "standard",
         user_id: str = "situations_user",
+        force_ai: bool = False,
     ) -> dict[str, Any]:
-        """Generates dynamic situational roleplay exercise via Gemini AI with smart cache pool & zero-latency serving."""
+        """Generates dynamic situational roleplay exercise via Gemini AI with smart cache pool & zero-latency serving.
+        When force_ai=True, bypasses smart cache pool to generate a fresh exercise."""
         is_custom = bool(custom_topic and custom_topic.strip())
         is_infinite = category == "infinite" or category == "random"
 
@@ -118,39 +121,6 @@ class AISituationsGenerator:
         else:
             chosen_cat_key = category
 
-        # Smart Cache Pool check for standard & infinite categories
-        if not is_custom:
-            is_explore, pool_size = await self.cache_service.should_explore(
-                domain="situations", sub_mode=chosen_cat_key, difficulty=difficulty
-            )
-            if not is_explore:
-                cached = await self.cache_service.get_smart_exercise(
-                    domain="situations", sub_mode=chosen_cat_key, difficulty=difficulty
-                )
-                if cached:
-                    cached["timer_limit_ms"] = timer_for_level(pressure_level)
-                    cached["pressure_level"] = pressure_level
-                    # Expand pool in background
-                    self.cache_service.trigger_background_expansion(
-                        domain="situations",
-                        sub_mode=chosen_cat_key,
-                        difficulty=difficulty,
-                        generator_coroutine_factory=lambda: self._generate_raw_ai_situation(
-                            category=category,
-                            custom_topic=custom_topic,
-                            difficulty=difficulty,
-                            pressure_level=pressure_level,
-                            duration=duration,
-                            mode=mode,
-                            user_id=user_id,
-                            chosen_cat_key=chosen_cat_key,
-                            is_custom=is_custom,
-                            is_infinite=is_infinite,
-                        ),
-                        category=chosen_cat_key,
-                    )
-                    return cached
-
         fresh = await self._generate_raw_ai_situation(
             category=category,
             custom_topic=custom_topic,
@@ -162,9 +132,11 @@ class AISituationsGenerator:
             chosen_cat_key=chosen_cat_key,
             is_custom=is_custom,
             is_infinite=is_infinite,
+            force_ai=force_ai,
         )
 
-        if not is_custom and fresh and fresh.get("ai_generated") is not False:
+        if fresh and fresh.get("ai_generated") is not False:
+            fresh["generation_source"] = "ai"
             async def _save_bg(item):
                 try:
                     svc = ExerciseCacheService()
@@ -193,10 +165,13 @@ class AISituationsGenerator:
         chosen_cat_key: str,
         is_custom: bool,
         is_infinite: bool,
+        force_ai: bool = False,
     ) -> dict[str, Any]:
         """Raw Gemini AI generator for Japanese situational roleplay."""
+        import time
+
         timer_ms = timer_for_level(pressure_level)
-        nonce = uuid.uuid4().hex[:8]
+        nonce = f"{uuid.uuid4().hex[:8]}_{int(time.time() * 1000)}" if force_ai else uuid.uuid4().hex[:8]
 
         # 1. Determine Context & NPC Setting
         if is_custom:
@@ -293,30 +268,8 @@ class AISituationsGenerator:
             is_ai_success = True
             fallback_err = None
         except Exception as e:
-            logger.warning(f"[AISituationsGenerator] Dynamic generation fallback: {e}")
-            scenario = self.factory.generate(category=chosen_cat_key if chosen_cat_key in SITUATIONAL_CATEGORIES else "food", difficulty=difficulty, duration_minutes=duration, mode=mode)
-            first_npc = scenario["actors"][0] if scenario.get("actors") else {}
-            title = f"Tình huống tại {scenario['location']['subtype']}"
-            loc_name = scenario["location"]["subtype"]
-            npc_name = f"{first_npc.get('identity', {}).get('name', 'Nhân viên')} ({first_npc.get('identity', {}).get('role', 'clerk')})"
-            npc_personality = "Thân thiện"
-            opening = "いらっしゃいませ。ご注文はお決まりでしょうか？"
-            opening_vi = "Kính chào quý khách. Quý khách đã chọn được món chưa ạ?"
-            user_role = scenario.get("user_role", {}).get("role", "Khách hàng")
-            goals = [{"id": f"g_{i}", "task": g.get("description", "Nhiệm vụ"), "intent": g.get("required_intent", "REQUEST")} for i, g in enumerate(scenario.get("goals", []))]
-            event = "Quán đông khách, hãy gọi món dứt khoát"
-            canonical = "すみません、これをひとつお願いします。"
-            variants = [canonical]
-            phrases = ["これをお願いします", "いくらですか"]
-            hints = {
-                "tier1_keywords": [{"word": "注文", "reading": "ちゅうもん", "meaning": "Gọi món"}, {"word": "これ", "reading": "これ", "meaning": "Cái này"}],
-                "tier2_frame": "すみません、〜をお願いします",
-                "tier3_model": canonical,
-            }
-            quick_starters = ["すみません、...", "これをお願いします", "おすすめは何ですか？"]
-            cultural_tip = "Khi gọi nhân viên quán ở Nhật, hãy nói to 'Sumimasen!' một cách dứt khoát và kèm theo nụ cười thân thiện."
-            is_ai_success = False
-            fallback_err = str(e)[:150]
+            logger.error(f"[AISituationsGenerator] Dynamic generation failed: {e}")
+            raise ValidationException(f"Không thể sinh tình huống từ AI: {e}. Vui lòng thử lại.")
 
         # Enrich hints and vocabulary with authentic BCCWJ high frequency vocabulary
         bccwj_svc = get_frequency_vocabulary_service()
@@ -364,7 +317,8 @@ class AISituationsGenerator:
             "constraints": [f"Vai trò: {user_role}", f"Thời gian phản xạ: {timer_ms/1000:.1f}s"],
             "target_patterns": variants[:2],
             "estimated_minutes": duration,
-            "ai_generated": is_ai_success,
-            "fallback_reason": fallback_err,
-            "generation_source": "gemini_ai" if is_ai_success else "scenario_factory",
+            "ai_generated": True,
+            "fallback_reason": None,
+            "generation_source": "ai",
+            "is_fallback": False,
         }

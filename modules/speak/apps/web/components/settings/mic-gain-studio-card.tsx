@@ -280,7 +280,7 @@ export function MicGainStudioCard() {
         <div className="pt-2 text-[11px] text-muted-foreground flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-t border-border/60">
           <span className="flex items-center gap-1.5">
             <Sparkles className="h-3 w-3 text-amber-500" />
-            <span>Tự động đồng bộ sang tất cả 4 chế độ luyện tập (Reflex, Pitch, Keigo, Situations).</span>
+            <span>Tự động đồng bộ sang tất cả 3 chế độ luyện tập (Reflex, Keigo, Situations).</span>
           </span>
           <span className="text-[10px] font-mono text-muted-foreground">Web Audio API + Compressor</span>
         </div>

@@ -10,11 +10,8 @@ import random
 from typing import Any
 
 from app.domains.vocabulary.bccwj_frequency_pool import (
-    BCCWJ_FREQUENCY_WORDS,
     FrequencyWordEntry,
     get_all_frequency_words,
-    get_words_by_category,
-    get_words_by_tier,
     search_frequency_words,
 )
 

@@ -51,14 +51,6 @@ class MetricKey(str, Enum):
     KEIGO_REACTION_LATENCY = "keigo_reaction_latency"
     KEIGO_AUTOMATICITY = "keigo_automaticity"
 
-    # Pitch Lab (Mode 3) Metrics — reuse PITCH_ACCURACY etc but add lab-specific
-    PITCH_MINIMAL_PAIR_ACCURACY = "pitch_minimal_pair_accuracy"
-    PITCH_MORA_ACCURACY = "pitch_mora_accuracy"
-    PITCH_DEVOICING_ACCURACY = "pitch_devoicing_accuracy"
-    PITCH_CONTOUR_ACCURACY = "pitch_contour_accuracy"
-    PITCH_RECOGNITION_ACCURACY = "pitch_recognition_accuracy"
-    PITCH_LAB_AUTOMATICITY = "pitch_lab_automaticity"
-
     # Situational Roleplay (Mode 4) Metrics
     SITUATIONAL_TASK_COMPLETION = "situational_task_completion"
     SITUATIONAL_GOAL_SUCCESS_RATE = "situational_goal_success_rate"
@@ -455,33 +447,6 @@ METRIC_REGISTRY: dict[MetricKey, MetricDefinition] = {
         description="Automaticity of keigo register selection under pressure.",
         unit="pts",
         category="keigo",
-        min_sample_size=5,
-    ),
-    MetricKey.PITCH_MINIMAL_PAIR_ACCURACY: MetricDefinition(
-        key=MetricKey.PITCH_MINIMAL_PAIR_ACCURACY,
-        name="Minimal Pair Accuracy",
-        ja_name="ミニマルペア正答率",
-        description="Accuracy in pitch minimal pair discrimination.",
-        unit="%",
-        category="pitch",
-        min_sample_size=5,
-    ),
-    MetricKey.PITCH_MORA_ACCURACY: MetricDefinition(
-        key=MetricKey.PITCH_MORA_ACCURACY,
-        name="Mora Length Accuracy",
-        ja_name="モーラ長正確さ",
-        description="Accuracy in mora/length discrimination.",
-        unit="%",
-        category="pitch",
-        min_sample_size=5,
-    ),
-    MetricKey.PITCH_LAB_AUTOMATICITY: MetricDefinition(
-        key=MetricKey.PITCH_LAB_AUTOMATICITY,
-        name="Pitch Lab Automaticity",
-        ja_name="ピッチ自動化度",
-        description="Automaticity of pitch pattern production under pressure.",
-        unit="pts",
-        category="pitch",
         min_sample_size=5,
     ),
     MetricKey.SITUATIONAL_TASK_COMPLETION: MetricDefinition(

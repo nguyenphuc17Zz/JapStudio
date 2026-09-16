@@ -12,7 +12,6 @@ import {
   MessageSquare,
   Zap,
   Crown,
-  Music,
   Compass,
   Ear,
   Blocks,
@@ -43,7 +42,6 @@ function getCategoryFromPath(pathname: string | null): KeybindingCategory {
   if (pathname.startsWith("/builder")) return "builder";
   if (pathname.startsWith("/interpret")) return "interpret";
   if (pathname.startsWith("/keigo")) return "keigo";
-  if (pathname.startsWith("/pitch")) return "pitch";
   if (pathname.startsWith("/situations")) return "situations";
   if (pathname.startsWith("/ramp")) return "ramp";
   if (pathname.startsWith("/speaking")) return "speaking";
@@ -57,7 +55,6 @@ const MODAL_TABS: { id: KeybindingCategory; label: string; icon: React.Component
   { id: "builder", label: "Xây Câu", icon: Blocks },
   { id: "interpret", label: "Việt-Nhật", icon: Languages },
   { id: "keigo", label: "Kính Ngữ", icon: Crown },
-  { id: "pitch", label: "Cao Độ", icon: Music },
   { id: "situations", label: "Tình Huống", icon: Compass },
   { id: "ramp", label: "Phục Hồi", icon: Activity },
   { id: "speaking", label: "Hội Thoại", icon: MessageSquare },

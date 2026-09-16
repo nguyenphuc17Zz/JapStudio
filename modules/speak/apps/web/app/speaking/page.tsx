@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePersonas } from "@/hooks/use-personas";
+import { ExerciseSourceBadge } from "@/components/ui/exercise-source-badge";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,6 @@ import { Modal } from "@/components/ui/modal";
 import {
   Mic,
   Sparkles,
-  Lock,
   Zap,
   Plus,
   Wand2,
@@ -21,7 +21,13 @@ import {
   RefreshCw,
   RotateCcw,
   Users,
+  Dices,
+  Search,
+  X,
+  Compass,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { soundFX } from "@/lib/sound-fx";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { Persona, PersonaCreateInput } from "@/types/persona";
 import {
@@ -31,8 +37,33 @@ import {
   SessionSummaryModal,
   MicrophonePermissionModal,
 } from "@/features/speaking";
+import { getSavedLobbyPreferences } from "@/features/speaking/services/lobby-preferences";
 
-const DIFFICULTIES = ["All", "N5", "N4", "N3", "N2", "N1"];
+const DIFFICULTIES = [
+  { id: "All", label: "Tất cả" },
+  { id: "ADAPTIVE", label: "🌟 Tự thích ứng" },
+  { id: "N5", label: "N5 (Vỡ lòng)" },
+  { id: "N4", label: "N4 (Sơ cấp)" },
+  { id: "N3", label: "N3 (Trung cấp)" },
+  { id: "N2", label: "N2 (Thành thạo)" },
+  { id: "N1", label: "N1 (Cao cấp)" },
+  { id: "NATIVE", label: "👑 Bản xứ / Biz" },
+];
+
+const INSPIRATION_SCENARIOS = [
+  { label: "Phỏng vấn IT Roppongi", icon: "💼", theme: "Phỏng vấn xin việc vị trí IT Engineer tại văn phòng Roppongi Hills Tokyo, trả lời về kinh nghiệm lập trình và lý do chuyển việc." },
+  { label: "Omakase quán Izakaya", icon: "🍶", theme: "Ngồi tại quầy counter của quán Izakaya truyền thống ở Shinjuku, nhờ bác chủ quán giới thiệu các món nhắm ngon và rượu sake địa phương." },
+  { label: "Đổi vé tàu Shinkansen", icon: "🚄", theme: "Tại phòng vé Midori no Madoguchi ga Tokyo, xin đổi giờ vé tàu Shinkansen Nozomi đi Kyoto sang chuyến sớm hơn." },
+  { label: "Khám nha khoa đau răng", icon: "🦷", theme: "Đi khám tại phòng khám nha khoa ở Shibuya, giải thích với nha sĩ về chiếc răng hàm bị ê buốt khi uống nước lạnh." },
+  { label: "Mua thuốc cảm Shinjuku", icon: "💊", theme: "Tại hiệu thuốc Matsumoto Kiyoshi, nhờ dược sĩ tư vấn loại thuốc cảm cúm không gây buồn ngủ vì chiều phải họp." },
+  { label: "Khiếu nại khách sạn", icon: "🏨", theme: "Gọi lễ tân khách sạn ở Ginza phản ánh việc máy điều hòa trong phòng kêu to và không mát, yêu cầu đổi phòng." },
+  { label: "Thuê căn hộ & phí trọ", icon: "🏠", theme: "Tại công ty bất động sản ở Koenji, trao đổi về việc thuê căn hộ 1LDK, hỏi rõ về tiền lễ (Reikin) và tiền cọc (Shikikin)." },
+  { label: "Mua đồ Anime Akihabara", icon: "🎨", theme: "Tại cửa hàng mô hình Akihabara, hỏi nhân viên về tượng figure phiên bản giới hạn và cách gửi hàng an toàn." },
+  { label: "Cắt tóc ở Omotesando", icon: "💇", theme: "Tại salon tóc Omotesando, trao đổi với thợ làm tóc về kiểu tóc mong muốn, nhuộm màu tự nhiên." },
+  { label: "Gặp cảnh sát hỏi đường", icon: "👮", theme: "Tại bốt cảnh sát Koban ga Ikebukuro, hỏi đường đi đến bảo tàng nghệ thuật và báo mất một chiếc ô dù." },
+  { label: "Thương lượng giá B2B", icon: "🤝", theme: "Cuộc họp thương mại với đối tác Nhật tại Osaka, đàm phán giảm giá 5% cho đơn hàng linh kiện số lượng lớn." },
+  { label: "Lễ hội pháo hoa Hanabi", icon: "🎆", theme: "Mặc áo Yukata đi dạo lễ hội pháo hoa sông Sumida, nói chuyện với người bán đồ ăn dạo ở quầy Yatai." },
+];
 
 const INITIAL_FORM: PersonaCreateInput = {
   name: "",
@@ -40,9 +71,34 @@ const INITIAL_FORM: PersonaCreateInput = {
   description: "",
   personality: "",
   speaking_style: "",
-  difficulty: "N3",
   system_prompt: "",
 };
+
+type PersonaCategory = "all" | "business" | "dining" | "hospitality" | "daily";
+
+const CATEGORIES: Array<{ key: PersonaCategory; label: string; icon: string }> = [
+  { key: "all", label: "Tất cả", icon: "🌐" },
+  { key: "business", label: "IT & Công sở", icon: "💼" },
+  { key: "dining", label: "Ẩm thực & Quán nhậu", icon: "🍜" },
+  { key: "hospitality", label: "Khách sạn & Du lịch", icon: "🏨" },
+  { key: "daily", label: "Đời sống & Bạn bè", icon: "☕" },
+];
+
+const CATEGORY_META: Record<PersonaCategory, { badge: string; color: string; bg: string }> = {
+  all: { badge: "🌐 Tất cả", color: "text-primary", bg: "bg-primary/10 border-primary/20" },
+  business: { badge: "💼 Công sở", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-500/10 border-blue-500/20" },
+  dining: { badge: "🍜 Ẩm thực", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
+  hospitality: { badge: "🏨 Dịch vụ", color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10 border-purple-500/20" },
+  daily: { badge: "☕ Đời sống", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+};
+
+function getPersonaCategory(p: Persona): PersonaCategory {
+  const text = `${p.id} ${p.name} ${p.role} ${p.description}`.toLowerCase();
+  if (/it|engineer|scrum|pm|project|bucho|client|interview|tech lead|họp|báo cáo|kỹ thuật/.test(text)) return "business";
+  if (/izakaya|ramen|ẩm thực|quán|ăn|uống|món|nhậu/.test(text)) return "dining";
+  if (/hotel|concierge|khách sạn|du lịch|lễ tân/.test(text)) return "hospitality";
+  return "daily";
+}
 
 export default function SpeakingPage() {
   const {
@@ -60,9 +116,14 @@ export default function SpeakingPage() {
     "speaking_personas_difficulty",
     "All"
   );
+  const [selectedCategory, setSelectedCategory] = useState<PersonaCategory>("all");
   const [activePersona, setActivePersona] = useState<Persona | null>(null);
   const [isLobbyOpen, setIsLobbyOpen] = useState(false);
 
+  // Dynamic Custom Situation & Generator States
+  const [customSituationInput, setCustomSituationInput] = useState("");
+  const [isInstantGenerating, setIsInstantGenerating] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
 
   // Persona Creation & Deletion States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -118,9 +179,106 @@ export default function SpeakingPage() {
   };
 
   const filteredPersonas = personas.filter((p) => {
-    if (selectedDifficulty === "All") return true;
-    return p.difficulty.toUpperCase() === selectedDifficulty;
+    const pDiff = (p.difficulty || "N3").toUpperCase();
+    const matchDiff =
+      selectedDifficulty === "All" ||
+      pDiff === selectedDifficulty ||
+      (selectedDifficulty === "ADAPTIVE") ||
+      (selectedDifficulty === "NATIVE" && (pDiff === "N1" || pDiff === "NATIVE" || pDiff.includes("NAT")));
+
+    const matchCat =
+      selectedCategory === "all" || getPersonaCategory(p) === selectedCategory;
+
+    const matchSearch =
+      !searchKeyword.trim() ||
+      `${p.name} ${p.role} ${p.description} ${p.personality}`
+        .toLowerCase()
+        .includes(searchKeyword.toLowerCase().trim());
+
+    return matchDiff && matchCat && matchSearch;
   });
+
+  const handleInstantCreateAndStart = async (scenarioOverride?: string) => {
+    const rawTarget = (scenarioOverride || customSituationInput).trim();
+    let themeToUse = rawTarget;
+
+    if (!themeToUse) {
+      const randomScenario = INSPIRATION_SCENARIOS[Math.floor(Math.random() * INSPIRATION_SCENARIOS.length)];
+      themeToUse = randomScenario.theme;
+      setCustomSituationInput(randomScenario.label);
+    }
+
+    setIsInstantGenerating(true);
+    setFeedback(null);
+    soundFX.playFurin();
+
+    try {
+      const targetDiff = selectedDifficulty !== "All" ? selectedDifficulty : "ADAPTIVE";
+      const { data: generated, error: genError } = await generateRandomPersona({
+        theme: themeToUse,
+        difficulty: targetDiff,
+      });
+
+      if (!generated || genError) {
+        setFeedback({
+          type: "error",
+          msg: genError || "Không thể khởi tạo tình huống bằng AI. Vui lòng kiểm tra lại!",
+        });
+        setIsInstantGenerating(false);
+        return;
+      }
+
+      // Automatically persist to user's persona collection
+      const created = await createPersona({
+        name: generated.name,
+        role: generated.role,
+        description: generated.description,
+        personality: generated.personality,
+        speaking_style: generated.speaking_style,
+        difficulty: generated.difficulty || targetDiff,
+        system_prompt: generated.system_prompt || "",
+      });
+
+      const personaToStart = created || ({
+        ...generated,
+        id: `ai_temp_${Date.now()}`,
+        is_system: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      } as Persona);
+
+      setActivePersona(personaToStart);
+      soundFX.playSuikinkutsu();
+
+      // Launch session immediately using saved preferences (Zero-wait flow)
+      const prefs = getSavedLobbyPreferences();
+      await startSession(personaToStart, prefs.mode, {
+        ai_provider: prefs.ai_provider,
+        ai_model: prefs.ai_model,
+        stt_provider: prefs.stt_provider,
+        stt_model: prefs.stt_model,
+        tts_provider: prefs.tts_provider,
+        tts_engine: prefs.tts_engine,
+        tts_enabled: prefs.tts_enabled,
+        tts_voice: prefs.tts_voice,
+        auto_end_of_speech: prefs.auto_end_of_speech,
+        vad_sensitivity: prefs.vad_sensitivity,
+      });
+    } catch (err: any) {
+      setFeedback({
+        type: "error",
+        msg: err.message || "Đã xảy ra lỗi khi tạo tình huống hội thoại.",
+      });
+    } finally {
+      setIsInstantGenerating(false);
+    }
+  };
+
+  const handleInfiniteRandomGen = async () => {
+    const randomScenario = INSPIRATION_SCENARIOS[Math.floor(Math.random() * INSPIRATION_SCENARIOS.length)];
+    setCustomSituationInput(randomScenario.label);
+    await handleInstantCreateAndStart(randomScenario.theme);
+  };
 
   const handleOpenLobby = (persona: Persona) => {
     setActivePersona(persona);
@@ -255,7 +413,7 @@ export default function SpeakingPage() {
       )}
 
       {isSessionActive && activePersona ? (
-        <div className="space-y-3">
+        <div className="h-[calc(100vh-3.5rem)] overflow-hidden">
           <ActiveSessionRoom
             session={session!}
             persona={activePersona}
@@ -287,100 +445,217 @@ export default function SpeakingPage() {
         </div>
       ) : (
         <div className="space-y-3.5 sm:space-y-4">
-          {/* Header */}
-          <div className="rounded-2xl border border-border/70 bg-card/65 backdrop-blur-2xl p-4 sm:p-5 shadow-glass-card hover:shadow-glass-hover transition-all duration-300">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2.5">
-                  <span className="h-8 w-8 rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center text-primary shadow-xs">
-                    <Mic className="h-4 w-4" />
-                  </span>
-                  <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-foreground">
-                    Phòng hội thoại
+          {/* Zen Toolbar */}
+          <div className="rounded-2xl border border-border/70 bg-card/65 backdrop-blur-2xl p-3 sm:p-4 shadow-glass-card hover:shadow-glass-hover transition-all duration-300 space-y-3">
+            {/* Top Bar: Title + Quick Link + Action Buttons */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-border/60">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="h-7 w-7 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center text-primary shadow-xs shrink-0">
+                  <Mic className="h-3.5 w-3.5" />
+                </span>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+                    Phòng hội thoại AI
                   </h1>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-muted/80 text-muted-foreground border border-border/70 font-medium">
+                    {filteredPersonas.length} đối tác
+                  </span>
                 </div>
-                <p className="text-xs sm:text-sm text-muted-foreground max-w-2xl">
-                  Luyện nói trực tiếp với các nhân vật mô phỏng theo ngữ cảnh thực tế với độ trễ thấp và nhận diện giọng nói tự nhiên.
-                </p>
-                <div className="pt-0.5">
-                  <Link
-                    href="/ramp"
-                    prefetch={true}
-                    className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/60 hover:bg-muted border border-border text-foreground text-[11px] font-semibold transition-all"
-                  >
-                    <Sparkles className="h-3 w-3 text-primary" />
-                    <span>Mode 6: Phục hồi phát ngôn (Speaking Ramp) — Rèn từ 1 câu đến 60s độc lập</span>
-                  </Link>
-                </div>
+                <Link
+                  href="/ramp"
+                  prefetch={true}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 hover:bg-primary/15 border border-primary/25 text-primary text-[11px] font-semibold transition-all ml-1"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  <span>Mode 6: Nấc thang nói</span>
+                </Link>
               </div>
 
               {/* Partner Management Action Buttons */}
-              <div className="flex items-center gap-2 flex-wrap shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleRestoreDefaults}
                   isLoading={actionLoading}
-                  className="text-xs text-muted-foreground hover:text-foreground border-border/80 rounded-full h-8 px-3"
+                  className="text-[11px] text-muted-foreground hover:text-foreground border-border/80 rounded-full h-7 px-2.5"
                   title="Khôi phục lại các đối tác mẫu mặc định"
                 >
                   <RotateCcw className="h-3 w-3 mr-1" />
-                  Mẫu mặc định
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleGenerateAI}
-                  isLoading={generating}
-                  className="text-xs border-border/80 rounded-full h-8 px-3"
-                >
-                  <Wand2 className="h-3 w-3 mr-1 text-primary" />
-                  Sinh bằng AI
+                  Mẫu
                 </Button>
 
                 <Button
                   variant="primary"
                   size="sm"
                   onClick={handleOpenCreateModal}
-                  className="text-xs rounded-full font-bold shadow-md shadow-primary/25 h-8 px-3.5"
+                  className="text-[11px] rounded-full font-bold shadow-xs shadow-primary/25 h-7 px-3"
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Tạo đối tác
+                  <Plus className="h-3 w-3 mr-1" />
+                  Tự tạo đối tác
                 </Button>
               </div>
             </div>
 
-            {/* Filter by Difficulty Bar */}
-            <div className="mt-3.5 pt-3 border-t border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5 mr-1">
-                  <Users className="h-3.5 w-3.5" /> Trình độ:
+            {/* Direct Custom Situation Input Bar */}
+            <div className="pt-1 pb-1 space-y-2.5">
+              <div className="flex flex-col sm:flex-row items-stretch gap-2">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-primary">
+                    <Sparkles className="h-4 w-4 animate-pulse" />
+                  </div>
+                  <input
+                    type="text"
+                    value={customSituationInput}
+                    onChange={(e) => setCustomSituationInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleInstantCreateAndStart();
+                      }
+                    }}
+                    placeholder="Nhập bất kỳ tình huống nào muốn luyện... (VD: Đi khám nha khoa, Phỏng vấn IT Roppongi, Lạc đường đêm Shinjuku...)"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-primary/30 bg-background/90 text-xs sm:text-sm font-medium placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/40 shadow-inner"
+                  />
+                  {customSituationInput && (
+                    <button
+                      type="button"
+                      onClick={() => setCustomSituationInput("")}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    disabled={isInstantGenerating}
+                    onClick={() => handleInstantCreateAndStart()}
+                    className="h-10 px-3.5 rounded-xl text-xs font-bold shadow-md shadow-primary/25 gap-1.5 cursor-pointer whitespace-nowrap"
+                    title="AI sinh ngay nhân vật hoàn chỉnh và đưa bạn vào phòng luyện tập tức thì (Enter)"
+                  >
+                    {isInstantGenerating ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        <span>AI Đang Thiết Kế...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Vào Luyện Ngay</span>
+                        <kbd className="hidden md:inline-block text-[10px] font-mono px-1 py-0.2 rounded bg-black/20 text-white font-bold ml-0.5">
+                          Enter
+                        </kbd>
+                      </>
+                    )}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isInstantGenerating}
+                    onClick={handleInfiniteRandomGen}
+                    className="h-10 px-3 rounded-xl text-xs font-bold border-border/80 hover:border-primary/50 text-foreground bg-card hover:bg-primary/10 gap-1.5 cursor-pointer whitespace-nowrap shadow-xs"
+                    title="Sinh một tình huống & nhân vật hoàn toàn ngẫu nhiên và bắt đầu đàm thoại"
+                  >
+                    <Dices className="h-3.5 w-3.5 text-amber-500" />
+                    <span className="hidden sm:inline">🎲 Sinh Ngẫu Nhiên</span>
+                    <span className="sm:hidden">🎲 Random</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Inspiration Chips Carousel */}
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 text-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 flex items-center gap-1">
+                  <span>💡 Gợi ý thực chiến:</span>
                 </span>
-                <div className="flex items-center gap-1 p-0.5 rounded-full bg-muted/50 border border-border/70 backdrop-blur-md">
+                {INSPIRATION_SCENARIOS.map((sc, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setCustomSituationInput(sc.label);
+                      handleInstantCreateAndStart(sc.theme);
+                    }}
+                    className="shrink-0 px-2.5 py-1 rounded-lg bg-muted/60 hover:bg-primary/15 border border-border/70 hover:border-primary/40 text-[11px] font-semibold text-foreground hover:text-primary transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
+                    title={sc.theme}
+                  >
+                    <span>{sc.icon}</span>
+                    <span>{sc.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Filter Deck: Search + Category Pills + Level Pills */}
+            <div className="pt-2.5 border-t border-border/60 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+              <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                {/* Search Input */}
+                <div className="relative min-w-[140px] max-w-[200px]">
+                  <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    placeholder="Tìm tên, vai trò..."
+                    className="w-full pl-8 pr-2.5 py-1 text-xs rounded-lg border border-border/70 bg-background/80 focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  {searchKeyword && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchKeyword("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-[10px]"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Pills */}
+                <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-muted/40 border border-border/60 overflow-x-auto scrollbar-none">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.key}
+                      onClick={() => setSelectedCategory(cat.key)}
+                      className={cn(
+                        "px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all whitespace-nowrap flex items-center gap-1",
+                        selectedCategory === cat.key
+                          ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <span className="text-xs">{cat.icon}</span>
+                      <span>{cat.label}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Level Pills */}
+                <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-muted/40 border border-border/60 overflow-x-auto scrollbar-none">
                   {DIFFICULTIES.map((diff) => (
                     <button
-                      key={diff}
-                      onClick={() => setSelectedDifficulty(diff)}
-                      className={`px-3 py-0.5 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
-                        selectedDifficulty === diff
-                          ? "bg-primary text-primary-foreground shadow-sm shadow-primary/25"
+                      key={diff.id}
+                      onClick={() => setSelectedDifficulty(diff.id)}
+                      className={cn(
+                        "px-2 py-1 text-[11px] font-semibold rounded-md transition-all whitespace-nowrap",
+                        selectedDifficulty === diff.id
+                          ? "bg-primary text-primary-foreground shadow-xs font-bold"
                           : "text-muted-foreground hover:text-foreground"
-                      }`}
+                      )}
                     >
-                      {diff === "All" ? "Tất cả" : diff}
+                      {diff.label}
                     </button>
                   ))}
                 </div>
               </div>
-
-              <div className="text-xs text-muted-foreground font-medium">
-                {filteredPersonas.length} nhân vật khả dụng
-              </div>
             </div>
           </div>
 
-          {/* Persona Grid (4 columns on xl desktop) */}
+          {/* Persona Grid (Compact Cards, 5 columns on desktop) */}
           {loading ? (
             <div className="p-16 text-center text-sm text-muted-foreground flex flex-col items-center justify-center gap-3">
               <RefreshCw className="h-6 w-6 animate-spin text-primary" />
@@ -412,74 +687,90 @@ export default function SpeakingPage() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-3.5">
-              {filteredPersonas.map((persona) => (
-                <div
-                  key={persona.id}
-                  className="p-4 sm:p-4.5 rounded-2xl border border-border/70 bg-card/65 backdrop-blur-xl flex flex-col justify-between transition-all duration-300 hover:border-primary/40 hover:shadow-glass-hover hover:-translate-y-0.5 shadow-glass-sm group h-full"
-                >
-                  <div className="space-y-2.5">
-                    <div className="flex items-start justify-between gap-2.5">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="h-9 w-9 rounded-xl bg-muted border border-border flex items-center justify-center text-foreground font-bold text-sm shrink-0 shadow-2xs">
-                          {persona.name.charAt(0)}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-sm font-bold text-foreground block truncate">{persona.name}</span>
-                            {persona.is_system && (
-                              <span className="text-[9.5px] px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border inline-flex items-center font-medium">
-                                <Lock className="h-2.5 w-2.5 mr-0.5" /> Mẫu
-                              </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2.5 sm:gap-3">
+              {filteredPersonas.map((persona) => {
+                const catKey = getPersonaCategory(persona);
+                const catMeta = CATEGORY_META[catKey];
+                return (
+                  <div
+                    key={persona.id}
+                    className="p-3 rounded-xl border border-border/70 bg-card/65 backdrop-blur-xl flex flex-col justify-between transition-all duration-200 hover:border-primary/50 hover:shadow-glass-hover hover:-translate-y-0.5 shadow-glass-sm group relative"
+                  >
+                    <div className="space-y-2">
+                      {/* Avatar + Title + JLPT */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div
+                            className={cn(
+                              "h-8 w-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs border",
+                              catMeta.bg,
+                              catMeta.color
                             )}
+                          >
+                            {persona.name.charAt(0)}
                           </div>
-                          <span className="text-[11px] text-muted-foreground truncate block">{persona.role}</span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              <span className="text-xs font-bold text-foreground truncate block">
+                                {persona.name}
+                              </span>
+                              <ExerciseSourceBadge
+                                source={persona.is_system ? "sqlite" : "ai"}
+                                className="text-[9px] px-1.5 py-0 h-4 rounded-full"
+                              />
+                            </div>
+                            <span className="text-[10.5px] text-muted-foreground truncate block">
+                              {persona.role}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border shrink-0">
-                        {persona.difficulty}
-                      </span>
-                    </div>
 
-                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{persona.description}</p>
-
-                    <div className="space-y-1 pt-2.5 border-t border-border/60 text-[11px]">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-muted-foreground shrink-0">Phong cách:</span>
-                        <span className="text-foreground font-medium truncate max-w-[160px] text-right">{persona.speaking_style}</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-muted/80 text-foreground border border-border/80 shrink-0">
+                          {persona.difficulty}
+                        </span>
                       </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-muted-foreground shrink-0">Tính cách:</span>
-                        <span className="text-foreground font-medium truncate max-w-[160px] text-right">
-                          {persona.personality}
+
+                      {/* 1-line description */}
+                      <p className="text-[11px] text-muted-foreground leading-snug line-clamp-1" title={persona.description}>
+                        {persona.description}
+                      </p>
+
+                      {/* Style & Personality line */}
+                      <div className="pt-1.5 border-t border-border/50 flex items-center justify-between gap-1 text-[10px] text-muted-foreground">
+                        <span className="truncate max-w-[95px] font-medium" title={`Phong cách: ${persona.speaking_style}`}>
+                          {persona.speaking_style}
+                        </span>
+                        <span className="truncate max-w-[85px] text-foreground/80 text-right" title={`Tính cách: ${persona.personality}`}>
+                          • {persona.personality}
                         </span>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="pt-3 mt-3 border-t border-border/60 flex items-center gap-2">
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      className="flex-1 rounded-full font-bold shadow-md shadow-primary/25 h-8 text-xs"
-                      onClick={() => handleOpenLobby(persona)}
-                    >
-                      <Mic className="h-3.5 w-3.5 mr-1" />
-                      Luyện nói
-                    </Button>
+                    {/* Action Bar */}
+                    <div className="pt-2 mt-2 border-t border-border/50 flex items-center gap-1.5">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="flex-1 rounded-lg font-bold shadow-xs shadow-primary/20 h-7 text-[11px] px-2"
+                        onClick={() => handleOpenLobby(persona)}
+                      >
+                        <Mic className="h-3 w-3 mr-1" />
+                        Luyện nói
+                      </Button>
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 px-0 rounded-full text-muted-foreground hover:text-destructive shrink-0"
-                      title="Xóa đối tác này"
-                      onClick={() => setDeleteTarget(persona)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity"
+                        title="Xóa đối tác này"
+                        onClick={() => setDeleteTarget(persona)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

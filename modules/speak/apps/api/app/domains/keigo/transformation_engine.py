@@ -40,47 +40,6 @@ class KeigoTransformationResult:
     analysis: dict[str, Any] = field(default_factory=dict)
 
 
-class KeigoTransformationEngine:
-    """Deterministic keigo transformation engine (small overrides + rules)."""
-
-    def __init__(self):
-        self.lex = get_lexical_provider()
-        self.lang = get_language_provider()
-        self.uchi = UchiSotoResolver()
-        self.double_analyzer = DoubleKeigoAnalyzer()
-
-    def transform(self, source: str, target: Register, ctx: SocialContext | None = None) -> KeigoTransformationResult:
-        # Analyze source
-        tokens = self.lang.analyze(source)
-        # Find main verb lemma (first verb)
-        verb_token = next((t for t in tokens if t.pos == "動詞"), None)
-        lemma = verb_token.lemma if verb_token else source.strip()
-        reading = verb_token.reading if verb_token else None
-
-        # Check irregular overrides
-        overrides = KEIGO_IRREGULAR_OVERRIDES.get(lemma) or KEIGO_IRREGULAR_OVERRIDES.get(source.strip())
-        candidates: list[AnswerCandidate] = []
-        canonical: str | None = None
-
-        if target == Register.TAMEGUCHI:
-            # Casual: dictionary or plain
-            # For simplicity, if source contains です/ます, strip to plain
-            casual = self._to_casual(source, lemma)
-            candidates.append(AnswerCandidate(text=casual, source="rule", provenance="project_rule", naturalness=0.9, confidence=0.85))
-            canonical = casual
-        elif target == Register.POLITE:
-            polite = self._to_teineigo(source, lemma, overrides)
-            candidates.append(AnswerCandidate(text=polite, source="rule", provenance="project_rule"))
-            canonical = polite
-            # Alternative: long polite
-            if polite.endswith("します") and "いたし" not in polite:
-                alt = polite.replace("します", "いたします")
-                candidates.append(AnswerCandidate(text=alt, source="rule", provenance="project_rule", naturalness=0.85))
-        elif target == Register.BUSINESS_POLITE:
-            # Similar to polite but with bikago
-            bp = self._to_business_polite(source, lemma, overrides)
-            candidates.append(AnswerCandidate(text=bp, source="rule"))
-            canonical = bp
 # Common Noun & Adjective Dictionaries for お (Kunyomi & familiar) vs ご (Onyomi Sino-Japanese)
 O_HONORIFIC_WORDS = {
     "名前": "お名前", "宅": "お宅", "元気": "お元気", "仕事": "お仕事", "部屋": "お部屋",
@@ -318,7 +277,6 @@ class KeigoTransformationEngine:
             from app.domains.reflex.conjugation_engine import JapaneseConjugationEngine, ConjugationForm
 
             ce = JapaneseConjugationEngine()
-            vc = ce.identify_verb_class(lemma)
 
             # Suru group (Nhóm 3)
             if lemma.endswith("する"):

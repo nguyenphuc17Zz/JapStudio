@@ -75,6 +75,31 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* ==========================================================================
+     Japanese Ruby & Furigana Typography Engine (W3C JLReq Standards)
+     ========================================================================== */
+  ruby {
+    ruby-position: over;
+    ruby-align: center;
+    display: inline-ruby;
+    vertical-align: baseline;
+  }
+
+  rt {
+    display: ruby-text;
+    ruby-align: center;
+    user-select: none;
+    -webkit-user-select: none;
+    font-variant-east-asian: ruby;
+    font-size: 0.55em;
+    line-height: 1;
+    text-align: center;
+  }
+
+  rp {
+    display: none;
+  }
+
   /* Kyoto Clean Glass ambient refractions */
   html:not(.dark) body {
     background-color: #F8FAFC;

@@ -62,6 +62,7 @@ export interface GenerateOpts {
   windowMs?: number;
   difficulty?: string;
   numTurns?: number;
+  force_ai?: boolean;
 }
 
 export const WINDOW_LEVELS: Array<{ id: WindowProfile; ms: number; label: string; ja: string }> = [
@@ -87,6 +88,7 @@ export async function generateExercise(opts: GenerateOpts): Promise<AizuchiExerc
   params.set("num_turns", String(opts.numTurns ?? 3));
   if (opts.windowMs !== undefined) params.set("window_ms", String(opts.windowMs));
   if (opts.difficulty) params.set("difficulty", opts.difficulty);
+  if (opts.force_ai) params.set("force_ai", "true");
   params.set("nonce", `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
   const data = (await apiClient.post(`/aizuchi/exercises/generate?${params.toString()}`)) as any;
   const ac = data.extra_metadata?.aizuchi_config || {};

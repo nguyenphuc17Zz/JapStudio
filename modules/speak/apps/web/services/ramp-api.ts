@@ -12,10 +12,32 @@ export interface RampSession {
   started_at?: string;
 }
 
+export interface RampVocabItem {
+  word: string;
+  reading?: string;
+  meaning_vi: string;
+  example?: string;
+}
+
+export interface RampAnswerAngle {
+  title: string;
+  hint_jp: string;
+  hint_vi: string;
+}
+
+export interface RampSentenceFrame {
+  pattern: string;
+  meaning_vi: string;
+}
+
 export interface RampScaffold {
   support_level: number;
   topic?: string;
   keywords: string[];
+  vocab_items?: RampVocabItem[];
+  answer_angles?: RampAnswerAngle[];
+  sentence_frames?: RampSentenceFrame[];
+  sample_answers?: RampSampleAnswer[];
   guided_questions: string[];
   sentence_starter?: string;
   structure_outline: string[];
@@ -41,6 +63,9 @@ export interface RampTaskSpec {
   keywords_for_production: string[];
   previous_response?: string;
   is_retry: boolean;
+  source?: "ai" | "bank" | "mock" | string;
+  provider?: string;
+  model?: string;
 }
 
 export interface NextExerciseResponse {
@@ -115,6 +140,7 @@ export interface RampAttemptFeedback {
   followup?: FollowUpSpec;
   sample_answers?: RampSampleAnswer[];
   coaching_advice?: RampCoachingAdvice;
+  evaluation_source?: "fast_pass" | "ai_router" | "mock" | "rule_engine" | string;
 }
 
 export interface SubmitAttemptResult {
@@ -191,7 +217,7 @@ export const rampApi = {
 
   async generateNextExercise(
     sessionId: string,
-    params: { is_retry?: boolean; force_followup?: boolean } = {}
+    params: { is_retry?: boolean; force_followup?: boolean; force_ai?: boolean } = {}
   ): Promise<NextExerciseResponse> {
     return apiClient.post<NextExerciseResponse>(
       `/ramp/sessions/${sessionId}/next-exercise`,

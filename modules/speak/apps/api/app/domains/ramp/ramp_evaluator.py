@@ -103,11 +103,36 @@ class RampEvaluator:
             self_repair_count = audio_metrics.get("self_repair_count")
 
         # ---------------------------------------------------------------------------
-        # 2. AI semantic evaluation (§46)
+        # 2. AI semantic evaluation or Fast-Pass (§46)
         # ---------------------------------------------------------------------------
+        is_fast_pass = False
+        if stage == 0 and task_spec.echo_sentence:
+            norm_expected = re.sub(r"[^\w]", "", task_spec.echo_sentence)
+            norm_actual = re.sub(r"[^\w]", "", transcript)
+            if norm_expected and norm_actual and norm_expected == norm_actual:
+                is_fast_pass = True
+
+        evaluation_source = "rule_engine"
         ai_data: dict[str, Any] = {}
-        if transcript:
+        if is_fast_pass:
+            evaluation_source = "fast_pass"
+            ai_data = {
+                "semantic_relevance": 100.0,
+                "naturalness": 100.0,
+                "grammar_score": 100.0,
+                "completeness": 100.0,
+                "idea_quality": 100.0,
+                "feedback_jp": "完璧なリピートです！",
+                "has_reason": False,
+                "has_example": False,
+                "sentence_complete": True,
+            }
+        elif transcript:
             ai_data = await self._evaluate_with_ai(task_spec, transcript, support_level_used)
+            if ai_data:
+                evaluation_source = "ai_router"
+            else:
+                evaluation_source = "mock"
 
         semantic_relevance = ai_data.get("semantic_relevance", 70.0)
         naturalness = ai_data.get("naturalness", 70.0)
@@ -243,6 +268,7 @@ class RampEvaluator:
             stage=stage,
             sample_answers=sample_answers,
             coaching_advice=coaching_advice,
+            evaluation_source=evaluation_source,
         )
 
         return score, feedback
@@ -345,6 +371,7 @@ class RampEvaluator:
         stage: int,
         sample_answers: list[RampSampleAnswer] | None = None,
         coaching_advice: RampCoachingAdvice | None = None,
+        evaluation_source: str = "ai_router",
     ) -> RampAttemptFeedback:
         """Build RampAttemptFeedback with badges and next action. §37"""
         badges: list[str] = []
@@ -404,6 +431,7 @@ class RampEvaluator:
             ramp_score=score,
             sample_answers=sample_answers or [],
             coaching_advice=coaching_advice,
+            evaluation_source=evaluation_source,
         )
 
     async def _evaluate_with_ai(

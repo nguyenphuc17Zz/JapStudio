@@ -156,7 +156,20 @@ export function RampFeedbackCard({
         </div>
 
         <div className="flex-1 space-y-1.5 min-w-0">
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {feedback.evaluation_source === "fast_pass" ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-500/30 text-[10px] font-bold text-cyan-700 dark:text-cyan-300">
+                <Zap className="h-3 w-3" /> Fast-Pass 0ms
+              </span>
+            ) : feedback.evaluation_source === "mock" ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-[10px] font-bold text-amber-700 dark:text-amber-300">
+                Offline Rule Engine
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                <Sparkles className="h-3 w-3" /> AI Realtime Examiner
+              </span>
+            )}
             {feedback.badges.map((b, i) => (
               <Badge key={i} variant="outline" className="text-xs font-bold py-0.5 px-2 bg-muted/40">
                 {b}

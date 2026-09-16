@@ -1,4 +1,3 @@
-from typing import Any
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -207,9 +206,9 @@ async def generate_custom_exercise(
     goal_service = GoalService(db)
     goals = await goal_service.get_active_goals(user_id)
 
-    # Allow explicit exercise_type for reflex/keigo/pitch/situational/speech generation without requiring existing learning_item
+    # Allow explicit exercise_type for reflex/keigo/situational/speech generation without requiring existing learning_item
     req_type = payload.exercise_type
-    if req_type and (req_type.startswith(("reflex", "keigo", "pitch", "situational", "speech")) or req_type in ("mora_length", "vowel_devoicing", "pitch_contour", "pitch_recognition", "situational_roleplay", "situational_scenario", "speech_monologue")):
+    if req_type and (req_type.startswith(("reflex", "keigo", "situational", "speech")) or req_type in ("situational_roleplay", "situational_scenario", "speech_monologue")):
         # Find or create suitable item for reflex type
         from app.domains.learning.contracts import ExerciseType as ET
 
@@ -217,7 +216,7 @@ async def generate_custom_exercise(
             et = ET(req_type)
         except Exception:
             raise ValidationException(f"Invalid exercise_type '{req_type}'")
-        # Build priority for reflex/keigo/pitch/situational/speech
+        # Build priority for reflex/keigo/situational/speech
         target_type_map = {
             "reflex_conjugation": "conjugation",
             "reflex_qna": "fluency",
@@ -230,11 +229,6 @@ async def generate_custom_exercise(
             "keigo_context": "politeness",
             "keigo_doctor": "politeness",
             "keigo_naturalness": "politeness",
-            "pitch_minimal_pair": "pitch_accent",
-            "mora_length": "pitch_accent",
-            "vowel_devoicing": "pitch_accent",
-            "pitch_contour": "pitch_accent",
-            "pitch_recognition": "pitch_accent",
             "situational_roleplay": "naturalness",
             "situational_scenario": "conversation",
             "speech_monologue": "fluency",
@@ -415,10 +409,9 @@ async def submit_exercise(
         logger.warning(f"[Learning Submit] speech delegation fallback: {e}")
 
     session_svc = ExerciseSessionService(db)
-    # Build reflex/keigo/pitch/situational metrics dict for evaluator (alias)
+    # Build reflex/keigo/situational metrics dict for evaluator (alias)
     reflex_metrics = None
     keigo_metrics = None
-    pitch_metrics = None
     situational_metrics = None
     aizuchi_metrics = None
     builder_metrics = None
@@ -427,8 +420,6 @@ async def submit_exercise(
         reflex_metrics = payload.reflex_metrics.model_dump()
     if payload.keigo_metrics:
         keigo_metrics = payload.keigo_metrics.model_dump()
-    if payload.pitch_metrics:
-        pitch_metrics = payload.pitch_metrics.model_dump()
     if payload.situational_metrics:
         situational_metrics = payload.situational_metrics.model_dump()
     if payload.aizuchi_metrics:
@@ -437,7 +428,7 @@ async def submit_exercise(
         builder_metrics = payload.builder_metrics.model_dump()
     if payload.interpret_metrics:
         interpret_metrics = payload.interpret_metrics.model_dump()
-    elif payload.reflex_metrics is None and payload.keigo_metrics is None and payload.pitch_metrics is None and payload.situational_metrics is None and payload.aizuchi_metrics is None and payload.builder_metrics is None and payload.interpret_metrics is None and any(v is not None for v in [payload.reaction_latency_ms, payload.timer_limit_ms, payload.timed_out, payload.pitch_confidence, payload.audio_quality]):
+    elif payload.reflex_metrics is None and payload.keigo_metrics is None and payload.situational_metrics is None and payload.aizuchi_metrics is None and payload.builder_metrics is None and payload.interpret_metrics is None and any(v is not None for v in [payload.reaction_latency_ms, payload.timer_limit_ms, payload.timed_out, payload.audio_quality]):
         reflex_metrics = {
             "reaction_latency_ms": payload.reaction_latency_ms,
             "semantic_latency_ms": payload.semantic_latency_ms,
@@ -445,10 +436,9 @@ async def submit_exercise(
             "timed_out": payload.timed_out or False,
             "late_response": payload.late_response or False,
             "speech_confidence": payload.speech_confidence,
-            "pitch_confidence": payload.pitch_confidence,
             "audio_quality": payload.audio_quality,
         }
-        keigo_metrics = pitch_metrics = situational_metrics = reflex_metrics
+        keigo_metrics = situational_metrics = reflex_metrics
     if aizuchi_metrics is None and reflex_metrics is not None:
         aizuchi_metrics = reflex_metrics
     if builder_metrics is None and reflex_metrics is not None:
@@ -466,7 +456,6 @@ async def submit_exercise(
         plan_item_id=payload.plan_item_id,
         reflex_metrics=reflex_metrics,
         keigo_metrics=keigo_metrics,
-        pitch_metrics=pitch_metrics,
         situational_metrics=situational_metrics,
         aizuchi_metrics=aizuchi_metrics,
         builder_metrics=builder_metrics,
@@ -477,7 +466,6 @@ async def submit_exercise(
         timed_out=payload.timed_out,
         late_response=payload.late_response,
         speech_confidence=payload.speech_confidence,
-        pitch_confidence=payload.pitch_confidence,
         audio_quality=payload.audio_quality,
     )
     return result

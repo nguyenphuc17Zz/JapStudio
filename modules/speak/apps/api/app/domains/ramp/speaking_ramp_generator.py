@@ -62,9 +62,13 @@ class SpeakingRampGenerator:
         #    enrich the task spec
         try:
             enriched = await self._enrich_for_type(inp, topic_spec)
+            if inp.force_ai:
+                enriched.source = "ai"
             return enriched
         except Exception as e:
             logger.warning(f"[SpeakingRampGenerator] Enrichment failed: {e}. Using base topic spec.")
+            if inp.force_ai:
+                topic_spec.source = "ai"
             return topic_spec
 
     async def _enrich_for_type(
@@ -166,13 +170,21 @@ class SpeakingRampGenerator:
                 task=AITask.RAMP_PROMPT_GENERATION,
                 system_instruction=sys_p,
                 temperature=0.7,
-                max_output_tokens=250,
+                max_output_tokens=800,
                 response_format=ResponseFormat(type=ResponseFormatType.JSON_OBJECT),
             )
             resp = await self.ai_router.generate(req)
             data = json.loads(resp.text)
             base.template_sentence = data.get("template_sentence")
             base.substitution_variable = data.get("substitution_variable")
+            if data.get("vocab_items"):
+                base.scaffold.vocab_items = data.get("vocab_items")
+            if data.get("answer_angles"):
+                base.scaffold.answer_angles = data.get("answer_angles")
+            if data.get("sentence_frames"):
+                base.scaffold.sentence_frames = data.get("sentence_frames")
+            if data.get("sample_answers"):
+                base.scaffold.sample_answers = data.get("sample_answers")
         except Exception:
             # Deterministic fallback
             base.template_sentence = "週末は家でゆっくり過ごします。"

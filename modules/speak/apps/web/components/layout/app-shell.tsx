@@ -17,7 +17,6 @@ import {
   Tv,
   Zap,
   Crown,
-  Music,
   Compass,
   Ear,
   Blocks,
@@ -34,7 +33,6 @@ const MOBILE_NAV = [
   { href: "/builder", label: "Xây câu", ja: "文立て", icon: Blocks },
   { href: "/interpret", label: "Việt-Nhật", ja: "通訳", icon: Languages },
   { href: "/keigo", label: "Kính ngữ", ja: "敬語", icon: Crown },
-  { href: "/pitch", label: "Cao độ", ja: "高低", icon: Music },
   { href: "/situations", label: "Tình huống", ja: "場面", icon: Compass },
   { href: "/shadowing", label: "Shadowing", ja: "シャドーイング", icon: Tv },
   { href: "/settings", label: "Cài đặt", ja: "設定", icon: Settings },
@@ -91,7 +89,6 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
     { label: "Xây câu", href: "/builder", desc: "文立てビルダー — Nối từ thành câu dài N1" },
     { label: "Việt-Nhật", href: "/interpret", desc: "越日通訳 — Phiên dịch Việt→Nhật giữ đủ ý" },
     { label: "Kính ngữ", href: "/keigo", desc: "敬語・タメ口特訓 — Keigo 7 kiểu, Uchi/Soto" },
-    { label: "Cao độ", href: "/pitch", desc: "高低アクセント — Pitch & Mora Lab 5 kiểu" },
     { label: "Tình huống", href: "/situations", desc: "場面ロールプレイ — Scenario Sprint" },
     { label: "Shadowing YouTube", href: "/shadowing", desc: "Luyện theo video" },
     { label: "Cài đặt", href: "/settings", desc: "AI, giọng nói, giao diện" },
@@ -228,7 +225,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             pathname?.startsWith("/builder") ||
             pathname?.startsWith("/interpret") ||
             pathname?.startsWith("/keigo") ||
-            pathname?.startsWith("/pitch") ||
             pathname?.startsWith("/situations");
 
           return (

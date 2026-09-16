@@ -29,6 +29,7 @@ export function useRamp() {
   const [summary, setSummary] = useState<RampSessionSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRegeneratingAI, setIsRegeneratingAI] = useState(false);
   const [stage, setStage] = useState(0);
   const [supportLevel, setSupportLevel] = useState(3);
   const [usedHint, setUsedHint] = useState(false);
@@ -75,7 +76,7 @@ export function useRamp() {
   );
 
   const loadNextExercise = useCallback(
-    async (isRetry = false, forceFollowup = false, explicitSessionId?: string) => {
+    async (isRetry = false, forceFollowup = false, explicitSessionId?: string, forceAi = false) => {
       const activeSessionId = explicitSessionId || sessionRef.current?.id || session?.id;
       if (!activeSessionId) {
         console.warn("loadNextExercise: No active session ID found.");
@@ -89,6 +90,7 @@ export function useRamp() {
         const ex = await rampApi.generateNextExercise(activeSessionId, {
           is_retry: isRetry,
           force_followup: forceFollowup,
+          force_ai: forceAi,
         });
         currentExerciseRef.current = ex;
         setCurrentExercise(ex);
@@ -100,6 +102,33 @@ export function useRamp() {
         return null;
       } finally {
         setIsLoading(false);
+      }
+    },
+    [session]
+  );
+
+  const regenerateWithAI = useCallback(
+    async () => {
+      const activeSessionId = sessionRef.current?.id || session?.id;
+      if (!activeSessionId) return null;
+      setIsRegeneratingAI(true);
+      setError(null);
+      try {
+        const ex = await rampApi.generateNextExercise(activeSessionId, {
+          force_ai: true,
+        });
+        currentExerciseRef.current = ex;
+        setCurrentExercise(ex);
+        setSubmitResult(null);
+        setUsedHint(false);
+        setPhase("prompting");
+        latencyStartRef.current = performance.now();
+        return ex;
+      } catch (e: any) {
+        setError(e?.message || "Không thể sinh bài tập AI mới");
+        return null;
+      } finally {
+        setIsRegeneratingAI(false);
       }
     },
     [session]
@@ -199,12 +228,14 @@ export function useRamp() {
     summary,
     error,
     isLoading,
+    isRegeneratingAI,
     stage,
     supportLevel,
     usedHint,
     // Actions
     startSession,
     loadNextExercise,
+    regenerateWithAI,
     submitAttempt,
     revealHint,
     fetchProgress,

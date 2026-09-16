@@ -63,19 +63,17 @@ class ExerciseSessionService:
         plan_item_id: str | None = None,
         reflex_metrics: dict[str, Any] | None = None,
         keigo_metrics: dict[str, Any] | None = None,
-        pitch_metrics: dict[str, Any] | None = None,
         situational_metrics: dict[str, Any] | None = None,
         aizuchi_metrics: dict[str, Any] | None = None,
         builder_metrics: dict[str, Any] | None = None,
         interpret_metrics: dict[str, Any] | None = None,
-        # Flattened reflex/keigo/pitch/situational timing (alternative to reflex_metrics)
+        # Flattened reflex/keigo/situational timing (alternative to reflex_metrics)
         reaction_latency_ms: float | None = None,
         semantic_latency_ms: float | None = None,
         timer_limit_ms: int | None = None,
         timed_out: bool | None = None,
         late_response: bool | None = None,
         speech_confidence: float | None = None,
-        pitch_confidence: float | None = None,
         audio_quality: float | None = None,
     ) -> ExerciseResult:
         """
@@ -103,7 +101,7 @@ class ExerciseSessionService:
         if not attempt:
             attempt = await self.start_exercise(exercise_id, user_id)
 
-        # Build normalized reflex/keigo/pitch/situational/aizuchi metrics dict from either nested or flattened inputs (alias)
+        # Build normalized reflex/keigo/situational/aizuchi metrics dict from either nested or flattened inputs (alias)
         _reflex_metrics: dict[str, Any] = {}
         if interpret_metrics:
             _reflex_metrics.update(interpret_metrics)
@@ -113,8 +111,6 @@ class ExerciseSessionService:
             _reflex_metrics.update(aizuchi_metrics)
         if situational_metrics:
             _reflex_metrics.update(situational_metrics)
-        if pitch_metrics:
-            _reflex_metrics.update(pitch_metrics)
         if keigo_metrics:
             _reflex_metrics.update(keigo_metrics)
         if reflex_metrics:
@@ -132,8 +128,6 @@ class ExerciseSessionService:
             _reflex_metrics["late_response"] = bool(late_response)
         if speech_confidence is not None:
             _reflex_metrics["speech_confidence"] = speech_confidence
-        if pitch_confidence is not None:
-            _reflex_metrics["pitch_confidence"] = pitch_confidence
         if audio_quality is not None:
             _reflex_metrics["audio_quality"] = audio_quality
         if user_transcript:
@@ -156,7 +150,6 @@ class ExerciseSessionService:
             used_hint=used_hint,
             reflex_metrics=_reflex_metrics,
             keigo_metrics=_reflex_metrics,
-            pitch_metrics=_reflex_metrics,
             situational_metrics=_reflex_metrics,
             aizuchi_metrics=_reflex_metrics,
             builder_metrics=_reflex_metrics,
@@ -189,15 +182,12 @@ class ExerciseSessionService:
         attempt.target_usage = result.target_usage
         attempt.feedback = result.feedback
         attempt.metrics_json = result.metrics
-        # Merge reflex/keigo/pitch/situational timing into metrics if present (already in result.metrics.*)
+        # Merge reflex/keigo/situational timing into metrics if present (already in result.metrics.*)
         if _has_metrics and _reflex_metrics is not None:
             if attempt.metrics_json is None:
                 attempt.metrics_json = {}
             if exercise.exercise_type.startswith("keigo"):
                 attempt.metrics_json.setdefault("keigo", _reflex_metrics)
-                attempt.metrics_json.setdefault("reflex", _reflex_metrics)
-            elif exercise.exercise_type.startswith("pitch") or exercise.exercise_type in ("mora_length", "vowel_devoicing", "pitch_contour", "pitch_recognition"):
-                attempt.metrics_json.setdefault("pitch", _reflex_metrics)
                 attempt.metrics_json.setdefault("reflex", _reflex_metrics)
             elif exercise.exercise_type.startswith("situational"):
                 attempt.metrics_json.setdefault("situational", _reflex_metrics)

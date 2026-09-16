@@ -76,12 +76,9 @@ async def get_frequency_vocabulary(
     Returns authentic Japanese high-frequency vocabulary based on BCCWJ & Spoken Japanese Corpus.
     Supports filtering by communicative category, frequency tier (1, 2, 3), JLPT level, and keyword.
     """
-    from app.domains.vocabulary.frequency_service import get_frequency_vocabulary_service
     from app.domains.vocabulary.bccwj_frequency_pool import (
         get_all_frequency_words,
         search_frequency_words,
-        get_words_by_category,
-        get_words_by_tier,
         CATEGORY_WORDS_MAP,
     )
 

@@ -1,56 +1,43 @@
 "use client";
 
 import React from "react";
-import { Sparkles, Database, Box } from "lucide-react";
+import { Sparkles, Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface ExerciseSourceBadgeProps {
-  source?: "ai" | "smart_cache_pool" | "template_fallback" | string;
+  source?: "ai" | "smart_cache_pool" | "gemini_ai" | "sqlite" | "bank" | string;
   isFallback?: boolean;
   className?: string;
 }
 
-export function ExerciseSourceBadge({ source, isFallback, className }: ExerciseSourceBadgeProps) {
-  if (source === "smart_cache_pool") {
-    return (
-      <span
-        title="Bài tập được lấy từ Ngân hàng Database thông minh"
-        className={cn(
-          "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/25 select-none transition-all animate-in fade-in duration-200",
-          className
-        )}
-      >
-        <Database className="h-2.5 w-2.5 shrink-0 text-cyan-600 dark:text-cyan-400" />
-        <span>Ngân hàng DB</span>
-      </span>
-    );
-  }
+export function ExerciseSourceBadge({ source, className }: ExerciseSourceBadgeProps) {
+  const isFromDB = source === "smart_cache_pool" || source === "sqlite" || source === "database" || source === "bank";
 
-  if (source === "template_fallback") {
+  if (isFromDB) {
     return (
       <span
-        title="Bài tập từ bộ mẫu dự phòng an toàn (khi AI và Database đều trống)"
+        title="Nội dung được lấy từ Cơ sở Dữ liệu SQLite (Kho bài tập đã lưu)"
         className={cn(
-          "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25 select-none transition-all animate-in fade-in duration-200",
+          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 shadow-2xs select-none transition-all animate-in fade-in duration-200",
           className
         )}
       >
-        <Box className="h-2.5 w-2.5 shrink-0 text-amber-600 dark:text-amber-400" />
-        <span>Mẫu dự phòng</span>
+        <Database className="h-3 w-3 shrink-0 text-cyan-500 animate-pulse" />
+        <span>💾 Từ Kho SQLite</span>
       </span>
     );
   }
 
   return (
     <span
-      title="Bài tập được sinh trực tiếp bằng AI"
+      title="Nội dung được AI (Gemini) sinh trực tiếp theo thời gian thực"
       className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 select-none transition-all animate-in fade-in duration-200",
+        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 shadow-2xs select-none transition-all animate-in fade-in duration-200",
         className
       )}
     >
-      <Sparkles className="h-2.5 w-2.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-      <span>AI Realtime</span>
+      <Sparkles className="h-3 w-3 shrink-0 text-emerald-500 animate-spin-slow" />
+      <span>✨ AI Vừa Tạo</span>
     </span>
   );
 }

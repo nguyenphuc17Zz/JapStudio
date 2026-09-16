@@ -5,12 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { ZenLoadingState } from "@/components/ui/zen-loading-state";
-import { Mic, Clock, Play, Square, Trophy, Settings2, Zap, BookOpen, BarChart3, Lightbulb, AlertCircle, Sparkles, HelpCircle, Keyboard, Send, FileText } from "lucide-react";
+import { Mic, Clock, Play, Square, Trophy, Settings2, Zap, BookOpen, BarChart3, Lightbulb, AlertCircle, Sparkles, HelpCircle, Keyboard, Send, FileText, X, RotateCcw, CheckCircle2, ArrowRight } from "lucide-react";
 import { useMonologue } from "@/hooks/use-monologue";
 import { useAudioRecorder } from "@/features/audio/hooks/useAudioRecorder";
 import { convertToWavBlob } from "@/features/audio";
 import { toast } from "@/lib/toast";
 import { useSystemKeybindings, formatKeyDisplay } from "@/hooks/use-system-keybindings";
+import { cn } from "@/lib/utils";
 
 const DURATIONS = [30,45,60,90,120,180,300];
 const PREP_OPTIONS = [0,15,30,60];
@@ -425,331 +426,514 @@ export default function SpeechPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-4 animate-in fade-in">
-      
-      <div className="flex items-center justify-between">
-        <Badge variant="sakura">{speechConfig?.genre ?? mono.exercise.exercise_type} • {speechConfig?.target_duration_sec ?? durationSec}s • Prep {speechConfig?.prep_duration_sec ?? prepSec}s • Lvl {speechConfig?.support_level} {SUPPORT_LABEL[speechConfig?.support_level ?? 0]}</Badge>
-        <Button variant="ghost" size="sm" onClick={()=>{
-          if (rafRef.current) cancelAnimationFrame(rafRef.current);
-          if (recRafRef.current) cancelAnimationFrame(recRafRef.current);
-          recorder.releaseMicrophone();
-          mono.reset();
-        }}>Exit</Button>
+    <div className="w-full max-w-[1760px] mx-auto h-full min-h-[calc(100vh-4rem)] flex flex-col justify-between px-2 sm:px-4 py-2 gap-2 overflow-hidden select-none animate-in fade-in duration-200">
+      {/* 1. Top Capsule HUD */}
+      <div className="shrink-0 flex items-center justify-between gap-2.5 p-2 px-3 sm:px-4 rounded-2xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 shadow-md backdrop-blur-2xl">
+        {/* Left: Exit + Mode Pill */}
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => {
+              if (rafRef.current) cancelAnimationFrame(rafRef.current);
+              if (recRafRef.current) cancelAnimationFrame(recRafRef.current);
+              recorder.releaseMicrophone();
+              mono.reset();
+            }}
+            className="h-8 w-8 rounded-full border border-border/80 dark:border-white/15 bg-background/80 hover:bg-destructive/15 hover:border-destructive/40 hover:text-destructive flex items-center justify-center text-muted-foreground transition-all shrink-0 cursor-pointer shadow-xs"
+            title="Thoát về sảnh phát biểu (Esc)"
+          >
+            <X className="h-4 w-4" />
+          </button>
+
+          <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-amber-500 via-primary to-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-md shadow-primary/25 shrink-0 ring-1 ring-primary/30">
+            弁
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h2 className="text-xs sm:text-sm font-extrabold text-foreground tracking-tight truncate">
+                1分間スピーチ
+              </h2>
+              <Badge variant="outline" size="sm" className="text-[9px] font-mono border-primary/30 bg-primary/10 text-primary py-0 px-1.5 font-bold uppercase">
+                {speechConfig?.genre ?? mono.exercise?.exercise_type ?? "Monologue"}
+              </Badge>
+              <Badge variant="outline" size="sm" className="text-[9px] font-mono border-amber-500/30 bg-amber-500/10 text-amber-500 py-0 px-1.5 font-medium">
+                Lvl {speechConfig?.support_level ?? 0} {SUPPORT_LABEL[speechConfig?.support_level ?? 0]}
+              </Badge>
+            </div>
+            <p className="text-[10px] text-muted-foreground font-medium truncate max-w-[200px] sm:max-w-xs">
+              Mục tiêu {speechConfig?.target_duration_sec ?? durationSec}s • Chuẩn bị {speechConfig?.prep_duration_sec ?? prepSec}s
+            </p>
+          </div>
+        </div>
+
+        {/* Middle: Target Duration & Phase Indicator */}
+        <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-muted/40 dark:bg-black/30 border border-border/60 dark:border-white/10 text-xs">
+          <span className="font-bold text-muted-foreground">Mục tiêu:</span>
+          <span className="font-mono font-black text-foreground">{speechConfig?.target_duration_sec ?? durationSec} giây phát biểu</span>
+          <span className="text-muted-foreground">•</span>
+          <span className="font-medium text-primary">
+            {phase === "preparing"
+              ? `⏳ Đang chuẩn bị: ${prepLeft.toFixed(1)}s`
+              : phase === "ready"
+              ? "🟢 Sẵn sàng nói"
+              : phase === "recording"
+              ? `🔴 Đang thu âm (${Math.floor(recElapsed)}s / ${durationSec}s)`
+              : phase === "processing"
+              ? "⚡ AI Đang phân tích"
+              : "🏆 Báo cáo kết quả"}
+          </span>
+        </div>
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={handleGenerate}
+            className="h-8 px-3 rounded-full text-xs font-bold gap-1.5 bg-gradient-to-r from-blue-600 via-primary to-indigo-600 text-white shadow-sm hover:opacity-95 cursor-pointer flex items-center transition-all"
+            title="Sinh chủ đề phát biểu mới [Enter]"
+          >
+            <Zap className="h-3.5 w-3.5" />
+            <span>Đề mới [Enter]</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowHelp(true)}
+            className="h-8 w-8 rounded-full border border-border/80 dark:border-white/15 bg-background/80 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-all shrink-0 cursor-pointer shadow-xs"
+            title="Phím tắt hệ thống"
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 space-y-3">
-          <Card className="p-4 space-y-3">
-            <div className="text-xs font-bold text-muted-foreground">Topic (VI+JP hybrid)</div>
-            <div className="text-lg font-black">{speechConfig?.topic || mono.exercise.title}</div>
-            <div className="text-sm text-foreground border-l-2 border-primary pl-3 py-1 bg-primary/5 rounded-r">指示: {speechConfig?.instruction || mono.exercise.instructions}</div>
-            <div className="flex flex-wrap gap-1.5">
-              {(speechConfig?.constraints || mono.exercise.constraints || []).map((c:string)=>(
-                <Badge key={c} variant="jlpt" size="sm">{c}</Badge>
-              ))}
-            </div>
-            {(speechConfig?.support?.keywords?.length>0 || speechConfig?.support?.guided_questions?.length>0 || speechConfig?.support?.outline?.length>0) && (
-              <div className="pt-2 border-t">
-                {!showHint ? (
-                  <Button variant="outline" size="sm" onClick={()=>{setShowHint(true); setUsedHint(true);}}>Show hint (counts as assisted)</Button>
-                ) : (
-                  <div className="space-y-1 text-sm">
-                    {speechConfig.support.keywords?.length>0 && <div><span className="font-bold">Keywords:</span> {speechConfig.support.keywords.join(" • ")}</div>}
-                    {speechConfig.support.guided_questions?.length>0 && <div><span className="font-bold">Guided:</span> {speechConfig.support.guided_questions.join(" | ")}</div>}
-                    {speechConfig.support.outline?.length>0 && <div><span className="font-bold">Outline:</span> {speechConfig.support.outline.join(" → ")}</div>}
+      {/* 2. Cockpit Studio Grid */}
+      <div className="flex-1 min-h-0 w-full overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full min-h-0">
+          {/* COLUMN 1: Topic, Constraints & Outline Deck (5 cols ~ 41.7%) */}
+          <div className="lg:col-span-5 h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-xl">
+            <div className="absolute top-[-40px] left-1/2 -translate-x-1/2 w-56 h-36 bg-primary/10 blur-3xl rounded-full pointer-events-none -z-10" />
+
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
+              {/* Topic Header */}
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5 text-primary" />
+                  <span>Chủ đề phát biểu (Topic)</span>
+                </div>
+                <h3 className="text-base sm:text-lg font-black font-jp text-foreground leading-snug">
+                  {speechConfig?.topic || mono.exercise?.title}
+                </h3>
+                <div className="text-xs text-foreground/90 border-l-2 border-primary pl-3 py-1.5 bg-primary/5 rounded-r leading-relaxed">
+                  <span className="font-bold">Chỉ thị:</span> {speechConfig?.instruction || mono.exercise?.instructions}
+                </div>
+              </div>
+
+              {/* Constraints */}
+              {(speechConfig?.constraints || mono.exercise?.constraints || []).length > 0 && (
+                <div className="space-y-1">
+                  <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    Ràng buộc ngữ cảnh:
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(speechConfig?.constraints || mono.exercise?.constraints || []).map((c: string) => (
+                      <Badge key={c} variant="jlpt" size="sm" className="rounded-full text-[10px] py-0 px-2 font-mono">
+                        {c}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Outline Hint */}
+              <div className="p-3 rounded-2xl bg-muted/40 dark:bg-black/30 border border-border/60 dark:border-white/10 space-y-1.5 text-xs">
+                <div className="font-bold text-primary flex items-center gap-1.5">
+                  <Lightbulb className="h-3.5 w-3.5" />
+                  <span>Cấu trúc dàn ý chuẩn:</span>
+                </div>
+                <div className="text-[11px] font-mono text-muted-foreground leading-relaxed">
+                  {speechConfig?.outline_hint?.join(" → ") || "Quan điểm (Position) → Lý do (Reason) → Ví dụ (Example) → Kết luận (Conclusion)"}
+                </div>
+
+                {/* Support Hints Toggle */}
+                {(speechConfig?.support?.keywords?.length > 0 || speechConfig?.support?.guided_questions?.length > 0 || speechConfig?.support?.outline?.length > 0) && (
+                  <div className="pt-2 border-t border-border/60 dark:border-white/10 space-y-1.5">
+                    {!showHint ? (
+                      <button
+                        type="button"
+                        onClick={() => { setShowHint(true); setUsedHint(true); }}
+                        className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        <span>Xem gợi ý chi tiết (Keywords / Câu hỏi dẫn dắt)</span>
+                      </button>
+                    ) : (
+                      <div className="space-y-1.5 text-[11px] bg-card p-2.5 rounded-xl border border-primary/20">
+                        {speechConfig.support.keywords?.length > 0 && (
+                          <div><span className="font-bold text-primary">Từ khóa:</span> {speechConfig.support.keywords.join(" • ")}</div>
+                        )}
+                        {speechConfig.support.guided_questions?.length > 0 && (
+                          <div><span className="font-bold text-amber-500">Gợi ý câu hỏi:</span> {speechConfig.support.guided_questions.join(" | ")}</div>
+                        )}
+                        {speechConfig.support.outline?.length > 0 && (
+                          <div><span className="font-bold text-emerald-500">Dàn ý cụ thể:</span> {speechConfig.support.outline.join(" → ")}</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </Card>
+            </div>
 
-          {phase==="preparing" && (
-            <Card className="p-6 text-center space-y-3">
-              <div className="text-sm font-bold flex items-center justify-center gap-2"><Clock className="h-4 w-4"/> Preparing</div>
-              <div className="text-4xl font-black tabular-nums">{prepLeft.toFixed(1)}s</div>
-              <div className="h-2 rounded-full bg-muted overflow-hidden"><div className="h-full bg-primary transition-all" style={{width:`${Math.max(0, (1 - prepLeft/(speechConfig?.prep_duration_sec||prepSec))*100)}%`}}/></div>
-              <div className="text-xs text-muted-foreground">Throttled 100ms + visibility handling. Organize: {speechConfig?.outline_hint?.join(" → ") || "Position → Reason → Example → Conclusion"}</div>
-              <Button variant="akane" size="sm" onClick={()=>{
-                if (rafRef.current) cancelAnimationFrame(rafRef.current);
-                mono.setPhase("ready");
-              }}>Skip to Ready</Button>
-            </Card>
-          )}
-          {phase==="ready" && (
-            <Card className="p-6 space-y-4">
-              <div className="text-center space-y-1">
-                <div className="text-base font-bold text-foreground">Sẵn sàng phát biểu — Mục tiêu: {speechConfig?.target_duration_sec ?? durationSec} giây</div>
-                <div className="text-xs text-muted-foreground">Chọn thu âm qua micro hoặc soạn bài nói trực tiếp nếu đang ở văn phòng / hỏng mic.</div>
-              </div>
-
-              {/* Action Choices */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-                {/* Option 1: Mic Recording */}
-                <div className="p-4 rounded-2xl border border-primary/30 bg-primary/5 washi-texture flex flex-col justify-between space-y-3 text-center">
-                  <div className="space-y-1">
-                    <div className="font-extrabold text-sm flex items-center justify-center gap-1.5 text-primary">
-                      <Mic className="h-4 w-4" />
-                      <span>Thu Âm Bằng Micro</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Bật micro và nói tự do liên tục theo dàn ý gợi ý</p>
-                  </div>
-                  <Button variant="akane" onClick={startRecording} className="w-full font-bold gap-1.5 shadow-xs">
-                    <Mic className="h-4 w-4" />
-                    <span>Bắt đầu thu âm ({speechConfig?.target_duration_sec ?? durationSec}s)</span>
-                  </Button>
-                </div>
-
-                {/* Option 2: Direct Text / Office Mode */}
-                <div className="p-4 rounded-2xl border border-border bg-card washi-texture flex flex-col justify-between space-y-3">
-                  <div className="space-y-1">
-                    <div className="font-extrabold text-sm flex items-center gap-1.5 text-foreground">
-                      <Keyboard className="h-4 w-4 text-emerald-500" />
-                      <span>Soạn Bài Nói (Chế Độ Văn Phòng)</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">Gõ bài phát biểu tiếng Nhật của bạn vào ô bên dưới</p>
-                  </div>
-                  <div className="text-[11px] font-mono text-muted-foreground">
-                    {transcriptInput.trim().length} chữ ~ {Math.round(transcriptInput.trim().length / 5.0)}s
-                  </div>
-                </div>
-              </div>
-
-              {/* Full Text Input Editor Box */}
-              <div className="p-4 rounded-2xl border border-border bg-muted/20 space-y-2.5">
+            {/* Bottom Countdown (if preparing) */}
+            {phase === "preparing" && (
+              <div className="pt-3 border-t border-border/60 dark:border-white/10 space-y-2 shrink-0">
                 <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="flex items-center gap-1 text-foreground">
-                    <FileText className="h-3.5 w-3.5 text-primary" />
-                    <span>Nội dung bài nói tiếng Nhật:</span>
+                  <span className="flex items-center gap-1.5 text-primary">
+                    <Clock className="h-3.5 w-3.5 animate-spin" />
+                    <span>Thời gian chuẩn bị:</span>
                   </span>
-                  <span className="text-[11px] font-normal text-muted-foreground">
-                    Tối thiểu 15 chữ
+                  <span className="text-lg font-black font-mono tabular-nums text-foreground">
+                    {prepLeft.toFixed(1)}s
                   </span>
                 </div>
-                <textarea
-                  value={transcriptInput}
-                  onChange={(e) => setTranscriptInput(e.target.value)}
-                  placeholder="Gõ bài phát biểu tiếng Nhật của bạn tại đây... (Ví dụ: 私の意見としては、テレワークには多くのメリットがあると思います。なぜなら通勤時間がなくなり、効率的に仕事ができるからです。)"
-                  rows={4}
-                  className="w-full rounded-xl border bg-background p-3 text-sm font-jp leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-[11px] text-muted-foreground">
-                    🏢 Không cần mic — AI chấm đầy đủ cấu trúc & từ vựng
-                  </span>
+                <div className="h-2 rounded-full bg-muted overflow-hidden relative">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary to-amber-400 transition-all duration-100 rounded-full"
+                    style={{ width: `${Math.max(0, (1 - prepLeft / (speechConfig?.prep_duration_sec || prepSec)) * 100)}%` }}
+                  />
+                </div>
+                <Button
+                  variant="akane"
+                  size="sm"
+                  className="w-full font-bold text-xs h-9 rounded-xl shadow-xs cursor-pointer"
+                  onClick={() => {
+                    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+                    mono.setPhase("ready");
+                  }}
+                >
+                  <span>Bỏ qua chuẩn bị & Bắt đầu phát biểu [Space]</span>
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* COLUMN 2: Interaction / Mic / Result Deck (7 cols ~ 58.3%) */}
+          <div className="lg:col-span-7 h-full min-h-0 flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-y-auto shadow-xl scrollbar-thin">
+            {/* STAGE A: READY */}
+            {phase === "ready" && (
+              <div className="h-full flex flex-col justify-between space-y-4">
+                <div className="text-center space-y-1">
+                  <div className="text-sm sm:text-base font-extrabold text-foreground">
+                    Sẵn sàng phát biểu — Mục tiêu: {speechConfig?.target_duration_sec ?? durationSec} giây
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Chọn thu âm qua micro để rèn luyện nhịp điệu hoặc soạn bài nói trực tiếp nếu đang ở văn phòng.
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Option 1: Mic Recording */}
+                  <div className="p-4 rounded-2xl border border-primary/30 bg-primary/5 flex flex-col justify-between space-y-3 text-center">
+                    <div className="space-y-1">
+                      <div className="font-extrabold text-sm flex items-center justify-center gap-1.5 text-primary">
+                        <Mic className="h-4 w-4" />
+                        <span>Thu Âm Bằng Micro</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Bật micro và nói tự do liên tục theo dàn ý gợi ý</p>
+                    </div>
+                    <Button variant="akane" onClick={startRecording} className="w-full font-bold gap-1.5 shadow-md h-10 rounded-xl cursor-pointer">
+                      <Mic className="h-4 w-4" />
+                      <span>Bắt đầu thu âm [Space]</span>
+                    </Button>
+                  </div>
+
+                  {/* Option 2: Direct Text / Office Mode */}
+                  <div className="p-4 rounded-2xl border border-border/80 dark:border-white/10 bg-card flex flex-col justify-between space-y-3">
+                    <div className="space-y-1">
+                      <div className="font-extrabold text-sm flex items-center gap-1.5 text-foreground">
+                        <Keyboard className="h-4 w-4 text-emerald-500" />
+                        <span>Soạn Bài Nói (Chế Độ Văn Phòng)</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Gõ bài phát biểu tiếng Nhật của bạn vào ô bên dưới</p>
+                    </div>
+                    <div className="text-[11px] font-mono text-muted-foreground">
+                      {transcriptInput.trim().length} chữ ~ {Math.round(transcriptInput.trim().length / 5.0)}s
+                    </div>
+                  </div>
+                </div>
+
+                {/* Full Text Input Editor Box */}
+                <div className="p-4 rounded-2xl border border-border/80 dark:border-white/10 bg-muted/20 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="flex items-center gap-1 text-foreground">
+                      <FileText className="h-3.5 w-3.5 text-primary" />
+                      <span>Nội dung bài nói tiếng Nhật:</span>
+                    </span>
+                    <span className="text-[11px] font-normal text-muted-foreground">
+                      Tối thiểu 15 chữ
+                    </span>
+                  </div>
+                  <textarea
+                    value={transcriptInput}
+                    onChange={(e) => setTranscriptInput(e.target.value)}
+                    placeholder="Gõ bài phát biểu tiếng Nhật của bạn tại đây... (Ví dụ: 私の意見としては、テレワークには多くのメリットがあると思います。なぜなら通勤時間がなくなり、効率的に仕事ができるからです。)"
+                    rows={4}
+                    className="w-full rounded-xl border bg-background p-3 text-sm font-jp leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-[11px] text-muted-foreground">
+                      🏢 Không cần mic — AI chấm đầy đủ cấu trúc & từ vựng
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="akane"
+                        size="sm"
+                        onClick={handleDirectTextSubmit}
+                        disabled={transcriptInput.trim().length < 15}
+                        className="font-bold gap-1.5 shadow-xs cursor-pointer rounded-xl h-8 px-3"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                        <span>Nộp bài viết</span>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STAGE B: RECORDING */}
+            {phase === "recording" && (
+              <div className="h-full flex flex-col justify-between space-y-4">
+                <div className="p-4 rounded-2xl bg-destructive/10 border border-destructive/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold flex items-center gap-2 text-destructive">
+                      <span className="h-2.5 w-2.5 rounded-full bg-destructive animate-pulse" />
+                      <span>Đang thu âm bài nói liên tục...</span>
+                    </span>
+                    <span className="text-sm font-mono font-black tabular-nums text-foreground">
+                      {Math.floor(recElapsed)}s / {durationSec}s (còn {recLeft.toFixed(1)}s)
+                    </span>
+                  </div>
+                  <div className="h-2.5 rounded-full bg-muted overflow-hidden relative">
+                    <div
+                      className="h-full bg-gradient-to-r from-destructive to-amber-500 transition-all rounded-full"
+                      style={{ width: `${Math.min(100, (recElapsed / durationSec) * 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 flex-1 rounded-xl bg-muted/60 overflow-hidden flex items-end gap-px p-1">
+                      <div className="flex-1 bg-primary rounded-xs transition-all" style={{ height: `${Math.round(recorder.volumeLevel * 100)}%` }} />
+                    </div>
+                    <span className="text-xs font-mono text-muted-foreground font-bold">{Math.round(recorder.volumeLevel * 100)}%</span>
+                  </div>
                   <div className="flex gap-2">
-                    <Button
-                      variant="akane"
-                      size="sm"
-                      onClick={handleDirectTextSubmit}
-                      disabled={transcriptInput.trim().length < 15}
-                      className="font-bold gap-1.5 shadow-xs"
-                    >
-                      <Send className="h-3.5 w-3.5" />
-                      <span>Nộp bài viết</span>
+                    <Button variant="akane" onClick={handleStopRecording} className="h-10 rounded-xl font-bold gap-2 shadow-md cursor-pointer flex-1">
+                      <Square className="h-4 w-4" />
+                      <span>Dừng & Nộp bài ghi âm [Space]</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+                      onClick={async () => {
+                        if (recRafRef.current) { cancelAnimationFrame(recRafRef.current); recRafRef.current = null; }
+                        await recorder.stopRecording();
                         recorder.releaseMicrophone();
-                        mono.reset();
+                        mono.setPhase("ready");
                       }}
+                      className="rounded-xl h-10 px-3 cursor-pointer"
                     >
                       Hủy
                     </Button>
                   </div>
                 </div>
-              </div>
-            </Card>
-          )}
-          {phase==="recording" && (
-            <Card className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"/> Đang thu âm bài nói liên tục</span>
-                <span className="text-sm font-mono font-bold tabular-nums">{Math.floor(recElapsed)}s / {durationSec}s (còn {recLeft.toFixed(1)}s)</span>
-              </div>
-              <div className="h-2 rounded-full bg-muted overflow-hidden"><div className="h-full bg-red-500 transition-all" style={{width:`${Math.min(100, recElapsed/durationSec*100)}%`}}/></div>
-              <div className="flex items-center gap-2">
-                <div className="h-8 flex-1 rounded bg-muted overflow-hidden flex items-end gap-px p-1">
-                  <div className="flex-1 bg-primary" style={{height:`${Math.round(recorder.volumeLevel*100)}%`}}/>
+
+                {/* Supplementary Text Input */}
+                <div className="p-3 rounded-2xl border border-border/80 dark:border-white/10 space-y-2 bg-muted/20">
+                  <div className="text-xs font-bold text-foreground">Hoặc gõ văn bản bài nói (Chế độ Văn phòng):</div>
+                  <textarea
+                    value={transcriptInput}
+                    onChange={(e) => setTranscriptInput(e.target.value)}
+                    placeholder="Gõ bài nói của bạn tại đây nếu không thể nói to..."
+                    className="w-full rounded-xl border bg-background p-2.5 text-sm font-jp min-h-[72px]"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDirectTextSubmit}
+                    disabled={!transcriptInput.trim()}
+                    className="font-bold text-xs gap-1.5 rounded-xl h-8 cursor-pointer"
+                  >
+                    <Send className="h-3 w-3" />
+                    <span>Nộp bài gõ</span>
+                  </Button>
                 </div>
-                <span className="text-xs text-muted-foreground">{Math.round(recorder.volumeLevel*100)}%</span>
               </div>
-              <div className="flex gap-2">
-                <Button variant="akane" onClick={handleStopRecording}><Square className="h-4 w-4"/> Dừng & Nộp bài ghi âm</Button>
-                <Button variant="ghost" size="sm" onClick={async()=>{
-                  if (recRafRef.current) { cancelAnimationFrame(recRafRef.current); recRafRef.current=null; }
-                  await recorder.stopRecording();
-                  recorder.releaseMicrophone();
-                  mono.setPhase("ready");
-                }}>Hủy thu âm</Button>
-              </div>
-              <div className="pt-3 border-t space-y-2">
-                <div className="text-xs font-bold">Hoặc gõ văn bản bài nói (Chế độ Văn phòng):</div>
-                <textarea
-                  value={transcriptInput}
-                  onChange={(e) => setTranscriptInput(e.target.value)}
-                  placeholder="Gõ bài nói của bạn tại đây nếu không thể nói to..."
-                  className="w-full rounded-xl border bg-background p-2.5 text-sm font-jp min-h-[72px]"
+            )}
+
+            {/* STAGE C: PROCESSING */}
+            {phase === "processing" && (
+              <div className="h-full flex items-center justify-center">
+                <ZenLoadingState
+                  variant="ai"
+                  title="AI Đang Phân Tích Bài Nói & Nâng Cấp Tự Nhiên..."
+                  ja="スピーチ評価・AI添削中..."
+                  description="Đang xử lý nhận diện giọng nói (STT), phân tích tính lưu loát, cấu trúc luận điểm và đề xuất nâng cấp câu văn chuẩn bản xứ..."
                 />
+              </div>
+            )}
+
+            {/* STAGE D: RETRY */}
+            {phase === "retry" && (
+              <div className="h-full flex flex-col items-center justify-center p-6 text-center space-y-3 border border-amber-500/30 bg-amber-500/10 rounded-2xl">
+                <div className="text-sm font-bold text-amber-600 dark:text-amber-400 flex items-center justify-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  <span>Chất lượng âm thanh chưa đạt chuẩn</span>
+                </div>
+                <p className="text-xs text-foreground/80 max-w-md">
+                  {mono.result?.feedback || mono.error || "Vui lòng kiểm tra lại mic hoặc thu âm lại ở nơi yên tĩnh hơn."}
+                </p>
                 <Button
-                  variant="outline"
+                  variant="akane"
                   size="sm"
-                  onClick={handleDirectTextSubmit}
-                  disabled={!transcriptInput.trim()}
-                  className="font-bold text-xs gap-1.5"
+                  onClick={() => {
+                    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+                    if (recRafRef.current) cancelAnimationFrame(recRafRef.current);
+                    mono.setPhase("ready");
+                  }}
+                  className="rounded-xl font-bold h-9 px-4 cursor-pointer"
                 >
-                  <Send className="h-3 w-3" />
-                  <span>Nộp bài gõ</span>
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                  <span>Thu âm lại</span>
                 </Button>
               </div>
-            </Card>
-          )}
-          {phase==="processing" && (
-            <ZenLoadingState
-              variant="ai"
-              title="AI Đang Phân Tích Bài Nói & Nâng Cấp Tự Nhiên..."
-              ja="スピーチ評価・AI添削中..."
-              description="Đang xử lý nhận diện giọng nói (STT), phân tích tính lưu loát, cấu trúc luận điểm và đề xuất nâng cấp câu văn chuẩn bản xứ..."
-            />
-          )}
-          {phase==="retry" && (
-            <Card className="p-6 text-center space-y-2 border-amber-500/30 bg-amber-500/10 dark:bg-amber-950/25">
-              <div className="text-sm font-bold text-amber-700 dark:text-amber-300 flex items-center justify-center gap-2">
-                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400"/> Audio quality low — RETRY_AUDIO
-              </div>
-              <div className="text-xs text-foreground/80 dark:text-foreground/80 font-medium">{mono.result?.feedback || mono.error || "Please retry in quieter environment"}</div>
-              <Button variant="akane" size="sm" onClick={()=>{
-                if (rafRef.current) cancelAnimationFrame(rafRef.current);
-                if (recRafRef.current) cancelAnimationFrame(recRafRef.current);
-                mono.setPhase("ready");
-              }}>Retry Recording</Button>
-            </Card>
-          )}
-          {phase==="result" && result && (
-            <Card className="p-4 space-y-4">
-              <div className="flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-600"/> <span className="font-black">Result — Overall {result.score ?? result.assessment?.overall}</span><Badge variant={result.success?"kintsugi":"jlpt"}>{result.success?"Success":"Needs work"}</Badge><span className="ml-auto text-xs text-muted-foreground">conf {(result.confidence ?? result.assessment?.confidence ?? 0).toFixed(2)} {result.assessment?.ai_error? "• AI unavailable":""}</span></div>
-              <div className="grid grid-cols-4 gap-2 text-center">
-                {[
-                  ["Fluency", result.assessment?.fluency],
-                  ["Coherence", result.assessment?.coherence],
-                  ["Grammar", result.assessment?.grammar],
-                  ["Vocab", result.assessment?.vocabulary],
-                  ["Natural", result.assessment?.naturalness],
-                  ["Relevance", result.assessment?.relevance],
-                  ["Discourse", result.assessment?.discourse],
-                  ["Pronunc.", result.assessment?.pronunciation],
-                ].map(([k,v])=>(
-                  <div key={k as string} className="rounded-xl border bg-muted/40 p-2">
-                    <div className="text-[11px] font-bold text-muted-foreground">{k}</div>
-                    <div className={`text-lg font-black ${v==null?"text-muted-foreground text-sm":""}`}>{v ?? "—"}</div>
-                  </div>
-                ))}
-              </div>
-              {result.assessment?.ai_error && <div className="text-xs text-amber-700 dark:text-amber-300 border border-amber-500/30 bg-amber-500/10 dark:bg-amber-950/30 rounded-lg p-2.5 font-medium">AI unavailable: {result.assessment.ai_error} — showing deterministic only (Low confidence)</div>}
-              <div className="text-sm border-l-2 border-primary pl-3 bg-primary/5 rounded-r p-2">Feedback: {result.feedback}</div>
-              {result.evidence?.length>0 && <div className="text-xs text-muted-foreground">Evidence: {result.evidence.join(" • ")}</div>}
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="rounded-lg border p-2"><div className="font-bold">Duration</div><div>{((result.metrics?.speech_duration_ms ?? result.metrics?.speech_metrics_core?.speech_duration_ms ?? 0)/1000).toFixed(1)}s / {(speechConfig?.target_duration_sec ?? durationSec)}s</div></div>
-                <div className="rounded-lg border p-2"><div className="font-bold">Rate</div><div>{result.metrics?.speech_metrics_core?.chars_per_min ?? result.metrics?.chars_per_min ?? "—"} chars/min {result.metrics?.speech_metrics_core?.mora_per_sec ? `${result.metrics.speech_metrics_core.mora_per_sec} mora/sec` : ""}</div></div>
-                <div className="rounded-lg border p-2"><div className="font-bold">Fillers</div><div>{result.metrics?.filler_summary?.filler_count ?? result.metrics?.speech_metrics_core?.filler_count ?? 0} ({result.metrics?.filler_summary?.filler_per_min ?? 0}/min)</div></div>
-                <div className="rounded-lg border p-2"><div className="font-bold">Pauses</div><div>{result.metrics?.pause_summary?.total ?? 0} (long {result.metrics?.pause_summary?.long ?? 0} stall {result.metrics?.pause_summary?.stall ?? 0})</div></div>
-                <div className="rounded-lg border p-2"><div className="font-bold">Self-repair</div><div>{result.metrics?.repair_summary?.repair_count ?? 0} abandoned {result.metrics?.repair_summary?.abandoned_count ?? 0}</div></div>
-                <div className="rounded-lg border p-2"><div className="font-bold">Ideas</div><div>{result.metrics?.idea_density?.unique_ideas ?? 0} ideas, {result.metrics?.idea_density?.examples ?? 0} examples</div></div>
-              </div>
-              {result.metrics?.fluency_timeline?.length>0 && (
-                <div className="space-y-1">
-                  <div className="text-xs font-bold flex items-center gap-1"><BarChart3 className="h-3.5 w-3.5"/> Fluency Timeline</div>
-                  <div className="text-xs font-mono space-y-0.5 bg-muted/40 rounded-lg p-2">
-                    {result.metrics.fluency_timeline.map((t:any,i:number)=>(
-                      <div key={i}>{t.display} — pauses:{t.pauses} fillers:{t.fillers}</div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {result.metrics?.filler_timeline?.length>0 && (
-                <div className="space-y-1">
-                  <div className="text-xs font-bold">Filler Timeline</div>
-                  <div className="flex flex-wrap gap-1">
-                    {result.metrics.filler_timeline.map((f:any,i:number)=>(
-                      <Badge key={i} variant="jlpt" size="sm">{(f.at_ms/1000).toFixed(1)}s {f.token}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {result.metrics?.discourse && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="rounded-lg border p-2">
-                    <div className="font-bold">Discourse Map</div>
-                    <div className="mt-1 font-mono">{result.metrics.discourse.detected_structure?.join(" → ") || "—"}</div>
-                    <div className="text-muted-foreground">Missing: {result.metrics.discourse.missing_elements?.join(", ")||"none"} • Connectors: {JSON.stringify(result.metrics.discourse.connector_counts)}</div>
-                  </div>
-                  <div className="rounded-lg border p-2">
-                    <div className="font-bold">Lexical Profile {result.metrics.lexical_profile?.provider_available===false?"(provider unavailable — Low confidence)":""}</div>
-                    <div>TTR {result.metrics.lexical_profile?.type_token_ratio} MATTR {result.metrics.lexical_profile?.mattr} • {JSON.stringify(result.metrics.lexical_profile?.frequency_profile)}</div>
-                    {result.metrics.lexical_profile?.repetition_clusters?.length>0 && <div className="text-amber-700 dark:text-amber-300 font-medium">Repetition: {result.metrics.lexical_profile.repetition_clusters.map((c:any)=>`${c.lemma||c.phrase}×${c.count}`).join(", ")}</div>}
-                    {result.metrics.lexical_profile?.provider_available===false && <div className="text-[11px] text-muted-foreground">Vocab hidden — provider unavailable</div>}
-                  </div>
-                </div>
-              )}
-              {result.upgrade && (
-                <div className="space-y-2 border-t pt-3">
-                  <div className="text-xs font-bold flex items-center gap-1"><Lightbulb className="h-3.5 w-3.5"/> Native Upgrade</div>
-                  <div className="rounded-lg border p-2 bg-muted/20">
-                    <div className="text-xs font-bold">Minimal correction</div><div className="text-sm">{result.upgrade.minimal_correction || "—"}</div>
-                  </div>
-                  <div className="rounded-lg border p-2 bg-primary/5">
-                    <div className="text-xs font-bold">Native version</div><div className="text-sm">{result.upgrade.native_version || "—"}</div>
-                  </div>
-                  {result.upgrade.professional_version && <div className="rounded-lg border p-2"><div className="text-xs font-bold">Professional</div><div className="text-sm">{result.upgrade.professional_version}</div></div>}
-                  {result.upgrade_explanations?.length>0 && (
-                    <div className="space-y-1">
-                      {result.upgrade_explanations.map((ex:any,i:number)=>(
-                        <div key={i} className="text-xs rounded border p-2"><span className="font-bold">Original:</span> {ex.original} → <span className="font-bold">Correction:</span> {ex.correction} <span className="text-muted-foreground">({ex.why})</span> → <span className="font-bold">Alt:</span> {ex.alternative}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Button variant="akane" onClick={handleGenerate}>Next Challenge</Button>
-                <Button variant="outline" onClick={()=>{
-                  if (rafRef.current) cancelAnimationFrame(rafRef.current);
-                  if (recRafRef.current) cancelAnimationFrame(recRafRef.current);
-                  recorder.releaseMicrophone();
-                  mono.reset();
-                }}>Back to Generate</Button>
-              </div>
-            </Card>
-          )}
-        </div>
+            )}
 
-        <div className="space-y-3">
-          <Card className="p-3">
-            <div className="text-xs font-bold flex items-center gap-1.5"><Settings2 className="h-3.5 w-3.5"/> Speech Status</div>
-            <div className="mt-2 text-xs space-y-1">
-              <div>Phase: <Badge size="sm" variant="jlpt">{phase}</Badge></div>
-              <div>Target: {speechConfig?.target_duration_sec ?? durationSec}s • Prep: {speechConfig?.prep_duration_sec ?? prepSec}s</div>
-              <div>Genre: {speechConfig?.genre ?? "auto"} • Domain: {speechConfig?.topic_domain ?? "auto"}</div>
-              <div>Support: {SUPPORT_LABEL[speechConfig?.support_level ?? 0] ?? "auto"}</div>
-            </div>
-          </Card>
-          <Card className="p-3">
-            <div className="text-xs font-bold">Audio</div>
-            <div className="text-[11px] text-muted-foreground">Volume {Math.round(recorder.volumeLevel*100)}% • {recorder.state}</div>
-            <div className="h-2 rounded-full bg-muted overflow-hidden mt-1"><div className="h-full bg-primary" style={{width:`${Math.round(recorder.volumeLevel*100)}%`}}/></div>
-            {recorder.error && <div className="text-xs text-red-600 mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3"/>{recorder.error}</div>}
-          </Card>
-          <Card className="p-3 bg-muted/30">
-            <div className="text-xs font-bold">Transcript (supplementary)</div>
-            <textarea value={transcriptInput} onChange={e=>setTranscriptInput(e.target.value)} placeholder="STT transcript will appear here; you may edit supplementally but audio is required" className="mt-1 w-full rounded-lg border bg-background p-2 text-sm min-h-[90px]"/>
-            <div className="text-[11px] text-muted-foreground mt-1">Audio required — text-only submit is rejected with error toast.</div>
-          </Card>
+            {/* STAGE E: RESULT DECK */}
+            {phase === "result" && result && (
+              <div className="space-y-4">
+                {/* Result Header */}
+                <div className="flex items-center justify-between pb-2 border-b border-border/60 dark:border-white/10">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-amber-500" />
+                    <span className="font-black text-base text-foreground">
+                      Điểm tổng quan: {result.score ?? result.assessment?.overall ?? 85}/100
+                    </span>
+                    <Badge variant={result.success ? "kintsugi" : "jlpt"}>
+                      {result.success ? "Thành Công" : "Cần Rèn Thêm"}
+                    </Badge>
+                  </div>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    Độ tin cậy {(result.confidence ?? result.assessment?.confidence ?? 0).toFixed(2)}
+                  </span>
+                </div>
+
+                {/* 8 Criterion Grid */}
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  {[
+                    ["Lưu loát", result.assessment?.fluency],
+                    ["Mạch lạc", result.assessment?.coherence],
+                    ["Ngữ pháp", result.assessment?.grammar],
+                    ["Từ vựng", result.assessment?.vocabulary],
+                    ["Tự nhiên", result.assessment?.naturalness],
+                    ["Đúng đề", result.assessment?.relevance],
+                    ["Cấu trúc", result.assessment?.discourse],
+                    ["Phát âm", result.assessment?.pronunciation],
+                  ].map(([k, v]) => (
+                    <div key={k as string} className="rounded-xl border border-border/60 dark:border-white/10 bg-muted/40 p-2">
+                      <div className="text-[10px] font-bold text-muted-foreground">{k}</div>
+                      <div className={`text-base font-black ${v == null ? "text-muted-foreground text-sm" : "text-foreground"}`}>
+                        {v ?? "—"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Feedback Box */}
+                <div className="text-xs sm:text-sm border-l-2 border-primary pl-3 bg-primary/5 rounded-r p-2.5 leading-relaxed">
+                  <span className="font-bold text-primary">Nhận xét AI:</span> {result.feedback}
+                </div>
+
+                {/* Core Speech Metrics */}
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="rounded-xl border border-border/60 dark:border-white/10 p-2 bg-card">
+                    <div className="font-bold text-muted-foreground text-[10px]">Thời lượng</div>
+                    <div className="font-mono font-bold mt-0.5">{((result.metrics?.speech_duration_ms ?? result.metrics?.speech_metrics_core?.speech_duration_ms ?? 0) / 1000).toFixed(1)}s / {speechConfig?.target_duration_sec ?? durationSec}s</div>
+                  </div>
+                  <div className="rounded-xl border border-border/60 dark:border-white/10 p-2 bg-card">
+                    <div className="font-bold text-muted-foreground text-[10px]">Tốc độ nói</div>
+                    <div className="font-mono font-bold mt-0.5">{result.metrics?.speech_metrics_core?.chars_per_min ?? result.metrics?.chars_per_min ?? "—"} chữ/phút</div>
+                  </div>
+                  <div className="rounded-xl border border-border/60 dark:border-white/10 p-2 bg-card">
+                    <div className="font-bold text-muted-foreground text-[10px]">Từ đệm (Fillers)</div>
+                    <div className="font-mono font-bold mt-0.5">{result.metrics?.filler_summary?.filler_count ?? result.metrics?.speech_metrics_core?.filler_count ?? 0} từ</div>
+                  </div>
+                </div>
+
+                {/* Native Upgrade Section */}
+                {result.upgrade && (
+                  <div className="space-y-2 border-t border-border/60 dark:border-white/10 pt-3">
+                    <div className="text-xs font-bold flex items-center gap-1.5 text-primary">
+                      <Lightbulb className="h-3.5 w-3.5" />
+                      <span>Nâng cấp diễn đạt chuẩn bản xứ (Native Upgrade):</span>
+                    </div>
+                    {result.upgrade.minimal_correction && (
+                      <div className="rounded-xl border border-border/60 dark:border-white/10 p-2.5 bg-muted/20 text-xs">
+                        <div className="font-bold text-muted-foreground text-[10px]">Sửa tối thiểu:</div>
+                        <div className="font-jp text-foreground mt-0.5">{result.upgrade.minimal_correction}</div>
+                      </div>
+                    )}
+                    {result.upgrade.native_version && (
+                      <div className="rounded-xl border border-primary/30 p-2.5 bg-primary/5 text-xs">
+                        <div className="font-bold text-primary text-[10px]">Bản nói tự nhiên bản xứ:</div>
+                        <div className="font-jp text-foreground font-bold mt-0.5">{result.upgrade.native_version}</div>
+                      </div>
+                    )}
+                    {result.upgrade.professional_version && (
+                      <div className="rounded-xl border border-indigo-500/30 p-2.5 bg-indigo-500/5 text-xs">
+                        <div className="font-bold text-indigo-500 text-[10px]">Bản thuyết trình công sở chuyên nghiệp:</div>
+                        <div className="font-jp text-foreground font-bold mt-0.5">{result.upgrade.professional_version}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Bottom Result Action Buttons */}
+                <div className="flex items-center gap-2 pt-2 border-t border-border/60 dark:border-white/10">
+                  <Button variant="akane" onClick={handleGenerate} className="rounded-xl font-bold text-xs h-9 px-4 gap-1.5 cursor-pointer shadow-sm">
+                    <Zap className="h-3.5 w-3.5" />
+                    <span>Đề bài tiếp theo [Enter]</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => mono.setPhase("ready")}
+                    className="rounded-xl font-bold text-xs h-9 px-3 gap-1.5 cursor-pointer"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    <span>Làm lại đề này [R]</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+                      if (recRafRef.current) cancelAnimationFrame(recRafRef.current);
+                      recorder.releaseMicrophone();
+                      mono.reset();
+                    }}
+                    className="text-muted-foreground hover:text-foreground text-xs h-9 px-3 cursor-pointer ml-auto"
+                  >
+                    Về sảnh
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <Modal isOpen={showHelp} onClose={()=>setShowHelp(false)} title="Phím tắt Monologue Lab">
+      <Modal isOpen={showHelp} onClose={() => setShowHelp(false)} title="Phím tắt Monologue Lab">
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="rounded-lg border bg-muted/40 p-2.5"><div className="font-bold font-mono text-primary">{formatKeyDisplay(keybindings.speakingMic)}</div><div className="text-muted-foreground">Bắt đầu / Dừng ghi âm</div></div>
           <div className="rounded-lg border bg-muted/40 p-2.5"><div className="font-bold font-mono text-primary">{formatKeyDisplay(keybindings.drillSubmitOrNext)}</div><div className="text-muted-foreground">Tạo đề / Bỏ qua chuẩn bị / Tiếp tục</div></div>

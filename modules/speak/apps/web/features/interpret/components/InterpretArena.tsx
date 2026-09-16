@@ -44,24 +44,13 @@ interface InterpretResultCardProps {
 export function InterpretResultCard({ result, exercise, isPending = false, liveTranscript = "", onNext, autoNext, onCancelAutoNext, onRetry }: InterpretResultCardProps) {
   const [replaying, setReplaying] = useState(false);
   const [isTTSPlaying, setIsTTSPlaying] = useState(false);
-  const [isRevealed, setIsRevealed] = useState(false);
   const handlePlayModelTTSRef = useRef<(() => void) | null>(null);
-
-  useEffect(() => {
-    setIsRevealed(false);
-  }, [exercise?.id]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       if (tag === "input" || tag === "textarea") return;
-      if (e.key.toLowerCase() === "v" && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        if (isPending) {
-          e.preventDefault();
-          soundFX.playFurin();
-          setIsRevealed((p) => !p);
-        }
-      } else if (e.key.toLowerCase() === "a" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (e.key.toLowerCase() === "a" && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         e.stopImmediatePropagation();
         handlePlayModelTTSRef.current?.();
@@ -69,9 +58,8 @@ export function InterpretResultCard({ result, exercise, isPending = false, liveT
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isPending]);
+  }, []);
 
-  const isBlurred = isPending && !isRevealed;
   const isPerfect = result?.isPerfect ?? false;
   const isTimeout = result?.timedOut ?? false;
   const isCorrect = result?.success ?? false;
@@ -164,11 +152,6 @@ export function InterpretResultCard({ result, exercise, isPending = false, liveT
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {isPending && (
-            <button type="button" onClick={() => setIsRevealed((v) => !v)} className="text-[10px] px-2 py-0.5 rounded-full bg-card/80 border border-primary/30 text-primary font-bold hover:bg-primary/10 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-2xs" title={isRevealed ? "Làm mờ (V)" : "Xem trước (V)"}>
-              {isRevealed ? <><EyeOff className="h-3 w-3 shrink-0" /><span>Mờ</span><kbd className="text-[9px] font-mono px-1 rounded bg-primary/10 border border-primary/25 font-bold">V</kbd></> : <><Eye className="h-3 w-3 shrink-0" /><span>Xem</span><kbd className="text-[9px] font-mono px-1 rounded bg-primary/10 border border-primary/25 font-bold">V</kbd></>}
-            </button>
-          )}
           {ttsText && (
             <button type="button" onClick={handlePlayModelTTS} className="p-1 px-2 rounded-lg bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 shrink-0 shadow-2xs transition-colors flex items-center gap-1 text-[11px] font-bold cursor-pointer whitespace-nowrap" title="Nghe mẫu (A)">
               <Volume2 className={cn("h-3 w-3 shrink-0", isTTSPlaying && "animate-bounce")} />
@@ -199,19 +182,12 @@ export function InterpretResultCard({ result, exercise, isPending = false, liveT
         </div>
       </div>
 
-      <div className={cn("flex-1 min-h-0 flex flex-col justify-between rounded-2xl bg-primary/[0.02] dark:bg-primary/[0.04] border border-primary/20 p-2.5 sm:p-3 relative overflow-hidden transition-all duration-300", isBlurred && "filter blur-sm select-none pointer-events-none")}>
+      <div className="flex-1 min-h-0 flex flex-col justify-between rounded-2xl bg-primary/[0.02] dark:bg-primary/[0.04] border border-primary/20 p-2.5 sm:p-3 relative overflow-hidden transition-all duration-300">
         <div className="flex flex-col justify-center h-full gap-1.5 text-center">
           <p className="text-[11px] font-black uppercase tracking-wider text-primary flex items-center justify-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-amber-500" /><span>Đáp án mẫu bản xứ:</span></p>
           <div className="text-base sm:text-lg font-black font-jp text-primary tracking-tight leading-snug"><UniversalFurigana text={canonicalDisplay} fontSize="lg" /></div>
           <div className="mt-1 flex justify-center"><FidelityMap items={isPending ? ((exercise as any)?.expectedJaKeywords?.map((k: string) => ({ idea_vi: k, hit: false, evidence: "" })) || []) : result?.fidelityMap || []} /></div>
         </div>
-        {isBlurred && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-card/60 backdrop-blur-[2px] rounded-2xl">
-            <Button size="sm" variant="outline" className="rounded-xl gap-1.5 font-bold border-primary/30 text-primary" onClick={() => setIsRevealed(true)}>
-              <Eye className="h-4 w-4" /> Xem trước đáp án <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 border border-primary/25 font-bold">V</kbd>
-            </Button>
-          </div>
-        )}
       </div>
 
       {!isPending && result?.assessment && (

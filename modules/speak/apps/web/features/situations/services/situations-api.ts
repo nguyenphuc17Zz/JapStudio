@@ -72,6 +72,8 @@ export interface SituationsExercise {
   quickStarters?: string[];
   culturalTip?: string;
   extra_metadata?: any;
+  generationSource?: "ai" | "smart_cache_pool" | "template_fallback";
+  isFallback?: boolean;
 }
 
 export interface SituationsResult {
@@ -104,6 +106,7 @@ export interface GenerateSituationsParams {
   difficulty?: string;
   duration?: number;
   mode?: string;
+  force_ai?: boolean;
 }
 
 export async function generateExercise(params: GenerateSituationsParams = {}): Promise<SituationsExercise> {
@@ -116,6 +119,7 @@ export async function generateExercise(params: GenerateSituationsParams = {}): P
     difficulty,
     duration = 5,
     mode = "standard",
+    force_ai,
   } = params;
 
   const q = new URLSearchParams({
@@ -128,6 +132,7 @@ export async function generateExercise(params: GenerateSituationsParams = {}): P
   if (customTopic && customTopic.trim()) q.set("custom_topic", customTopic.trim());
   if (timerLimitMs !== undefined) q.set("timer_limit_ms", String(timerLimitMs));
   if (difficulty) q.set("difficulty", difficulty);
+  if (force_ai) q.set("force_ai", "true");
 
   const res = await apiClient.post<any>(`/situations/exercises/generate?${q.toString()}`);
   const sc = res.extra_metadata?.situational_config || {};
@@ -146,6 +151,8 @@ export async function generateExercise(params: GenerateSituationsParams = {}): P
     hints: sData.hints || sc.hints,
     quickStarters: sData.quick_starters || sc.quick_starters || [],
     culturalTip: sData.cultural_tip || sc.cultural_tip || "",
+    generationSource: res.extra_metadata?.generation_source || sc.generation_source || "ai",
+    isFallback: !!(res.extra_metadata?.is_fallback ?? sc.is_fallback),
   };
 }
 

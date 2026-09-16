@@ -58,7 +58,6 @@ class BuilderEvaluator:
         eff_relation = cfg.get("relation", "casual_friend")
         eff_expected = list(cfg.get("connectors", []))
         eff_blind = bool(blind or cfg.get("blind", False))
-        eff_scaffold = scaffold_level or cfg.get("scaffold", "keyword_hint")
         eff_timer = timer_limit_ms or cfg.get("timer_limit_ms")
         eff_timed_out = bool(timed_out or (not raw))
 

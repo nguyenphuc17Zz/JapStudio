@@ -4,4 +4,5 @@ export * from "./components/SituationsPromptCard";
 export * from "./components/SituationsResultCard";
 export * from "./components/SituationsSessionSummary";
 export * from "./components/SituationsCheatsheetModal";
+export * from "./components/SituationsCoachPanel";
 export * from "./hooks/useSituationsSession";

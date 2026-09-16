@@ -27,9 +27,6 @@ class AITask(str, Enum):
     REFLEX_EVALUATION = "reflex_evaluation"
     KEIGO_GENERATION = "keigo_generation"
     KEIGO_EVALUATION = "keigo_evaluation"
-    PITCH_GENERATION = "pitch_generation"
-    PITCH_EVALUATION = "pitch_evaluation"
-    PITCH_FEEDBACK = "pitch_feedback"
     SITUATIONAL_GENERATION = "situational_generation"
     SITUATIONAL_EVALUATION = "situational_evaluation"
     AIZUCHI_GENERATION = "aizuchi_generation"
@@ -69,6 +66,9 @@ class AITask(str, Enum):
     RAMP_HINT_GENERATION = "ramp_hint_generation"
     RAMP_SEMANTIC_EVALUATION = "ramp_semantic_evaluation"
     RAMP_FEEDBACK = "ramp_feedback"
+    # Survival Speaking & Recovery (Mode 6 / Survival Gym)
+    SURVIVAL_GENERATION = "survival_generation"
+    SURVIVAL_EVALUATION = "survival_evaluation"
 
 
 class AIMessageRole(str, Enum):

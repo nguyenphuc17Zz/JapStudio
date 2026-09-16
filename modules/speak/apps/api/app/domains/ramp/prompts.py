@@ -38,11 +38,15 @@ class RampPrompts:
         desired_duration_sec: int,
     ) -> tuple[str, str]:
         system = (
-            "You are a Japanese speaking coach designing practice topics for output rehabilitation.\n"
+            "You are an inspiring Japanese speaking coach designing practice topics for oral output training.\n"
             "RULES:\n"
-            "1. Generate ONE topic appropriate for the stage and measured speaking level (NOT JLPT level).\n"
-            "2. Stage 0–4: use very simple, concrete daily situations. Stage 5+: richer context.\n"
-            "3. Do NOT generate grammar explanations or vocabulary lists — only the topic+prompt.\n"
+            "1. Generate ONE topic appropriate for the stage and measured speaking level.\n"
+            "2. Stage 0–4: concrete daily situations. Stage 5+: richer context and opinions.\n"
+            "3. Provide rich, supportive coaching cues to help the learner speak confidently:\n"
+            "   - 'vocab_items': 3-4 useful vocabulary items with reading and Vietnamese meaning.\n"
+            "   - 'answer_angles': 2-3 distinct perspectives or angles for answering.\n"
+            "   - 'sentence_frames': 2-3 sentence starter/connector patterns.\n"
+            "   - 'sample_answers': 2 natural sample answers (casual and polite).\n"
             "4. Return ONLY valid JSON with this schema:\n"
             "{\n"
             '  "topic": "Short topic label in Japanese",\n'
@@ -50,9 +54,22 @@ class RampPrompts:
             '  "prompt_jp": "The Japanese instruction/question shown to the learner",\n'
             '  "prompt_vi": "Vietnamese explanation of what to do",\n'
             '  "domain": "one of: personal/daily_life/work/study/opinions/preferences/experiences/hypothetical/comparison/problem_solving",\n'
-            '  "keywords": ["keyword1", "keyword2"],\n'
+            '  "keywords": ["keyword1", "keyword2", "keyword3"],\n'
+            '  "vocab_items": [\n'
+            '    {"word": "単語", "reading": "たんご", "meaning_vi": "Nghĩa tiếng Việt"}\n'
+            '  ],\n'
+            '  "answer_angles": [\n'
+            '    {"title": "Góc nhìn 1", "hint_jp": "Gợi ý tiếng Nhật", "hint_vi": "Gợi ý hướng nói tiếng Việt"}\n'
+            '  ],\n'
+            '  "sentence_frames": [\n'
+            '    {"pattern": "〜と思います", "meaning_vi": "Tôi nghĩ là..."}\n'
+            '  ],\n'
+            '  "sample_answers": [\n'
+            '    {"style": "casual", "style_label": "Thường ngày", "japanese": "Natural Japanese", "vietnamese": "Dịch Việt"},\n'
+            '    {"style": "polite", "style_label": "Lịch sự", "japanese": "Polite Japanese", "vietnamese": "Dịch Việt"}\n'
+            '  ],\n'
             '  "sentence_starter": "Optional Japanese sentence starter (or null)",\n'
-            '  "example_response": "Optional example answer (only for support_level>=6, else null)",\n'
+            '  "example_response": "Model response in Japanese",\n'
             '  "difficulty_note": "Why this difficulty is appropriate"\n'
             "}"
         )
@@ -60,12 +77,12 @@ class RampPrompts:
             f"Generate a Mode 6 speaking ramp topic.\n"
             f"Stage: {stage}/10 (0=echo repetition, 10=60s independent speech)\n"
             f"JLPT Level: {learner_level} | Measured speaking level: {measured_speaking_level}\n"
-            f"Support level: {support_level}/7 (0=no support, 7=full translation)\n"
+            f"Support level: {support_level}/7\n"
             f"Topic domain: {topic_domain}\n"
             f"Target duration: {desired_duration_sec}s\n"
             f"Learner interests: {', '.join(interests) if interests else 'general'}\n"
             f"Recent topics to AVOID: {', '.join(topic_history[-5:]) if topic_history else 'none'}\n"
-            f"Generate a fresh, natural topic. The prompt_jp must be in natural Japanese."
+            f"Generate an engaging, natural topic with rich scaffolding."
         )
         return system, user
 
@@ -86,11 +103,15 @@ class RampPrompts:
         is_retry: bool,
     ) -> tuple[str, str]:
         system = (
-            "You are generating a specific speaking ramp exercise prompt in Japanese.\n"
+            "You are generating a specific speaking ramp exercise prompt in Japanese with rich coaching scaffolding.\n"
             "RULES:\n"
             "1. The prompt must be natural Japanese appropriate for the exercise type.\n"
-            "2. Do NOT reveal the expected answer in the prompt.\n"
-            "3. For retry, vary the surface form but test the same skill.\n"
+            "2. For retry, vary the surface form but test the same skill.\n"
+            "3. Provide rich scaffolding so the learner never feels stuck:\n"
+            "   - 'vocab_items': 3-4 useful vocabulary items with reading and Vietnamese meaning.\n"
+            "   - 'answer_angles': 2-3 distinct perspectives or angles for answering.\n"
+            "   - 'sentence_frames': 2-3 sentence starter/connector patterns.\n"
+            "   - 'sample_answers': 2 natural sample answers (casual and polite).\n"
             "4. Return ONLY valid JSON:\n"
             "{\n"
             '  "prompt_jp": "The Japanese prompt/question for the learner",\n'
@@ -99,13 +120,26 @@ class RampPrompts:
             '  "seed_sentence": "For expand exercises: the seed to expand, or null",\n'
             '  "expansion_dimension": "時間/人/場所/理由/detail or null",\n'
             '  "echo_sentence": "For echo exercises: exact sentence to repeat, or null",\n'
-            '  "scaffold_hint_jp": "A hint in Japanese that does NOT give the answer"\n'
+            '  "vocab_items": [\n'
+            '    {"word": "単語", "reading": "たんご", "meaning_vi": "Nghĩa tiếng Việt"}\n'
+            '  ],\n'
+            '  "answer_angles": [\n'
+            '    {"title": "Góc nhìn 1", "hint_jp": "Gợi ý tiếng Nhật", "hint_vi": "Gợi ý hướng nói tiếng Việt"}\n'
+            '  ],\n'
+            '  "sentence_frames": [\n'
+            '    {"pattern": "〜と思います", "meaning_vi": "Tôi nghĩ là..."}\n'
+            '  ],\n'
+            '  "sample_answers": [\n'
+            '    {"style": "casual", "style_label": "Thường ngày", "japanese": "Natural Japanese", "vietnamese": "Dịch Việt"},\n'
+            '    {"style": "polite", "style_label": "Lịch sự", "japanese": "Polite Japanese", "vietnamese": "Dịch Việt"}\n'
+            '  ],\n'
+            '  "scaffold_hint_jp": "A helpful hint in Japanese"\n'
             "}"
         )
         retry_note = " (This is a RETRY — vary surface form, keep same skill)" if is_retry else ""
         prev_note = f"\nPrevious learner response: 「{previous_response}」" if previous_response else ""
         user = (
-            f"Generate a {exercise_type} exercise prompt.{retry_note}\n"
+            f"Generate a {exercise_type} exercise prompt with rich scaffolding.{retry_note}\n"
             f"Topic: {topic}\n"
             f"Stage: {stage}/10 | Support level: {support_level}/7\n"
             f"Learner JLPT: {learner_level}\n"

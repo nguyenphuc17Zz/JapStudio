@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ConversationTurn, CorrectionItem, RecordingState, TurnAnalysis } from "../types";
-import { Volume2, Sparkles, Clock, CheckCircle2, ChevronRight, Mic, Zap } from "lucide-react";
+import { Volume2, Sparkles, Clock, CheckCircle2, ChevronRight, ChevronDown, ChevronUp, Mic, Zap, Copy, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { speakJapaneseText } from "../services/web-speech";
 import { soundFX } from "@/lib/sound-fx";
 import { UniversalFurigana } from "@/components/japanese/UniversalFurigana";
+import { generateSayItBetter } from "../services/discourse-engine";
 
 interface ConversationTranscriptProps {
   turns: ConversationTurn[];
@@ -32,13 +33,21 @@ export function ConversationTranscript({
   onReplayVoice,
 }: ConversationTranscriptProps) {
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [expandedSayItBetterTurnId, setExpandedSayItBetterTurnId] = useState<string | null>(null);
+  const [copiedText, setCopiedText] = useState<string | null>(null);
+
+  const handleCopyText = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(text);
+    setTimeout(() => setCopiedText(null), 2000);
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [turns, state, isUserSpeaking, interimTranscript]);
 
   return (
-    <div className="space-y-3.5 p-4 overflow-y-auto max-h-[520px] flex-1 scrollbar-thin">
+    <div className="space-y-3.5 p-4 overflow-y-auto flex-1 scrollbar-thin">
       {turns.length === 0 && !isUserSpeaking && state === "listening" && (
         <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground space-y-2.5">
           <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xl shadow-lg shadow-primary/10 animate-pulse">
@@ -97,7 +106,7 @@ export function ConversationTranscript({
                   : "glass-card text-foreground border border-white/10 dark:border-white/10 rounded-tl-xs shadow-xl backdrop-blur-2xl"
               }`}
             >
-              <div className="whitespace-pre-wrap font-jp text-xs sm:text-sm leading-relaxed">
+              <div className="whitespace-pre-wrap font-jp text-xs sm:text-sm leading-[2.2]">
                 <UniversalFurigana text={turn.transcript} fontSize="normal" />
               </div>
 
@@ -170,6 +179,109 @@ export function ConversationTranscript({
                 </div>
               )}
 
+              {/* Say It Better Expansion Button & Drawer for User Turns */}
+              {isUser && (
+                <div className="mt-2 pt-1.5 border-t border-border/60">
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundFX.playTaiko();
+                        setExpandedSayItBetterTurnId(
+                          expandedSayItBetterTurnId === turn.id ? null : turn.id
+                        );
+                      }}
+                      className="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-primary hover:text-primary/80 transition-all cursor-pointer"
+                    >
+                      <Sparkles className="h-3 w-3 text-primary animate-pulse" />
+                      <span>✨ Diễn đạt hay hơn (Say It Better)</span>
+                      {expandedSayItBetterTurnId === turn.id ? (
+                        <ChevronUp className="h-3 w-3" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3" />
+                      )}
+                    </button>
+
+                    <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-primary/10 text-primary border border-primary/20">
+                      ✨ AI Realtime
+                    </span>
+                  </div>
+
+                  {expandedSayItBetterTurnId === turn.id && (
+                    <div className="mt-2 space-y-2 p-2.5 rounded-2xl bg-background/80 border border-border/80 backdrop-blur-md animate-in fade-in duration-200">
+                      {(() => {
+                        const sayItBetter = generateSayItBetter(turn.transcript);
+                        const variants = [
+                          {
+                            key: "casual",
+                            badge: "🌿 Thân mật",
+                            badgeColor: "bg-emerald-500/15 border-emerald-500/30 text-emerald-400",
+                            ...sayItBetter.casual,
+                          },
+                          {
+                            key: "polite",
+                            badge: "💼 Công sở",
+                            badgeColor: "bg-blue-500/15 border-blue-500/30 text-blue-400",
+                            ...sayItBetter.polite,
+                          },
+                          {
+                            key: "idiomatic",
+                            badge: "⚡ Khẩu ngữ bản xứ",
+                            badgeColor: "bg-purple-500/15 border-purple-500/30 text-purple-400",
+                            ...sayItBetter.idiomatic,
+                          },
+                        ];
+
+                        return variants.map((v) => (
+                          <div
+                            key={v.key}
+                            className="p-2 rounded-xl bg-card/60 border border-border/60 space-y-1 hover:border-primary/30 transition-all text-left"
+                          >
+                            <div className="flex items-center justify-between gap-1.5">
+                              <span className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded-full border ${v.badgeColor}`}>
+                                {v.badge}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => speakJapaneseText(v.ja, { rate: 0.92 })}
+                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+                                  title="Nghe phát âm mẫu"
+                                >
+                                  <Volume2 className="h-3 w-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyText(v.ja)}
+                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+                                  title="Sao chép câu"
+                                >
+                                  {copiedText === v.ja ? (
+                                    <Check className="h-3 w-3 text-emerald-400" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+
+                            <p className="font-jp text-xs font-semibold text-foreground leading-snug">
+                              {v.ja}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground leading-tight">
+                              {v.vi}
+                            </p>
+                            <p className="text-[9.5px] text-primary/80 italic font-mono">
+                              💡 {v.nuance}
+                            </p>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Coaching Feedback Hint if present in assistant turn */}
               {!isUser && turn.feedback_hint && (
                 <div className="mt-2.5 pt-2 border-t border-primary/20 text-[11px] bg-primary/5 p-2 rounded-lg text-primary space-y-1">
@@ -185,9 +297,10 @@ export function ConversationTranscript({
               {!isUser && (
                 <div className="mt-2 pt-1.5 flex items-center justify-between border-t border-border/60 text-[10px] text-muted-foreground flex-wrap gap-1.5">
                   <div className="flex items-center gap-1.5 font-mono">
-                    <Badge variant="outline" size="sm" className="text-[9px] py-0 px-1.5">
-                      {turn.ai_model || "gemini"}
-                    </Badge>
+                    <span className="text-[9.5px] px-1.5 py-0.2 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold inline-flex items-center gap-1">
+                      <Sparkles className="h-2.5 w-2.5" />
+                      <span>✨ AI Realtime ({turn.ai_model || "gemini"})</span>
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <button

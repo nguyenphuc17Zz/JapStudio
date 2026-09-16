@@ -90,6 +90,7 @@ async def generate_next_exercise(
     payload: dict[str, Any] | None = None,
     is_retry: bool = Query(default=False),
     force_followup: bool = Query(default=False),
+    force_ai: bool = Query(default=False),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -97,6 +98,7 @@ async def generate_next_exercise(
     if payload:
         is_retry = bool(payload.get("is_retry", is_retry))
         force_followup = bool(payload.get("force_followup", force_followup))
+        force_ai = bool(payload.get("force_ai", force_ai))
 
     svc = RampSessionService(db)
     try:
@@ -105,6 +107,7 @@ async def generate_next_exercise(
             user_id=user_id,
             is_retry=is_retry,
             force_followup=force_followup,
+            force_ai=force_ai,
         )
     except ValueError as e:
         raise NotFoundException(str(e))
@@ -134,6 +137,9 @@ async def generate_next_exercise(
             "keywords_for_production": task_spec.keywords_for_production,
             "previous_response": task_spec.previous_response,
             "is_retry": task_spec.is_retry,
+            "source": getattr(task_spec, "source", "bank"),
+            "provider": getattr(task_spec, "provider", None),
+            "model": getattr(task_spec, "model", None),
         },
     }
 

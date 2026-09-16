@@ -30,7 +30,6 @@ class ExerciseEvaluator:
         used_hint: bool = False,
         reflex_metrics: dict[str, Any] | None = None,
         keigo_metrics: dict[str, Any] | None = None,
-        pitch_metrics: dict[str, Any] | None = None,
         situational_metrics: dict[str, Any] | None = None,
         aizuchi_metrics: dict[str, Any] | None = None,
         builder_metrics: dict[str, Any] | None = None,
@@ -51,7 +50,7 @@ class ExerciseEvaluator:
             indep = IndependenceLevel.INDEPENDENT
 
         # Strict Empty Audio / Missing Speech Check (0% score, no fake points)
-        # Check reflex/keigo/pitch/situational/aizuchi timed_out if provided (alias) — merge all
+        # Check reflex/keigo/situational/aizuchi timed_out if provided (alias) — merge all
         _reflex: dict[str, Any] = {}
         if interpret_metrics:
             _reflex.update(interpret_metrics)
@@ -61,8 +60,6 @@ class ExerciseEvaluator:
             _reflex.update(aizuchi_metrics)
         if situational_metrics:
             _reflex.update(situational_metrics)
-        if pitch_metrics:
-            _reflex.update(pitch_metrics)
         if keigo_metrics:
             _reflex.update(keigo_metrics)
         if reflex_metrics:
@@ -153,80 +150,6 @@ class ExerciseEvaluator:
             except Exception as e:
                 logger.warning(f"[ExerciseEvaluator] Keigo branch failed, fallback to generic: {e}")
                 # Fall through to generic
-
-        # Pitch branch: delegate to PitchEvaluator if exercise_type is pitch-related
-        if exercise.exercise_type.startswith("pitch") or exercise.exercise_type in ("mora_length", "vowel_devoicing", "pitch_contour", "pitch_recognition", "pitch_minimal_pair"):
-            try:
-                from app.domains.pitch.evaluator import PitchEvaluator
-
-                pitch_eval = PitchEvaluator(self.db)
-                p_res = await pitch_eval.evaluate(
-                    exercise_type=exercise.exercise_type,
-                    exercise=exercise,
-                    user_transcript=user_transcript,
-                    timer_limit_ms=_reflex.get("timer_limit_ms"),
-                    reaction_latency_ms=_reflex.get("reaction_latency_ms", response_speed_ms),
-                    speech_confidence=_reflex.get("speech_confidence"),
-                    pitch_confidence=_reflex.get("pitch_confidence") or _reflex.get("speech_confidence"),
-                    audio_quality=_reflex.get("audio_quality"),
-                    timed_out=_timed_out,
-                    late_response=_late,
-                    independence=_reflex.get("independence") or ("assisted_hint" if used_hint else "independent"),
-                    audio_samples=None,  # TODO: pass raw audio when available via pitch_metrics
-                )
-                # Map PitchEvaluator result to ExerciseResult
-                _lat = _reflex.get("reaction_latency_ms", response_speed_ms)
-                _pitch_metrics = {
-                    "pattern_found": p_res["success"],
-                    "used_hint": used_hint,
-                    "response_speed_ms": response_speed_ms,
-                    "pitch": _reflex,
-                    "reaction_latency_ms": _lat,
-                    "timer_limit_ms": _reflex.get("timer_limit_ms"),
-                    "timed_out": _timed_out,
-                    "late_response": _late,
-                    "pitch_confidence": _reflex.get("pitch_confidence"),
-                    "audio_quality": _reflex.get("audio_quality"),
-                }
-                # Handle retry audio status
-                if p_res.get("status") == "RETRY_AUDIO":
-                    return ExerciseResult(
-                        exercise_id=exercise.id,
-                        user_id=exercise.user_id,
-                        score=0.0,
-                        success=False,
-                        confidence=0.3,
-                        target_mastery_delta={},
-                        feedback=p_res["feedback"],
-                        evidence=p_res["evidence"],
-                        metrics=_pitch_metrics,
-                        independence=IndependenceLevel.ASSISTED_HINT if used_hint else IndependenceLevel.INDEPENDENT,
-                        response_speed_ms=response_speed_ms,
-                        target_usage="not_attempted",
-                        pronunciation_score=pronunciation_score,
-                        grammar_score=0.0,
-                        naturalness_score=0.0,
-                        attempt_id=attempt.id,
-                    )
-                return ExerciseResult(
-                    exercise_id=exercise.id,
-                    user_id=exercise.user_id,
-                    score=float(p_res["score"]),
-                    success=bool(p_res["success"]),
-                    confidence=float(p_res["assessment"]["overall"]["confidence"] if p_res.get("assessment") and "overall" in p_res["assessment"] else 0.85) if isinstance(p_res.get("assessment"), dict) else 0.85,
-                    target_mastery_delta={},
-                    feedback=p_res["feedback"],
-                    evidence=p_res["evidence"],
-                    metrics={**_pitch_metrics, "pitch_assessment": p_res.get("assessment")},
-                    independence=IndependenceLevel.ASSISTED_HINT if used_hint else IndependenceLevel.INDEPENDENT,
-                    response_speed_ms=response_speed_ms,
-                    target_usage="correct" if p_res["success"] else "incorrect",
-                    grammar_score=float(p_res["assessment"]["accent_pattern"]["score"] if p_res.get("assessment") and "accent_pattern" in p_res["assessment"] else 70),
-                    naturalness_score=float(p_res["assessment"]["contour"]["score"] if p_res.get("assessment") and "contour" in p_res["assessment"] else 70),
-                    attempt_id=attempt.id,
-                )
-            except Exception as e:
-                logger.warning(f"[ExerciseEvaluator] Pitch branch failed, fallback to generic: {e}")
 
         # Situational branch: delegate to SituationalEvaluator if situational
         if exercise.exercise_type.startswith("situational"):

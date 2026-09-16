@@ -14,6 +14,10 @@ import {
   X,
   Volume2,
   Headphones,
+  Compass,
+  ChevronDown,
+  Trophy,
+  Sparkles,
 } from "lucide-react";
 import { soundFX } from "@/lib/sound-fx";
 import { cn } from "@/lib/utils";
@@ -44,9 +48,14 @@ export interface CombatCapsuleHUDProps {
     label: string;
     onClick: () => void;
   };
+  onNextTask?: () => void;
+  isNextLoading?: boolean;
+  isNextDisabled?: boolean;
   onSubmit: () => void;
   onExit: () => void;
   onOpenHelp: () => void;
+  provenanceBadge?: React.ReactNode;
+  extraActions?: React.ReactNode;
   className?: string;
 }
 
@@ -72,9 +81,14 @@ export function CombatCapsuleHUD({
   category,
   setCategory,
   filterTrigger,
+  onNextTask,
+  isNextLoading = false,
+  isNextDisabled = false,
   onSubmit,
   onExit,
   onOpenHelp,
+  provenanceBadge,
+  extraActions,
   className,
 }: CombatCapsuleHUDProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
@@ -105,8 +119,21 @@ export function CombatCapsuleHUD({
         className
       )}
     >
-      {/* 1. Left Section: Question Badge, Mode Title, Streak, Vocab Select */}
+      {/* 1. Left Section: Exit Studio (X), Question Badge, Mode Title, In-Studio Topic Switcher, Vocab Select */}
       <div className="flex items-center gap-2 shrink-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            soundFX.playFurin();
+            onExit();
+          }}
+          className="h-8 w-8 p-0 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer"
+          title="Thoát phòng luyện (Esc)"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+
         <Badge
           variant="kintsugi"
           size="sm"
@@ -122,11 +149,21 @@ export function CombatCapsuleHUD({
           </span>
         </div>
 
-        {currentStreak > 1 && (
-          <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-500 text-[11px] font-bold shadow-2xs animate-pulse">
-            <Flame className="h-3 w-3 fill-current" />
-            <span>{currentStreak} Streak</span>
-          </div>
+        {/* In-Studio Topic / Submode Switcher Chip (Chuẩn EnglishSpeaking) */}
+        {filterTrigger && (
+          <button
+            type="button"
+            onClick={() => {
+              soundFX.playFurin();
+              filterTrigger.onClick();
+            }}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/30 text-foreground text-xs font-medium transition-all cursor-pointer group max-w-[160px] sm:max-w-[220px] truncate shadow-2xs"
+            title="Bấm để đổi nhanh chủ đề/ngữ cảnh"
+          >
+            <Compass className="h-3 w-3 text-primary shrink-0 group-hover:rotate-45 transition-transform" />
+            <span className="truncate font-medium">{filterTrigger.label}</span>
+            <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0 ml-0.5" />
+          </button>
         )}
 
         {/* Dynamic Vocabulary Level & Category Dropdowns on HUD */}
@@ -142,16 +179,10 @@ export function CombatCapsuleHUD({
           </div>
         )}
 
-        {filterTrigger && (
-          <button
-            type="button"
-            onClick={filterTrigger.onClick}
-            className="hidden md:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/25 text-primary hover:bg-primary/20 text-[11px] font-bold transition-all shadow-2xs cursor-pointer"
-            title="Bấm để đổi bộ lọc chuyên đề"
-          >
-            <Sliders className="h-3 w-3" />
-            <span className="max-w-[140px] truncate">{filterTrigger.label}</span>
-          </button>
+        {provenanceBadge && (
+          <div className="inline-flex items-center">
+            {provenanceBadge}
+          </div>
         )}
       </div>
 
@@ -372,38 +403,52 @@ export function CombatCapsuleHUD({
           )}
         </div>
 
-        {/* Global Help Trigger */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0 text-xs rounded-xl text-muted-foreground hover:text-foreground"
-          onClick={onOpenHelp}
-          title="Trợ giúp phím tắt (?)"
-        >
-          <HelpCircle className="h-4 w-4" />
-        </Button>
+        {/* Extra Actions if any */}
+        {extraActions}
 
-        {/* Submit Early Button */}
+        {/* Next Task Button (Chuẩn EnglishSpeaking: Bài tiếp theo) */}
+        {onNextTask && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-3 text-xs font-semibold rounded-xl gap-1.5 border-primary/30 text-primary hover:bg-primary/10 transition-all shadow-xs cursor-pointer"
+            onClick={() => {
+              soundFX.playFurin();
+              onNextTask();
+            }}
+            disabled={isNextDisabled || isNextLoading}
+            title="Chuyển sang bài tập tiếp theo (Enter / R)"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span className="hidden sm:inline">Bài tiếp theo</span>
+            <kbd className="hidden md:inline px-1 py-0.2 text-[10px] bg-primary/10 text-primary rounded font-mono">↵</kbd>
+          </Button>
+        )}
+
+        {/* Finish & View Results Button (Chuẩn EnglishSpeaking: Trophy Icon) */}
         <Button
           variant="akane"
           size="sm"
           className="h-8 px-3 text-xs font-bold rounded-xl gap-1.5 shadow-2xs cursor-pointer bg-gradient-to-r from-sakura to-akane hover:opacity-95 text-white"
-          onClick={onSubmit}
-          title="Nộp bài và xem bảng điểm tổng kết (kết thúc phiên)"
+          onClick={() => {
+            soundFX.playTaiko();
+            onSubmit();
+          }}
+          title="Kết thúc buổi luyện & xem kết quả tổng hợp"
         >
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          <span className="hidden xs:inline">Nộp bài</span>
+          <Trophy className="h-3.5 w-3.5" />
+          <span className="hidden xs:inline">Kết thúc</span>
         </Button>
 
-        {/* Exit Button */}
+        {/* Global Help Trigger */}
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 px-2.5 text-xs font-bold rounded-xl text-muted-foreground hover:text-foreground"
-          onClick={onExit}
-          title="Thoát phòng về sảnh chính (Esc)"
+          className="h-8 w-8 p-0 text-xs rounded-xl text-muted-foreground hover:text-foreground cursor-pointer"
+          onClick={onOpenHelp}
+          title="Trợ giúp phím tắt (?)"
         >
-          Thoát
+          <HelpCircle className="h-4 w-4" />
         </Button>
       </div>
     </div>

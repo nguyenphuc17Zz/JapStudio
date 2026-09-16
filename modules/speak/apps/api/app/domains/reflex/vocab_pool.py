@@ -18,8 +18,6 @@ from app.domains.vocabulary.bccwj_frequency_pool import (
     CATEGORY_WORDS_MAP,
     FrequencyWordEntry,
     get_all_frequency_words,
-    get_words_by_category as get_bccwj_words_by_category,
-    search_frequency_words,
 )
 
 

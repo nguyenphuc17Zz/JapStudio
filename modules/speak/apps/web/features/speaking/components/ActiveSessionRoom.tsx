@@ -17,6 +17,9 @@ import { CoachingFeedbackCard } from "./CoachingFeedbackCard";
 import { ConversationReviewPanel } from "./ConversationReviewPanel";
 import { CorrectionDetailModal } from "./CorrectionDetailModal";
 import { LiveTurnScaffolding } from "./LiveTurnScaffolding";
+import { DiscourseStageProgress } from "./DiscourseStageProgress";
+import { ConversationalTwistBanner } from "./ConversationalTwistBanner";
+import { getDiscourseStage, getScenarioTwist } from "../services/discourse-engine";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,10 +36,14 @@ import {
   Zap,
   CheckCircle2,
   AlertCircle,
+  LifeBuoy,
+  X,
 } from "lucide-react";
 import { analysisApi } from "../services/analysis-api";
 import { useSystemKeybindings } from "@/hooks/use-system-keybindings";
 import { ZenUnifiedInputBar } from "@/components/ui/zen-unified-input-bar";
+import { EmergencySOSModal } from "@/features/survival/components/EmergencySOSModal";
+import { cn } from "@/lib/utils";
 
 interface ActiveSessionRoomProps {
   session: VoiceSession;
@@ -104,6 +111,7 @@ export function ActiveSessionRoom({
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [selectedCorrection, setSelectedCorrection] =
     useState<CorrectionItem | null>(null);
+  const [isSosOpen, setIsSosOpen] = useState(false);
 
   const statusInfo = getStatusColor(state);
 
@@ -257,108 +265,133 @@ export function ActiveSessionRoom({
     (latestAssistantTurn?.metrics as any)?.scaffolding ??
     null;
 
+  const currentDiscourseStage = getDiscourseStage(userTurns.length);
+  const currentTwist = getScenarioTwist(persona.id, userTurns.length);
+  const [isTwistDismissed, setIsTwistDismissed] = useState(false);
+
+  useEffect(() => {
+    setIsTwistDismissed(false);
+  }, [userTurns.length]);
+
   return (
-    <div className="space-y-3.5 max-w-[1560px] w-full mx-auto animate-in fade-in duration-300">
-      {/* Session Top Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl glass-card border border-white/10 dark:border-white/10 shadow-xl backdrop-blur-2xl">
-        {/* Left: Persona & Mode Info */}
-        <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-primary via-aizome-500 to-indigo-600 flex items-center justify-center text-primary-foreground font-extrabold text-base shadow-lg shadow-primary/20 ring-2 ring-primary/20">
+    <div className="h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden max-w-[1560px] w-full mx-auto space-y-2 p-1 sm:p-2 animate-in fade-in duration-300">
+      {/* 1. Session Top Capsule HUD */}
+      <div className="shrink-0 flex items-center justify-between gap-2.5 p-2 px-3 sm:px-4 rounded-2xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 shadow-md backdrop-blur-2xl">
+        {/* Left: Exit + Persona Avatar & Info */}
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <button
+            type="button"
+            onClick={onEndSession}
+            className="h-8 w-8 rounded-full border border-border/80 dark:border-white/15 bg-background/80 hover:bg-destructive/15 hover:border-destructive/40 hover:text-destructive flex items-center justify-center text-muted-foreground transition-all shrink-0 cursor-pointer shadow-xs"
+            title="Kết thúc phiên đàm thoại (Esc)"
+          >
+            <X className="h-4 w-4" />
+          </button>
+
+          <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-primary via-indigo-600 to-primary flex items-center justify-center text-white font-black text-xs shadow-md shadow-primary/25 shrink-0 ring-1 ring-primary/30">
             {persona.name.charAt(0)}
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-extrabold text-foreground tracking-tight">{persona.name}</h2>
-              <Badge variant="jlpt" size="sm" className="rounded-full shadow-2xs">
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h2 className="text-xs sm:text-sm font-extrabold text-foreground tracking-tight truncate">
+                {persona.name}
+              </h2>
+              <Badge variant="jlpt" size="sm" className="rounded-full text-[9px] py-0 px-1.5 font-bold">
                 {persona.difficulty}
               </Badge>
-              <Badge variant="outline" size="sm" className="capitalize text-[10px] rounded-full border-white/15 bg-white/5 backdrop-blur-md">
-                {session.mode} Mode
+              <Badge variant="outline" size="sm" className="capitalize text-[9px] rounded-full border-primary/30 bg-primary/10 text-primary py-0 px-1.5 font-medium">
+                {session.mode === "coaching" ? "HLV Trực Tiếp" : "Tự Do"}
               </Badge>
             </div>
-            <p className="text-[11px] text-primary/90 font-medium">
+            <p className="text-[10px] text-muted-foreground font-medium truncate max-w-[200px] sm:max-w-xs">
               {persona.role} • {persona.speaking_style}
             </p>
           </div>
         </div>
 
-        {/* Right: Timer & Turn Stats & Intelligence Drawer Trigger */}
-        <div className="flex items-center gap-2.5 text-xs font-mono text-muted-foreground self-end sm:self-center">
-          <div className="flex items-center gap-1.5 bg-white/5 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 backdrop-blur-md shadow-2xs">
-            <Clock className="h-3.5 w-3.5 text-primary" />
+        {/* Middle: 5 Discourse Stages (Desktop) */}
+        <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted/40 dark:bg-black/30 border border-border/60 dark:border-white/10 text-xs">
+          <DiscourseStageProgress
+            currentStage={currentDiscourseStage}
+            userTurnsCount={userTurns.length}
+          />
+        </div>
+
+        {/* Right: Timer & Turn Stats & Action Buttons */}
+        <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-mono shrink-0">
+          <div className="flex items-center gap-1 bg-muted/40 dark:bg-black/30 px-2.5 py-1 rounded-full border border-border/60 dark:border-white/10 text-[11px]">
+            <Clock className="h-3 w-3 text-primary" />
             <span className="text-foreground font-bold">{formattedElapsed}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-white/5 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-white/10 backdrop-blur-md text-[11px] shadow-2xs">
-            <span className="text-muted-foreground">Speaking:</span>
-            <span className="text-emerald-400 font-bold">{formattedSpeaking}</span>
+          <div className="hidden sm:flex items-center gap-1 bg-muted/40 dark:bg-black/30 px-2.5 py-1 rounded-full border border-border/60 dark:border-white/10 text-[10.5px]">
+            <Mic className="h-3 w-3 text-emerald-500" />
+            <span className="text-emerald-500 font-bold">{formattedSpeaking}</span>
           </div>
 
-          {/* Voice Mute / Audio Toggle Button */}
+          {/* Voice Mute Toggle */}
           {onToggleVoiceMute && (
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              type="button"
               onClick={onToggleVoiceMute}
-              className={`text-xs gap-1.5 rounded-xl backdrop-blur-md transition-all ${
+              className={cn(
+                "h-7 px-2.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all border cursor-pointer",
                 isVoiceMuted
-                  ? "border-amber-500/40 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
-                  : "border-white/15 bg-white/5 text-foreground hover:bg-white/10"
-              }`}
-              title={isVoiceMuted ? "Bật âm thanh đối tác" : "Tắt tiếng đối tác (Tiết kiệm RAM / Nhẹ máy)"}
-            >
-              {isVoiceMuted ? (
-                <>
-                  <VolumeX className="h-3.5 w-3.5 text-amber-400" />
-                  <span>Tắt tiếng</span>
-                </>
-              ) : (
-                <>
-                  <Volume2 className="h-3.5 w-3.5 text-primary" />
-                  <span>Bật tiếng</span>
-                </>
+                  ? "border-amber-500/40 text-amber-500 bg-amber-500/10 hover:bg-amber-500/20"
+                  : "border-border/80 dark:border-white/15 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground"
               )}
-            </Button>
+              title={isVoiceMuted ? "Bật âm thanh đối tác" : "Tắt tiếng đối tác"}
+            >
+              {isVoiceMuted ? <VolumeX className="h-3 w-3 text-amber-500" /> : <Volume2 className="h-3 w-3 text-primary" />}
+              <span className="hidden sm:inline">{isVoiceMuted ? "Đã tắt tiếng" : "Âm thanh"}</span>
+            </button>
           )}
 
-          {/* Live Intelligence Button */}
-          <Button
-            variant="outline"
-            size="sm"
+          {/* Live Intelligence / Analysis Button */}
+          <button
+            type="button"
             onClick={() => setIsReviewOpen(true)}
-            className={`text-xs gap-1.5 rounded-xl backdrop-blur-md transition-all ${
+            className={cn(
+              "h-7 px-2.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all border cursor-pointer",
               totalCorrectionsCount > 0
-                ? "border-kintsugi-500/40 text-kintsugi-400 bg-kintsugi-500/10 hover:bg-kintsugi-500/20 shadow-xs"
-                : "border-white/15 bg-white/5 text-foreground hover:bg-white/10"
-            }`}
+                ? "border-amber-500/40 text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 shadow-xs"
+                : "border-border/80 dark:border-white/15 bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground"
+            )}
+            title="Xem báo cáo phân tích hội thoại và ngữ pháp"
           >
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span>Analysis ({totalCorrectionsCount})</span>
-          </Button>
+            <Sparkles className="h-3 w-3 text-primary" />
+            <span>Phân tích ({totalCorrectionsCount})</span>
+          </button>
         </div>
       </div>
 
-      {/* Main Room Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* Left Column: Visualizer & Live Speaking Control Panel */}
-        <div className="lg:col-span-5 xl:col-span-4 flex flex-col justify-between p-5 rounded-3xl glass-card border border-white/10 dark:border-white/10 shadow-2xl backdrop-blur-2xl space-y-4 relative overflow-hidden">
+      {/* 2. Main Studio Cockpit (1-Screen Viewport Fit) */}
+      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2.5 overflow-hidden">
+        {/* Left Column: Live Audio Deck & Speaking Studio Controller (4 cols) */}
+        <div className="lg:col-span-5 xl:col-span-4 h-full min-h-0 flex flex-col justify-between p-3.5 sm:p-4 rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 shadow-xl backdrop-blur-2xl space-y-2 relative overflow-y-auto scrollbar-thin">
           {/* Subtle Ambient Refraction */}
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-44 h-44 bg-primary/10 blur-3xl rounded-full pointer-events-none -z-10" />
+          <div className="absolute top-[-30px] left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/10 blur-3xl rounded-full pointer-events-none -z-10" />
 
           {/* Status Indicator Banner */}
-          <div className="flex items-center justify-between pb-2 border-b border-white/10">
+          <div className="flex items-center justify-between pb-2 border-b border-border/60 dark:border-white/10 shrink-0">
             <div
-              className={`flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-semibold backdrop-blur-md ${statusInfo.badgeBg} ${statusInfo.badgeText}`}
+              className={cn("flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider border", statusInfo.badgeBg, statusInfo.badgeText)}
             >
               <div className={`h-2 w-2 rounded-full ${statusInfo.dotColor}`} />
               <span>{statusInfo.label}</span>
             </div>
 
-            {session.mode === "coaching" && (
-              <span className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20 backdrop-blur-md">
-                ⚡ Realtime Coach
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {session.mode === "coaching" && (
+                <span className="text-[10px] text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                  ⚡ Coach
+                </span>
+              )}
+              <Badge variant="outline" size="sm" className="text-[9px] font-mono border-white/15 bg-white/5 text-primary rounded-full">
+                Live VAD
+              </Badge>
+            </div>
           </div>
 
           {/* Central Pulsing Audio Orb */}
@@ -421,6 +454,19 @@ export function ActiveSessionRoom({
                 </button>
               </div>
             )}
+
+            {/* SOS Emergency Button */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsSosOpen(true)}
+                className="px-3 py-1.5 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                title="Cứu cánh khẩn cấp khi bị bí từ"
+              >
+                <LifeBuoy className="h-3.5 w-3.5" />
+                <span>🆘 Cấp Cứu Bí Từ (SOS)</span>
+              </button>
+            </div>
 
             {/* Interactive Speaking Controller */}
             <div className="w-full space-y-2">
@@ -651,19 +697,42 @@ export function ActiveSessionRoom({
         </div>
 
         {/* Right Column: Live Transcript Stream & Fallback Text Input */}
-        <div className="lg:col-span-7 xl:col-span-8 flex flex-col justify-between rounded-3xl glass-card border border-white/10 dark:border-white/10 shadow-2xl backdrop-blur-2xl overflow-hidden min-h-[480px]">
-          {/* Transcript Area */}
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="p-3.5 px-4 border-b border-white/10 bg-white/5 dark:bg-white/5 flex items-center justify-between text-xs font-semibold text-foreground backdrop-blur-md">
+        <div className="lg:col-span-7 xl:col-span-8 h-full min-h-0 flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 shadow-xl backdrop-blur-2xl overflow-hidden">
+          {/* Header Bar: Status, Turn Count & Mobile Discourse Stages */}
+          <div className="shrink-0 p-2.5 px-3.5 border-b border-border/60 dark:border-white/10 bg-muted/30 dark:bg-black/20 space-y-2 backdrop-blur-md">
+            <div className="flex items-center justify-between text-xs font-semibold text-foreground">
               <span className="flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                <span>Live Dialogue (会話履歴)</span>
+                <span>Hội thoại trực tiếp (会話履歴)</span>
               </span>
-              <span className="text-[11px] font-normal text-muted-foreground font-mono">
-                {turns.length} turns recorded
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-mono text-muted-foreground">
+                  {turns.length} lượt thoại
+                </span>
+              </div>
             </div>
 
+            {/* Mobile 5 Discourse Stages Pipeline */}
+            <div className="md:hidden">
+              <DiscourseStageProgress
+                currentStage={currentDiscourseStage}
+                userTurnsCount={userTurns.length}
+              />
+            </div>
+          </div>
+
+          {/* Injected Conversational Twist Complication Banner (Turns 3-4) */}
+          {currentTwist && !isTwistDismissed && (
+            <div className="shrink-0 p-2.5 pb-0">
+              <ConversationalTwistBanner
+                twist={currentTwist}
+                onDismiss={() => setIsTwistDismissed(true)}
+              />
+            </div>
+          )}
+
+          {/* Transcript Scroll Area */}
+          <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
             <ConversationTranscript
               turns={turns}
               personaName={persona.name}
@@ -725,6 +794,14 @@ export function ActiveSessionRoom({
         correction={selectedCorrection}
         onClose={() => setSelectedCorrection(null)}
         onPlayCorrection={onReplayVoice}
+      />
+
+      {/* Emergency SOS Modal */}
+      <EmergencySOSModal
+        isOpen={isSosOpen}
+        onClose={() => setIsSosOpen(false)}
+        lastAiMessage={[...turns].reverse().find((t) => t.speaker === "assistant")?.transcript || ""}
+        onSelectPhrase={(phrase) => onSendTextTurn(phrase)}
       />
     </div>
   );

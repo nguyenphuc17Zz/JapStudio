@@ -13,6 +13,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
+from app.shared.errors.exceptions import ValidationException
 from app.domains.ai.contracts import AIMessage, AIMessageRole, AIRequest, AITask, ResponseFormat, ResponseFormatType
 from app.domains.ai.router import AIRouter
 from app.domains.interpret.exercise_factory import InterpretExerciseFactory
@@ -35,10 +36,11 @@ class AIInterpretGenerator:
         difficulty: str = "normal",
         topic: str | None = None,
         user_id: str | None = None,
+        force_ai: bool = False,
     ) -> dict[str, Any]:
-        """Tries AI generation first; falls back to Smart Cache DB, then to deterministic pools."""
+        """Generates 100% fresh AI exercise and saves to SQLite pool. Raises explicit error on failure."""
         try:
-            data = await self._ai_generate(sub_mode, relation, difficulty, topic, user_id)
+            data = await self._ai_generate(sub_mode, relation, difficulty, topic, user_id, force_ai=force_ai)
             if data and data.get("prompt_vi"):
                 data.setdefault("relation", relation)
                 data.setdefault("scaffold", scaffold)
@@ -65,37 +67,13 @@ class AIInterpretGenerator:
 
                 asyncio.create_task(_save_bg(dict(data)))
                 return data
+            raise ValidationException("AI không thể tạo câu luyện dịch. Vui lòng thử lại.")
+        except ValidationException:
+            raise
         except Exception as e:
-            logger.warning(f"[AIInterpretGenerator] AI generation failed ({e}), attempting Smart Cache DB fallback...")
+            logger.error(f"[AIInterpretGenerator] AI generation failed: {e}")
+            raise ValidationException(f"Lỗi tạo bài luyện dịch từ AI: {e}. Vui lòng thử lại.")
 
-        # Tier 2: Try pulling previously learned/generated exercise from database cache pool
-        try:
-            cached = await self.cache_service.get_smart_exercise(
-                domain="interpret",
-                sub_mode=sub_mode,
-                difficulty=difficulty,
-            )
-            if cached and cached.get("prompt_vi"):
-                cached.setdefault("relation", relation)
-                cached.setdefault("scaffold", scaffold)
-                cached.setdefault("blind", scaffold == "none")
-                cached.setdefault("difficulty", difficulty)
-                if timer_limit_ms is not None:
-                    cached["timer_limit_ms"] = timer_limit_ms
-                cached["generation_source"] = "smart_cache_pool"
-                cached["is_fallback"] = True
-                cached["fallback_reason"] = "ai_unavailable"
-                logger.info("[AIInterpretGenerator] Successfully served exercise from Smart Cache DB")
-                return cached
-        except Exception as c_err:
-            logger.warning(f"[AIInterpretGenerator] Smart Cache DB lookup error: {c_err}")
-
-        # Tier 3: Deterministic Factory Seed Pool (Safety Net)
-        fb = self.factory.build(sub_mode, relation, scaffold, timer_limit_ms, difficulty, topic)
-        fb["generation_source"] = "template_fallback"
-        fb["is_fallback"] = True
-        fb["fallback_reason"] = "ai_and_cache_empty"
-        return fb
 
     async def _ai_generate(
         self,
@@ -104,7 +82,10 @@ class AIInterpretGenerator:
         difficulty: str,
         topic: str | None,
         user_id: str | None,
+        force_ai: bool = False,
     ) -> dict[str, Any] | None:
+        import time
+
         register = "タメ口 casual" if relation != "business_polite" else "丁寧語 business"
         if sub_mode == "interpret_word":
             task_desc = "One short Vietnamese word/phrase a learner must say in Japanese."
@@ -121,13 +102,14 @@ class AIInterpretGenerator:
             "reference_ja is a natural model answer. "
             f"Reply ONLY with JSON: {fmt}."
         )
-        user_content = f"Mode: {sub_mode}. Register: {register}. Difficulty: {difficulty}. Topic: {topic or 'mixed Tet/office/daily'}. Task: {task_desc}"
+        nonce_str = f" [Nonce: {int(time.time() * 1000)}]" if force_ai else ""
+        user_content = f"Mode: {sub_mode}. Register: {register}. Difficulty: {difficulty}. Topic: {topic or 'mixed Tet/office/daily'}. Task: {task_desc}{nonce_str}"
         req = AIRequest(
             task=AITask.INTERPRET_GENERATION,
             system_instruction=sys_inst,
             messages=[AIMessage(role=AIMessageRole.SYSTEM, content=sys_inst), AIMessage(role=AIMessageRole.USER, content=user_content)],
             response_format=ResponseFormat(type=ResponseFormatType.JSON_OBJECT),
-            temperature=0.7,
+            temperature=0.85 if force_ai else 0.7,
             max_output_tokens=500,
             user_id=user_id,
         )

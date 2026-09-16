@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Mic, Clock, Award, ArrowRight, History, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { conversationApi, RecentSessionItem } from "@/services/conversation-api";
+import { conversationApi, RecentSessionItem } from "@/features/speaking/services/conversation-api";
 import { soundFX } from "@/lib/sound-fx";
 import { cn } from "@/lib/utils";
 

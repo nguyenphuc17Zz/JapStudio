@@ -45,10 +45,11 @@ async def generate_situational_exercise_get(
     mode: str = Query(default="standard", description="guided|standard|challenge|blind"),
     timer_limit_ms: int | None = Query(default=None, ge=500, le=15000),
     seed: str | None = Query(default=None),
+    force_ai: bool = Query(default=False, description="Bypass cache and force AI generation"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    return await generate_situational_exercise(sub_mode, category, custom_topic, pressure_level, difficulty, duration, mode, timer_limit_ms, seed, user_id, db)
+    return await generate_situational_exercise(sub_mode, category, custom_topic, pressure_level, difficulty, duration, mode, timer_limit_ms, seed, force_ai, user_id, db)
 
 
 @router.post("/exercises/generate", response_model=ExerciseDTO)
@@ -62,6 +63,7 @@ async def generate_situational_exercise(
     mode: str = Query(default="standard", description="guided|standard|challenge|blind"),
     timer_limit_ms: int | None = Query(default=None, ge=0, le=15000),
     seed: str | None = Query(default=None),
+    force_ai: bool = Query(default=False, description="Bypass cache and force AI generation"),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -84,6 +86,7 @@ async def generate_situational_exercise(
         duration=duration,
         mode=mode,
         user_id=user_id,
+        force_ai=force_ai,
     )
 
     from app.domains.learning.exercise_variety_policy import ExerciseVarietyPolicy
@@ -163,7 +166,11 @@ async def generate_situational_exercise(
                 "cultural_tip": data.get("situational_data", {}).get("cultural_tip"),
                 "mode": mode,
                 "duration_minutes": duration,
+                "generation_source": data.get("generation_source", "ai"),
+                "is_fallback": data.get("is_fallback", False),
             },
+            "generation_source": data.get("generation_source", "ai"),
+            "is_fallback": data.get("is_fallback", False),
             "priority_score": 0.7,
             "item_type": "situational",
         },
@@ -212,7 +219,7 @@ async def submit_situational_attempt(
         response_speed_ms=payload.get("response_speed_ms") or payload.get("reaction_latency_ms"),
         used_hint=payload.get("used_hint", False) or (payload.get("independence") != "independent" if payload.get("independence") else False),
         plan_item_id=payload.get("plan_item_id"),
-        situational_metrics=payload.get("situational_metrics") or payload.get("reflex_metrics") or payload.get("pitch_metrics"),
+        situational_metrics=payload.get("situational_metrics") or payload.get("reflex_metrics"),
         reflex_metrics=payload.get("situational_metrics") or payload.get("reflex_metrics"),
         reaction_latency_ms=payload.get("reaction_latency_ms"),
         semantic_latency_ms=payload.get("semantic_latency_ms"),

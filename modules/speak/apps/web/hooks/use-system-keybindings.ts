@@ -5,7 +5,6 @@ import { useState, useEffect, useCallback } from "react";
 export type KeybindingCategory =
   | "reflex"
   | "keigo"
-  | "pitch"
   | "situations"
   | "aizuchi"
   | "builder"
@@ -45,21 +44,7 @@ export interface SystemKeybindings {
   keigoStartVoice: string;
   keigoToggleInputMode: string;
 
-  // 4. Pitch Lab (/pitch)
-  pitchSubmitOrNext: string;
-  pitchListenPrompt: string;
-  pitchReplayModel: string;
-  pitchToggleReveal: string;
-  pitchRetry: string;
-  pitchSkip: string;
-  pitchOpenCheatsheet: string;
-  pitchStartVoice: string;
-  pitchToggleInputMode: string;
-  pitchMetronome: string;
-  pitchQuizOption1: string;
-  pitchQuizOption2: string;
-
-  // 5. Situations Studio (/situations)
+  // 4. Situations Studio (/situations)
   situationsSubmitOrNext: string;
   situationsListenPrompt: string;
   situationsReplayModel: string;
@@ -179,20 +164,6 @@ export const DEFAULT_KEYBINDINGS: SystemKeybindings = {
   keigoStartVoice: "space",
   keigoToggleInputMode: "t",
 
-  // Pitch
-  pitchSubmitOrNext: "enter",
-  pitchListenPrompt: "l",
-  pitchReplayModel: "a",
-  pitchToggleReveal: "v",
-  pitchRetry: "r",
-  pitchSkip: "n",
-  pitchOpenCheatsheet: "c",
-  pitchStartVoice: "space",
-  pitchToggleInputMode: "t",
-  pitchMetronome: "m",
-  pitchQuizOption1: "1",
-  pitchQuizOption2: "2",
-
   // Situations
   situationsSubmitOrNext: "enter",
   situationsListenPrompt: "l",
@@ -310,20 +281,6 @@ export const ACTION_CATEGORIES: Record<keyof SystemKeybindings, KeybindingCatego
   keigoOpenCheatsheet: "keigo",
   keigoStartVoice: "keigo",
   keigoToggleInputMode: "keigo",
-
-  // Pitch
-  pitchSubmitOrNext: "pitch",
-  pitchListenPrompt: "pitch",
-  pitchReplayModel: "pitch",
-  pitchToggleReveal: "pitch",
-  pitchRetry: "pitch",
-  pitchSkip: "pitch",
-  pitchOpenCheatsheet: "pitch",
-  pitchStartVoice: "pitch",
-  pitchToggleInputMode: "pitch",
-  pitchMetronome: "pitch",
-  pitchQuizOption1: "pitch",
-  pitchQuizOption2: "pitch",
 
   // Situations
   situationsSubmitOrNext: "situations",

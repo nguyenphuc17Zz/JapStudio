@@ -12,6 +12,7 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
+from app.shared.errors.exceptions import ValidationException
 from app.domains.ai.contracts import AIMessage, AIMessageRole, AIRequest, AITask, ResponseFormat, ResponseFormatType
 from app.domains.ai.router import AIRouter
 from app.domains.builder.exercise_factory import BuilderExerciseFactory
@@ -34,10 +35,11 @@ class AIBuilderGenerator:
         timer_limit_ms: int | None = None,
         difficulty: str = "normal",
         user_id: str | None = None,
+        force_ai: bool = False,
     ) -> dict[str, Any]:
-        """Tries AI generation first; falls back to Smart Cache DB, then to deterministic pools."""
+        """Generates 100% fresh AI exercise and saves to SQLite pool. Raises explicit error on failure."""
         try:
-            data = await self._ai_generate(sub_mode, focus_skill, relation, difficulty, user_id)
+            data = await self._ai_generate(sub_mode, focus_skill, relation, difficulty, user_id, force_ai=force_ai)
             if data:
                 data.setdefault("scaffold", scaffold)
                 data.setdefault("blind", scaffold == "none")
@@ -64,37 +66,13 @@ class AIBuilderGenerator:
 
                 asyncio.create_task(_save_bg(dict(data)))
                 return data
+            raise ValidationException("AI không thể tạo bài tập ghép câu. Vui lòng thử lại.")
+        except ValidationException:
+            raise
         except Exception as e:
-            logger.warning(f"[AIBuilderGenerator] AI generation failed ({e}), attempting Smart Cache DB fallback...")
+            logger.error(f"[AIBuilderGenerator] AI generation failed: {e}")
+            raise ValidationException(f"Lỗi tạo bài tập ghép câu từ AI: {e}. Vui lòng thử lại.")
 
-        # Tier 2: Try pulling previously learned/generated exercise from database cache pool
-        try:
-            cached = await self.cache_service.get_smart_exercise(
-                domain="builder",
-                sub_mode=sub_mode,
-                difficulty=difficulty,
-            )
-            if cached:
-                cached.setdefault("scaffold", scaffold)
-                cached.setdefault("blind", scaffold == "none")
-                cached.setdefault("relation", relation)
-                cached.setdefault("difficulty", difficulty)
-                if timer_limit_ms is not None:
-                    cached["timer_limit_ms"] = timer_limit_ms
-                cached["generation_source"] = "smart_cache_pool"
-                cached["is_fallback"] = True
-                cached["fallback_reason"] = "ai_unavailable"
-                logger.info("[AIBuilderGenerator] Successfully served exercise from Smart Cache DB")
-                return cached
-        except Exception as c_err:
-            logger.warning(f"[AIBuilderGenerator] Smart Cache DB lookup error: {c_err}")
-
-        # Tier 3: Deterministic Factory Seed Pool (Safety Net)
-        fb = self.factory.build(sub_mode, focus_skill, relation, scaffold, timer_limit_ms, difficulty)
-        fb["generation_source"] = "template_fallback"
-        fb["is_fallback"] = True
-        fb["fallback_reason"] = "ai_and_cache_empty"
-        return fb
 
     async def _ai_generate(
         self,
@@ -103,6 +81,7 @@ class AIBuilderGenerator:
         relation: str,
         difficulty: str,
         user_id: str | None,
+        force_ai: bool = False,
     ) -> dict[str, Any] | None:
         register = "タメ口 casual" if relation != "business_polite" else "丁寧語 business"
         if sub_mode == "sentence_expand":
@@ -120,13 +99,14 @@ class AIBuilderGenerator:
             "canonical MUST be a natural, full Japanese model sentence for this drill. "
             f"Reply ONLY with JSON: {fmt}."
         )
-        user_content = f"Mode: {sub_mode}. Register: {register}. Difficulty: {difficulty}. Task: {task_desc}"
+        nonce_str = f" Fresh dynamic scenario nonce: {asyncio.get_event_loop().time()}." if force_ai else ""
+        user_content = f"Mode: {sub_mode}. Register: {register}. Difficulty: {difficulty}. Task: {task_desc}.{nonce_str}"
         req = AIRequest(
             task=AITask.BUILDER_GENERATION,
             system_instruction=sys_inst,
             messages=[AIMessage(role=AIMessageRole.SYSTEM, content=sys_inst), AIMessage(role=AIMessageRole.USER, content=user_content)],
             response_format=ResponseFormat(type=ResponseFormatType.JSON_OBJECT),
-            temperature=0.7,
+            temperature=0.85 if force_ai else 0.7,
             max_output_tokens=700,
             user_id=user_id,
         )

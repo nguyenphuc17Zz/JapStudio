@@ -136,8 +136,12 @@ export function UniversalFurigana({
         onClick={enableClickToSpeak ? handleSpeak : undefined}
         title={enableClickToSpeak ? "Nhấp để nghe phát âm Tokyo" : undefined}
         className={cn(
-          "font-jp inline-flex items-center gap-1",
+          "font-jp inline leading-relaxed align-baseline",
           enableClickToSpeak && "cursor-pointer hover:opacity-85 transition-opacity",
+          fontSize === "sm" && "text-xs",
+          fontSize === "normal" && "text-sm sm:text-base",
+          fontSize === "lg" && "text-base sm:text-lg md:text-xl",
+          fontSize === "xl" && "text-xl sm:text-2xl md:text-3xl font-black",
           className
         )}
       >
@@ -147,13 +151,13 @@ export function UniversalFurigana({
     );
   }
 
-  // Micro-stacking Architecture: Guarantees Furigana strictly on TOP of Kanji with 100% baseline alignment
+  // Standard W3C HTML5 Ruby: Guarantees 100% typographic baseline alignment, no wave artifacts, seamless text flow
   return (
     <span
       onClick={enableClickToSpeak ? handleSpeak : undefined}
       title={enableClickToSpeak ? "Nhấp để nghe phát âm Tokyo" : undefined}
       className={cn(
-        "font-jp tracking-wide inline-flex flex-wrap items-end justify-center gap-y-2 select-text",
+        "font-jp tracking-wide inline leading-[2.2] select-text align-baseline",
         enableClickToSpeak && "cursor-pointer hover:opacity-85 transition-opacity active:scale-[0.99]",
         isPlaying && "underline decoration-primary/50 decoration-2 underline-offset-4",
         fontSize === "sm" && "text-xs",
@@ -166,32 +170,22 @@ export function UniversalFurigana({
       {chunks.map((c, i) => {
         if (c.reading && KANJI_REGEX.test(c.text)) {
           return (
-            <span
-              key={i}
-              className="inline-flex flex-col-reverse items-center justify-end align-bottom mx-[1.5px] relative"
-            >
-              {/* 1. Base Kanji text at the bottom */}
-              <span className="font-bold text-foreground leading-none">{c.text}</span>
-
-              {/* 2. Furigana reading strictly on TOP */}
-              <span
+            <ruby key={i} className="select-text">
+              {c.text}
+              <rt
                 style={furiganaStyle}
                 className={cn(
-                  "font-jp text-[0.52em] font-medium leading-none select-none tracking-tight text-center mb-1.5 transition-colors",
+                  "font-jp text-[0.55em] font-medium leading-none select-none tracking-tight text-center transition-colors",
                   furiganaClass,
                   furiganaClassName
                 )}
               >
                 {c.reading}
-              </span>
-            </span>
+              </rt>
+            </ruby>
           );
         }
-        return (
-          <span key={i} className="inline-block align-bottom leading-none text-foreground">
-            {c.text}
-          </span>
-        );
+        return <span key={i}>{c.text}</span>;
       })}
       {audioBtnNode}
     </span>

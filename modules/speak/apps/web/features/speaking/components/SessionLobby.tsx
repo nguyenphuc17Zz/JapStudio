@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Persona } from "@/types/persona";
 import { SessionMode, VADSensitivity, VoiceSettingsConfig } from "../types";
 import { Badge } from "@/components/ui/badge";
+import { ExerciseSourceBadge } from "@/components/ui/exercise-source-badge";
 import { Button } from "@/components/ui/button";
 import {
   Mic,
@@ -484,45 +485,44 @@ export function SessionLobby({
 
   return (
     <div className="flex flex-col space-y-4 max-h-full">
-      {/* Persona Header Card */}
-      <div className="p-3.5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-border space-y-2.5 shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-primary via-akane-600 to-indigo-600 flex items-center justify-center text-primary-foreground font-extrabold text-base shadow-md shrink-0">
-              {persona.name.charAt(0)}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-sm font-bold text-foreground truncate">{persona.name}</h3>
-                <Badge variant="jlpt" size="sm">
-                  {persona.difficulty}
-                </Badge>
-                {persona.is_system && (
-                  <Badge variant="fuji" size="sm" className="text-[10px] py-0 px-1.5 h-4">
-                    Mẫu
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-primary font-medium truncate">{persona.role}</p>
-            </div>
+      {/* Persona Header Bar (Compact Zen) */}
+      <div className="p-2.5 rounded-xl bg-card/80 border border-border/80 flex items-center justify-between gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 text-primary flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+            {persona.name.charAt(0)}
           </div>
-
-          <div className="text-right hidden sm:block text-[11px] text-muted-foreground">
-            <span className="text-foreground font-medium">{persona.speaking_style}</span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h3 className="text-xs font-bold text-foreground truncate">{persona.name}</h3>
+              <Badge variant="jlpt" size="sm" className="text-[10px] py-0 px-1.5 h-4">
+                {persona.difficulty}
+              </Badge>
+              <ExerciseSourceBadge
+                source={persona.is_system ? "sqlite" : "ai"}
+                className="text-[9px] px-1.5 py-0 h-3.5 rounded-full"
+              />
+              <span className="text-[11px] text-primary font-medium truncate hidden sm:inline">• {persona.role}</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground truncate max-w-md" title={persona.description}>
+              {persona.description}
+            </p>
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{persona.description}</p>
+        <div className="text-right shrink-0 hidden sm:block text-[10.5px] text-muted-foreground">
+          <span className="text-foreground font-medium truncate max-w-[150px] block" title={persona.speaking_style}>
+            {persona.speaking_style}
+          </span>
+        </div>
       </div>
 
-      {/* 1-Click Quick Presets Bar */}
-      {/* Core Mode Selection (2 Clean Cards) */}
-      <div className="space-y-2">
+      {/* Core Mode Selection (2 Compact Cards) */}
+      <div className="space-y-1.5">
         <label className="text-xs font-bold text-foreground flex items-center justify-between">
-          <span>1. Chọn Chế Độ Luyện Tập:</span>
+          <span>1. Chế độ luyện tập:</span>
           <span className="text-[10px] text-muted-foreground font-normal">Tự động cấu hình chuẩn theo nhân vật</span>
         </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => {
@@ -530,21 +530,21 @@ export function SessionLobby({
               handleModeChange("conversation");
             }}
             className={cn(
-              "p-3 rounded-2xl border text-left transition-all relative",
+              "p-2.5 rounded-xl border text-left transition-all relative flex items-start gap-2",
               mode === "conversation"
                 ? "bg-primary/10 border-primary shadow-xs ring-1 ring-primary/30"
-                : "bg-card border-border hover:border-primary/40 text-muted-foreground"
+                : "bg-card/70 border-border/80 hover:border-primary/40 text-muted-foreground"
             )}
           >
-            <div className="flex items-center gap-2">
-              <span className="text-base">🗣️</span>
-              <span className={cn("text-xs font-bold", mode === "conversation" ? "text-primary" : "text-foreground")}>
+            <span className="text-sm shrink-0 mt-0.5">🗣️</span>
+            <div className="min-w-0">
+              <span className={cn("text-xs font-bold block", mode === "conversation" ? "text-primary" : "text-foreground")}>
                 Hội Thoại Tự Nhiên
               </span>
+              <p className="text-[10.5px] text-muted-foreground leading-snug line-clamp-1 mt-0.5">
+                Đàm thoại trôi chảy, phản xạ nhanh như người bản xứ.
+              </p>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-              Đàm thoại trôi chảy, phản xạ nhanh như trò chuyện với người bản xứ.
-            </p>
           </button>
 
           <button
@@ -554,39 +554,39 @@ export function SessionLobby({
               handleModeChange("coaching");
             }}
             className={cn(
-              "p-3 rounded-2xl border text-left transition-all relative",
+              "p-2.5 rounded-xl border text-left transition-all relative flex items-start gap-2",
               mode === "coaching"
                 ? "bg-amber-500/10 border-amber-500 shadow-xs ring-1 ring-amber-500/30"
-                : "bg-card border-border hover:border-amber-500/40 text-muted-foreground"
+                : "bg-card/70 border-border/80 hover:border-amber-500/40 text-muted-foreground"
             )}
           >
-            <div className="flex items-center gap-2">
-              <Sparkles className={cn("h-4 w-4", mode === "coaching" ? "text-amber-500" : "text-muted-foreground")} />
-              <span className={cn("text-xs font-bold", mode === "coaching" ? "text-amber-700 dark:text-amber-300" : "text-foreground")}>
-                Có Giảng Viên Hướng Dẫn (Coaching)
+            <Sparkles className={cn("h-3.5 w-3.5 shrink-0 mt-0.5", mode === "coaching" ? "text-amber-500" : "text-muted-foreground")} />
+            <div className="min-w-0">
+              <span className={cn("text-xs font-bold block", mode === "coaching" ? "text-amber-700 dark:text-amber-300" : "text-foreground")}>
+                Có Giảng Viên (Coaching)
               </span>
+              <p className="text-[10.5px] text-muted-foreground leading-snug line-clamp-1 mt-0.5">
+                Gợi ý câu, sửa lỗi ngữ pháp & phát âm sau mỗi lượt.
+              </p>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-              AI gợi ý mẫu câu, sửa lỗi ngữ pháp & phát âm sau mỗi lượt nói.
-            </p>
           </button>
         </div>
       </div>
 
-      {/* Voice & Sound Quick Bar */}
-      <div className="p-3 rounded-2xl bg-card border border-border flex flex-wrap items-center justify-between gap-2.5">
+      {/* Voice & Sound Quick Bar (Compact) */}
+      <div className="p-2.5 rounded-xl bg-card/70 border border-border/80 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-bold shrink-0">
+          <div className="h-7 w-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-bold shrink-0">
             {ttsEngine === "none" || !ttsEnabled ? "🔇" : ttsEngine === "web_speech" ? "🌐" : "🔊"}
           </div>
           <div className="min-w-0">
             <div className="text-[11px] font-bold text-foreground truncate flex items-center gap-1.5">
-              <span>Giọng đọc NPC:</span>
+              <span>Giọng NPC:</span>
               <span className="text-primary font-jp">
                 {!ttsEnabled || ttsEngine === "none"
                   ? "Tắt âm thanh"
                   : ttsEngine === "web_speech"
-                  ? "Giọng WebSpeech Trình Duyệt"
+                  ? "WebSpeech Trình Duyệt"
                   : selectedVoiceObj?.name || "VOICEVOX"}
               </span>
             </div>
@@ -603,9 +603,9 @@ export function SessionLobby({
               size="sm"
               onClick={() => handlePreviewVoice(ttsVoice)}
               isLoading={previewingVoiceId === ttsVoice || previewingVoiceId === "web_speech"}
-              className="h-7 text-[11px] font-bold gap-1 px-2.5 rounded-lg"
+              className="h-6.5 text-[10.5px] font-bold gap-1 px-2 rounded-lg"
             >
-              <Play className="h-3 w-3 fill-current" />
+              <Play className="h-2.5 w-2.5 fill-current" />
               <span>Nghe thử</span>
             </Button>
           )}
@@ -614,7 +614,7 @@ export function SessionLobby({
             variant="ghost"
             size="sm"
             onClick={() => handleTtsEnabledToggle(!ttsEnabled)}
-            className="h-7 text-[11px] font-bold text-muted-foreground hover:text-foreground px-2 rounded-lg"
+            className="h-6.5 text-[10.5px] font-bold text-muted-foreground hover:text-foreground px-2 rounded-lg"
           >
             {ttsEnabled ? "Tắt tiếng" : "Bật tiếng"}
           </Button>

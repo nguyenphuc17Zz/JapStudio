@@ -1,36 +1,23 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
-import {
-  Crown,
-  Mic,
-  Clock,
-  Play,
-  RotateCcw,
-  Sparkles,
-  BookOpen,
-  Edit3,
-  CheckCircle2,
-} from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useKeigoSession } from "@/features/keigo/hooks/useKeigoSession";
 import { ReflexTimer as KeigoTimer } from "@/features/reflex/components/ReflexTimer";
 import { CombatCapsuleHUD } from "@/features/reflex/components/CombatCapsuleHUD";
 import { KeigoPromptCard } from "@/features/keigo/components/KeigoPromptCard";
 import { KeigoResultCard } from "@/features/keigo/components/KeigoResultCard";
+import { KeigoCoachPanel } from "@/features/keigo/components/KeigoCoachPanel";
 import { KeigoSessionSummary } from "@/features/keigo/components/KeigoSessionSummary";
-import { KeigoCheatsheetModal } from "@/features/keigo/components/KeigoCheatsheetModal";
-import { KeigoFormulaFilterModal } from "@/features/keigo/components/KeigoFormulaFilterModal";
-import { KeigoLobby, KEIGO_SUB_MODES, PRESSURE_LEVELS } from "@/features/keigo/components/KeigoLobby";
+import { StudioSpeakingController } from "@/features/reflex/components/StudioSpeakingController";
+import { KEIGO_SUB_MODES, PRESSURE_LEVELS } from "@/features/keigo/constants";
 import { GlobalKeybindingsModal } from "@/components/layout/global-keybindings-modal";
 import { useSystemKeybindings, formatKeyDisplay } from "@/hooks/use-system-keybindings";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
 import { soundFX } from "@/lib/sound-fx";
-import { cn } from "@/lib/utils";
+import { ExerciseSourceBadge } from "@/components/ui/exercise-source-badge";
 import { ZenLoadingState } from "@/components/ui/zen-loading-state";
-import { ZenUnifiedInputBar } from "@/components/ui/zen-unified-input-bar";
 
 export default function KeigoPage() {
   const [subMode, setSubMode] = useState("mixed");
@@ -38,16 +25,12 @@ export default function KeigoPage() {
   const [subtitleMode, setSubtitleMode] = useState<"hidden" | "japanese" | "japanese_reading" | "vietnamese">("japanese");
   const [startTrigger, setStartTrigger] = useState<"manual" | "auto">("manual");
   const [transcriptInput, setTranscriptInput] = useState("");
-  const [showTextInput, setShowTextInput] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const [showCheatsheet, setShowCheatsheet] = useState(false);
   const [showKeybindingsModal, setShowKeybindingsModal] = useState(false);
-  const [duration, setDuration] = useState<0 | 3 | 5 | 10 | 20>(5);
+  const [duration, setDuration] = useState<0 | 3 | 5 | 10 | 20>(0);
   const [sessionRemainingSec, setSessionRemainingSec] = useState(duration * 60);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [autoNext, setAutoNext] = useState(false);
-  const [selectedFormulas, setSelectedFormulas] = useState<string[]>([]);
-  const [showFormulaFilter, setShowFormulaFilter] = useState(false);
 
   const sessionEndTimestampRef = useRef<number | null>(null);
   const sessionPausedRemainingMsRef = useRef<number>(duration * 60 * 1000);
@@ -69,13 +52,6 @@ export default function KeigoPage() {
       if (savedTrigger) setStartTrigger(savedTrigger as any);
       const savedAutoNext = localStorage.getItem("speaking_keigo_autonext");
       if (savedAutoNext !== null) setAutoNext(savedAutoNext === "true");
-      const savedFormulas = localStorage.getItem("speaking_keigo_formulas");
-      if (savedFormulas) {
-        try {
-          const parsed = JSON.parse(savedFormulas);
-          if (Array.isArray(parsed)) setSelectedFormulas(parsed);
-        } catch {}
-      }
     } catch (e) {}
   }, []);
 
@@ -88,16 +64,14 @@ export default function KeigoPage() {
       localStorage.setItem("speaking_keigo_subtitle", subtitleMode);
       localStorage.setItem("speaking_keigo_trigger", startTrigger);
       localStorage.setItem("speaking_keigo_autonext", String(autoNext));
-      localStorage.setItem("speaking_keigo_formulas", JSON.stringify(selectedFormulas));
     } catch (e) {}
-  }, [subMode, pressure, duration, subtitleMode, startTrigger, autoNext, selectedFormulas]);
+  }, [subMode, pressure, duration, subtitleMode, startTrigger, autoNext]);
 
   const session = useKeigoSession({
     subMode,
     pressureLevel: pressure as any,
     autoNext,
     startTrigger,
-    formulas: selectedFormulas,
   });
   const sessionRef = useRef(session);
   sessionRef.current = session;
@@ -244,20 +218,6 @@ export default function KeigoPage() {
       if (matchesAction(e, "openKeybindingsModal") || matchesAction(e, "drillToggleHelp")) {
         e.preventDefault();
         setShowKeybindingsModal((v) => !v);
-      } else if (matchesAction(e, "keigoOpenCheatsheet")) {
-        e.preventDefault();
-        setShowCheatsheet((v) => !v);
-      } else if (matchesAction(e, "keigoToggleInputMode")) {
-        e.preventDefault();
-        setShowTextInput((v) => !v);
-      } else if (
-        matchesAction(e, "keigoToggleHint") &&
-        session.phase !== "idle" &&
-        session.phase !== "summary"
-      ) {
-        e.preventDefault();
-        soundFX.playFurin();
-        session.cycleHint();
       } else if (matchesAction(e, "keigoRetry") && session.phase === "result") {
         e.preventDefault();
         soundFX.playSuikinkutsu();
@@ -287,9 +247,7 @@ export default function KeigoPage() {
         e.preventDefault();
         playPromptAudio(false);
       } else if (e.key === "Escape") {
-        if (showCheatsheet) {
-          setShowCheatsheet(false);
-        } else if (showKeybindingsModal) {
+        if (showKeybindingsModal) {
           setShowKeybindingsModal(false);
         } else if (session.phase !== "idle") {
           session.setPhase("idle" as any);
@@ -316,13 +274,16 @@ export default function KeigoPage() {
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [session, transcriptInput, showCheatsheet, showKeybindingsModal, matchesAction, playPromptAudio, handleDirectSubmit]);
+  }, [session, transcriptInput, showKeybindingsModal, matchesAction, playPromptAudio, handleDirectSubmit]);
 
-  const formatSessionTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
+  // Zero-Lobby: Automatically initialize Endless Mode on mount if idle
+  const hasInitializedRef = useRef(false);
+  useEffect(() => {
+    if (!hasInitializedRef.current && session.phase === "idle" && !showSummary) {
+      hasInitializedRef.current = true;
+      session.startSession();
+    }
+  }, [session.phase, showSummary, session]);
 
   if (showSummary || session.phase === "summary") {
     return (
@@ -336,7 +297,7 @@ export default function KeigoPage() {
           }}
           onToLobby={() => {
             setShowSummary(false);
-            session.setPhase("idle" as any);
+            window.location.href = "/dashboard";
           }}
           onRetryWeak={() => {
             setShowSummary(false);
@@ -348,41 +309,15 @@ export default function KeigoPage() {
     );
   }
 
-  if (session.phase === "idle") {
+  if (session.phase === "idle" && !showSummary) {
     return (
-      <div className="py-2">
-        <KeigoLobby
-          subMode={subMode}
-          setSubMode={setSubMode}
-          pressure={pressure}
-          setPressure={setPressure}
-          subtitleMode={subtitleMode}
-          setSubtitleMode={setSubtitleMode}
-          duration={duration}
-          setDuration={setDuration}
-          autoNext={autoNext}
-          setAutoNext={setAutoNext}
-          startTrigger={startTrigger}
-          setStartTrigger={setStartTrigger}
-          selectedFormulas={selectedFormulas}
-          onOpenFormulaFilter={() => setShowFormulaFilter(true)}
-          onStartSession={() => {
-            soundFX.playKatana();
-            session.startSession();
-          }}
-          onOpenCheatsheet={() => setShowCheatsheet(true)}
-          onOpenHelp={() => setShowKeybindingsModal(true)}
-          error={session.error}
+      <div className="h-full flex items-center justify-center rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl shadow-xl p-6">
+        <ZenLoadingState
+          variant="studio"
+          title="AI Đang Thiết Lập Thử Thách Kính Ngữ..."
+          ja="敬語課題生成中..."
+          description="AI đang thiết lập tình huống kinh doanh, đối tượng giao tiếp và ngữ cảnh tôn kính..."
         />
-
-        <KeigoCheatsheetModal isOpen={showCheatsheet} onClose={() => setShowCheatsheet(false)} />
-        <KeigoFormulaFilterModal
-          open={showFormulaFilter}
-          onClose={() => setShowFormulaFilter(false)}
-          selectedFormulas={selectedFormulas}
-          onChangeSelectedFormulas={setSelectedFormulas}
-        />
-        <GlobalKeybindingsModal isOpen={showKeybindingsModal} onClose={() => setShowKeybindingsModal(false)} />
       </div>
     );
   }
@@ -408,9 +343,35 @@ export default function KeigoPage() {
         setStartTrigger={setStartTrigger}
         autoNext={autoNext}
         setAutoNext={setAutoNext}
-        filterTrigger={{
-          label: "Sổ tay kính ngữ",
-          onClick: () => setShowCheatsheet(true),
+        provenanceBadge={
+          activeExercise ? (
+            <ExerciseSourceBadge
+              source={activeExercise.generationSource || activeExercise.generation_source}
+            />
+          ) : undefined
+        }
+        extraActions={
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isEvaluating}
+            onClick={() => {
+              soundFX.playTaiko();
+              stopWebSpeech();
+              session.startNext();
+              setTranscriptInput("");
+            }}
+            className="h-8 px-2 sm:px-2.5 rounded-xl text-xs font-bold border-amber-500/30 text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 gap-1.5 shadow-2xs cursor-pointer transition-all"
+            title="Chuyển sang thử thách kính ngữ mới (Alt+R)"
+          >
+            <Sparkles className="h-3 w-3" />
+            <span className="hidden sm:inline">✨ Đổi câu</span>
+            <span className="sm:hidden">Đổi</span>
+          </Button>
+        }
+        onNextTask={() => {
+          stopWebSpeech();
+          session.startNext();
         }}
         onSubmit={() => {
           stopWebSpeech();
@@ -422,13 +383,12 @@ export default function KeigoPage() {
         }}
         onExit={() => {
           stopWebSpeech();
-          session.setPhase("idle" as any);
-          setShowSummary(false);
+          window.location.href = "/dashboard";
         }}
         onOpenHelp={() => setShowKeybindingsModal(true)}
       />
 
-      {/* 2. Middle Arena Stage */}
+      {/* 2. Middle Arena Stage (4 : 4 : 4 Balanced Split) */}
       <div className="flex-1 min-h-0 w-full overflow-hidden">
         {session.phase === "loading" || (!activeExercise && !showSummary) ? (
           <div className="h-full flex items-center justify-center rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl shadow-xl p-6">
@@ -441,8 +401,8 @@ export default function KeigoPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full min-h-0">
-            {/* LEFT COLUMN: Mission Deck */}
-            <div className="lg:col-span-5 h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
+            {/* COLUMN 1: Mission Deck & Countdown Timer (4 cols) */}
+            <div className="lg:col-span-4 h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
               <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-72 h-36 bg-amber-500/10 blur-3xl rounded-full pointer-events-none -z-10" />
 
               <div className="flex-1 min-h-0 overflow-y-auto pr-1">
@@ -451,8 +411,6 @@ export default function KeigoPage() {
                   subtitleMode={subtitleMode}
                   onPlayAudio={() => playPromptAudio(false)}
                   phase={session.phase}
-                  hintLevel={session.hintLevel}
-                  onCycleHint={session.cycleHint}
                 />
               </div>
 
@@ -468,125 +426,93 @@ export default function KeigoPage() {
               </div>
             </div>
 
-            {/* RIGHT COLUMN: Combat Action Deck or Result Card */}
-            <div className="lg:col-span-7 h-full min-h-0 relative">
+            {/* COLUMN 2: Sensei AI Coach Panel when practicing / Result Card after submission (4 cols) */}
+            <div className="lg:col-span-4 h-full min-h-0 relative">
               {session.phase === "result" && session.result ? (
-                <div className="h-full overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-                  <KeigoResultCard
-                    result={session.result}
-                    exercise={activeExercise}
-                    onNext={() => {
-                      soundFX.playSuikinkutsu();
-                      session.startNext();
-                    }}
-                    onRetry={() => {
-                      soundFX.playSuikinkutsu();
-                      session.retry();
-                    }}
-                    onCancelAutoNext={session.cancelAutoNext}
-                  />
-                </div>
+                <KeigoResultCard
+                  result={session.result}
+                  exercise={activeExercise}
+                  isPending={false}
+                  liveTranscript={session.speech.transcript || transcriptInput}
+                  onNext={() => {
+                    stopWebSpeech();
+                    session.startNext();
+                  }}
+                  onRetry={() => {
+                    stopWebSpeech();
+                    session.retry();
+                  }}
+                  onCancelAutoNext={session.cancelAutoNext}
+                />
               ) : (
-                <div className="h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
-                  {/* Status Header */}
-                  <div className="flex items-center justify-between gap-2 shrink-0 pb-2 border-b border-border/60 dark:border-white/10">
-                    <span className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                      {isEvaluating ? (
-                        <span className="text-primary">AI ĐANG CHẤM ĐIỂM...</span>
-                      ) : session.phase === "ready" ? (
-                        <>
-                          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                          <span className="text-amber-500">ĐÃ SẴN SÀNG TRẢ LỜI</span>
-                        </>
-                      ) : isRecordingOrWaiting ? (
-                        <>
-                          <Mic className="h-3.5 w-3.5 text-rose-500 animate-pulse" />
-                          <span className="text-rose-500">ĐANG THU ÂM KÍNH NGỮ...</span>
-                        </>
-                      ) : (
-                        <span>LUYỆN TẬP KÍNH NGỮ THỰC CHIẾN</span>
-                      )}
-                    </span>
-
-                    <Badge variant="outline" size="sm" className="text-[10px] font-mono border-white/15 bg-white/5 text-primary rounded-full">
-                      Business Keigo Engine
-                    </Badge>
-                  </div>
-
-                  {/* Soundwaves & Actions */}
-                  <div className="flex-1 min-h-0 flex flex-col items-center justify-center py-2 space-y-4">
-                    <div className="flex items-center gap-1.5 h-14">
-                      {[0.5, 1.1, 0.7, 1.5, 0.9, 1.3, 0.6].map((scale, i) => {
-                        const activeMultiplier = isRecordingOrWaiting ? 36 : 6;
-                        const height = Math.max(6, Math.min(50, activeMultiplier * scale + 6));
-                        return (
-                          <span
-                            key={i}
-                            className={cn(
-                              "w-1.5 rounded-full transition-all duration-75",
-                              isRecordingOrWaiting
-                                ? "bg-gradient-to-t from-rose-500 to-amber-400"
-                                : "bg-gradient-to-t from-blue-600 to-primary/60"
-                            )}
-                            style={{ height: `${height}px` }}
-                          />
-                        );
-                      })}
-                    </div>
-
-                    {session.phase === "ready" && (
-                      <Button
-                        size="lg"
-                        className="font-extrabold text-sm h-11 px-6 rounded-2xl shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all gap-2 bg-gradient-to-r from-amber-500 via-amber-600 to-primary text-white cursor-pointer ring-2 ring-amber-500/30"
-                        onClick={() => session.startVoiceRecording()}
-                      >
-                        <Mic className="h-4 w-4" />
-                        <span>🎙️ Bắt Đầu Trả Lời ({formatKeyDisplay(keybindings.keigoStartVoice)})</span>
-                      </Button>
-                    )}
-
-                    {isRecordingOrWaiting && (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="akane"
-                          className="font-bold text-xs h-9 px-4 rounded-xl shadow-xs gap-1.5 cursor-pointer bg-gradient-to-r from-blue-600 to-primary text-white"
-                          onClick={() => handleDirectSubmit(true)}
-                          disabled={isEvaluating}
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          <span>Nộp câu này</span>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="font-bold text-xs h-9 px-3 rounded-xl border-border/80 text-muted-foreground hover:text-foreground"
-                          onClick={() => session.skip()}
-                          disabled={isEvaluating}
-                        >
-                          Bỏ qua câu ({formatKeyDisplay(keybindings.keigoSkip)})
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Unified Input Bar */}
-                  <div className="shrink-0 pt-2 border-t border-border/60 dark:border-white/10">
-                    <ZenUnifiedInputBar
-                      value={transcriptInput}
-                      onChange={setTranscriptInput}
-                      onSubmit={handleDirectSubmit}
-                      speechTranscript={session.speech.transcript}
-                      isRecording={isRecordingOrWaiting}
-                      isEvaluating={isEvaluating}
-                      placeholder="Nói vào mic hoặc gõ câu kính ngữ... (VD: ご覧になります / 参ります)"
-                      submitButtonText={`Gửi (${formatKeyDisplay(keybindings.keigoSubmitOrNext)})`}
-                      autoFocus={true}
-                      hintText="Gõ phím thay mic khi ở văn phòng"
-                    />
-                  </div>
-                </div>
+                <KeigoCoachPanel
+                  exercise={activeExercise}
+                  onInsertText={(text) => {
+                    setTranscriptInput((prev) => {
+                      const trimmed = prev.trim();
+                      return trimmed ? `${trimmed} ${text}` : text;
+                    });
+                  }}
+                  onPlayAudio={(text) => {
+                    stopWebSpeech();
+                    speakJapaneseText(text, { rate: 0.95 });
+                  }}
+                />
               )}
+            </div>
+
+            {/* COLUMN 3: Studio Speaking Controller (4 cols) */}
+            <div className="lg:col-span-4 h-full min-h-0">
+              <StudioSpeakingController
+                phase={
+                  isEvaluating
+                    ? "evaluating"
+                    : isRecordingOrWaiting
+                    ? "recording"
+                    : session.phase === "prompt_playing"
+                    ? "prompt_playing"
+                    : session.phase === "ready"
+                    ? "ready"
+                    : session.phase === "result"
+                    ? "result"
+                    : "idle"
+                }
+                liveTranscript={session.speech.transcript || transcriptInput}
+                onStartRecord={() => {
+                  stopWebSpeech();
+                  session.startVoiceRecording();
+                }}
+                onStopRecord={() => {
+                  handleDirectSubmit(true);
+                }}
+                onSubmit={(text) => {
+                  if (text) setTranscriptInput(text);
+                  handleDirectSubmit(true);
+                }}
+                onRetry={() => {
+                  stopWebSpeech();
+                  session.retry();
+                }}
+                onNext={() => {
+                  stopWebSpeech();
+                  session.startNext();
+                }}
+                onSkip={() => {
+                  stopWebSpeech();
+                  session.skip();
+                }}
+                onResetTranscript={() => {
+                  setTranscriptInput("");
+                }}
+                isWhisperMode={session.recorder.isWhisperMode}
+                onToggleWhisperMode={() => session.recorder.toggleWhisperMode?.()}
+                volumeLevel={session.recorder.volumeLevel}
+                textInput={transcriptInput}
+                onTextInputChange={setTranscriptInput}
+                placeholder="Nói vào mic hoặc gõ câu kính ngữ... (VD: 承知いたしました / ご覧になります)"
+                promptSpeakerLabel="Đối tác / Cấp trên"
+                onPlayPrompt={() => playPromptAudio(false)}
+              />
             </div>
           </div>
         )}
@@ -600,12 +526,10 @@ export default function KeigoPage() {
           <span className="hidden md:inline"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.keigoListenPrompt)}</kbd> Nghe đề</span>
         </div>
         <div className="flex items-center gap-2">
-          <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.keigoOpenCheatsheet)}</kbd> Sổ tay</span>
           <span><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">Esc</kbd> Thoát</span>
         </div>
       </div>
 
-      <KeigoCheatsheetModal isOpen={showCheatsheet} onClose={() => setShowCheatsheet(false)} />
       <GlobalKeybindingsModal isOpen={showKeybindingsModal} onClose={() => setShowKeybindingsModal(false)} />
     </div>
   );

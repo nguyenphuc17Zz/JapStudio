@@ -43,3 +43,13 @@ def test_no_repetition_burst():
             seen.add(t["text"])
     # 18 draws from 15-turn pool with shuffle queues -> at least 10 unique
     assert len(seen) >= 10
+
+
+def test_generator_force_ai_parameter():
+    import inspect
+    from app.domains.aizuchi.dynamic_generator import AIAizuchiGenerator
+
+    sig = inspect.signature(AIAizuchiGenerator.generate_dynamic_exercise)
+    assert "force_ai" in sig.parameters
+    assert sig.parameters["force_ai"].default is False
+

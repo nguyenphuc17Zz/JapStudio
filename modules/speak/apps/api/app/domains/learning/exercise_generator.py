@@ -57,20 +57,17 @@ class ExerciseGenerator:
         if ex_type_str.startswith("interpret_"):
             return await self._generate_interpret_exercise(user_id, priority, state, template_info, recent_signatures)
 
-        # 1. Attempt AI Personalization (pass reflex/keigo/pitch/situational overrides via extra_metadata if present)
+        # 1. Attempt AI Personalization (pass reflex/keigo/situational overrides via extra_metadata if present)
         reflex_overrides = None
         keigo_overrides = None
-        pitch_overrides = None
         situational_overrides = None
         if priority.recommended_exercise_type.value.startswith("reflex"):
             reflex_overrides = getattr(priority, "metadata", None) or {}
         if priority.recommended_exercise_type.value.startswith("keigo"):
             keigo_overrides = getattr(priority, "metadata", None) or {}
-        if priority.recommended_exercise_type.value.startswith("pitch") or priority.recommended_exercise_type.value in ("mora_length", "vowel_devoicing", "pitch_contour", "pitch_recognition"):
-            pitch_overrides = getattr(priority, "metadata", None) or {}
         if priority.recommended_exercise_type.value.startswith("situational"):
             situational_overrides = getattr(priority, "metadata", None) or {}
-        ai_data = await self._generate_with_ai(user_id, priority, state, template_info, recent_topics, reflex_overrides, keigo_overrides, pitch_overrides, situational_overrides)
+        ai_data = await self._generate_with_ai(user_id, priority, state, template_info, recent_topics, reflex_overrides, keigo_overrides, situational_overrides)
 
         # 2. Validate AI result
         is_valid = False
@@ -97,7 +94,7 @@ class ExerciseGenerator:
         if scaffold_hint and priority.difficulty == DifficultyLevel.EASY:
             scaffold_level_str = ScaffoldingLevel.KEYWORD_HINT.value
 
-        # Preserve reflex/keigo/pitch/situational config if provided by template or AI
+        # Preserve reflex/keigo/situational config if provided by template or AI
         extra_meta: dict[str, Any] = {"priority_score": priority.priority_score, "item_type": item_type_str}
         if ex_type_str.startswith("reflex"):
             _rc = {}
@@ -119,16 +116,6 @@ class ExerciseGenerator:
                 _kc.setdefault("timer_limit_ms", ai_data["timer_limit_ms"])
             if _kc:
                 extra_meta["keigo_config"] = _kc
-        if ex_type_str.startswith("pitch") or ex_type_str in ("mora_length", "vowel_devoicing", "pitch_contour", "pitch_recognition"):
-            _pc = {}
-            if ai_data.get("pitch_config"):
-                _pc.update(ai_data["pitch_config"])
-            if pitch_overrides:
-                _pc.update({k: v for k, v in pitch_overrides.items() if k in ("timer_limit_ms", "pressure_level", "pitch_pattern", "reading", "mora_count")})
-            if ai_data.get("timer_limit_ms"):
-                _pc.setdefault("timer_limit_ms", ai_data["timer_limit_ms"])
-            if _pc:
-                extra_meta["pitch_config"] = _pc
         if ex_type_str.startswith("situational"):
             _sc = {}
             if ai_data.get("situational_config"):
@@ -188,7 +175,7 @@ class ExerciseGenerator:
             estimated_minutes=ai_data.get("estimated_minutes", template_info["default_estimated_minutes"]),
             template_version=template_info.get("template_version", "v1"),
             generator_version=self.GENERATOR_VERSION,
-            prompt_version=LearningPrompts.INTERPRET_GEN_PROMPT_VERSION if ex_type_str.startswith("interpret_") else LearningPrompts.BUILDER_GEN_PROMPT_VERSION if ex_type_str.startswith("sentence_") else LearningPrompts.AIZUCHI_GEN_PROMPT_VERSION if ex_type_str.startswith(("aizuchi", "warikomi")) else LearningPrompts.SITUATIONAL_GEN_PROMPT_VERSION if ex_type_str.startswith("situational") else LearningPrompts.PITCH_GEN_PROMPT_VERSION if ex_type_str.startswith("pitch") or ex_type_str in ("mora_length", "vowel_devoicing", "pitch_contour", "pitch_recognition") else LearningPrompts.KEIGO_GEN_PROMPT_VERSION if ex_type_str.startswith("keigo") else LearningPrompts.REFLEX_GEN_PROMPT_VERSION if ex_type_str.startswith("reflex") else LearningPrompts.GEN_PROMPT_VERSION,
+            prompt_version=LearningPrompts.INTERPRET_GEN_PROMPT_VERSION if ex_type_str.startswith("interpret_") else LearningPrompts.BUILDER_GEN_PROMPT_VERSION if ex_type_str.startswith("sentence_") else LearningPrompts.AIZUCHI_GEN_PROMPT_VERSION if ex_type_str.startswith(("aizuchi", "warikomi")) else LearningPrompts.SITUATIONAL_GEN_PROMPT_VERSION if ex_type_str.startswith("situational") else LearningPrompts.KEIGO_GEN_PROMPT_VERSION if ex_type_str.startswith("keigo") else LearningPrompts.REFLEX_GEN_PROMPT_VERSION if ex_type_str.startswith("reflex") else LearningPrompts.GEN_PROMPT_VERSION,
             provider=ai_data.get("_provider"),
             model=ai_data.get("_model"),
             exercise_signature=sig,
@@ -490,14 +477,12 @@ class ExerciseGenerator:
         recent_topics: list[str] | None,
         reflex_overrides: dict[str, Any] | None = None,
         keigo_overrides: dict[str, Any] | None = None,
-        pitch_overrides: dict[str, Any] | None = None,
         situational_overrides: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
         """Calls AIRouter to personalize template into structured exercise JSON."""
-        # Check if reflex/keigo/pitch/situational exercise (needs specialized prompt)
+        # Check if reflex/keigo/situational exercise (needs specialized prompt)
         is_reflex = priority.recommended_exercise_type.value.startswith("reflex")
         is_keigo = priority.recommended_exercise_type.value.startswith("keigo")
-        is_pitch = priority.recommended_exercise_type.value.startswith("pitch") or priority.recommended_exercise_type.value in ("mora_length", "vowel_devoicing", "pitch_contour", "pitch_recognition")
         is_situational = priority.recommended_exercise_type.value.startswith("situational")
         if is_reflex:
             pressure = (reflex_overrides or {}).get("pressure_level", "normal")
@@ -530,21 +515,6 @@ class ExerciseGenerator:
                 social_context=ctx,
             )
             task = AITask.KEIGO_GENERATION
-            max_tokens = 700
-        elif is_pitch:
-            pressure = (pitch_overrides or {}).get("pressure_level", "normal")
-            timer_ms = (pitch_overrides or {}).get("timer_limit_ms", 5000)
-            pattern = (pitch_overrides or {}).get("pitch_pattern")
-            sys_inst, user_content = LearningPrompts.build_pitch_generation_prompt(
-                sub_mode=priority.recommended_exercise_type.value,
-                priority=priority,
-                state=state,
-                template_info=template_info,
-                pressure_level=pressure,
-                timer_ms=timer_ms,
-                pitch_pattern=pattern,
-            )
-            task = AITask.PITCH_GENERATION if hasattr(AITask, "PITCH_GENERATION") else AITask.EXERCISE_GENERATION
             max_tokens = 700
         elif is_situational:
             pressure = (situational_overrides or {}).get("pressure_level", "normal")

@@ -13,8 +13,6 @@ class LearningPrompts:
     REFLEX_EVAL_PROMPT_VERSION = "reflex.eval.v1"
     KEIGO_GEN_PROMPT_VERSION = "keigo.gen.v1"
     KEIGO_EVAL_PROMPT_VERSION = "keigo.eval.v1"
-    PITCH_GEN_PROMPT_VERSION = "pitch.gen.v1"
-    PITCH_EVAL_PROMPT_VERSION = "pitch.eval.v1"
     SITUATIONAL_GEN_PROMPT_VERSION = "situational.gen.v1"
     SITUATIONAL_EVAL_PROMPT_VERSION = "situational.eval.v1"
     AIZUCHI_GEN_PROMPT_VERSION = "aizuchi.gen.v1"
@@ -214,56 +212,6 @@ class LearningPrompts:
             f"User: {user_transcript}\n"
             f"Reaction: {reaction_latency_ms}ms / {timer_limit_ms}ms\n"
             f"</keigo_eval>"
-        )
-        return sys, user
-
-    @classmethod
-    def build_pitch_generation_prompt(
-        cls,
-        sub_mode: str,
-        priority: PriorityScore,
-        state: LearnerLearningState,
-        template_info: dict[str, Any],
-        pressure_level: str = "normal",
-        timer_ms: int = 5000,
-        pitch_pattern: list[str] | None = None,
-    ) -> tuple[str, str]:
-        base_sys, base_user = cls.build_exercise_generation_prompt(priority, state, template_info)
-        pitch_addon = (
-            f"\nBỔ SUNG PITCH ({sub_mode}):\n"
-            f"- Pressure: {pressure_level} ({timer_ms}ms)\n"
-            f"- Pitch pattern: {pitch_pattern}\n"
-            f"- Phải tạo minimal pair / mora / contour tự nhiên, không hard-code giant list, dựa trên provider.\n"
-            f"- acceptable_variants phải chứa biến thể đọc/cách nói tương đương.\n"
-        )
-        return base_sys + pitch_addon, base_user + pitch_addon
-
-    @classmethod
-    def build_pitch_evaluation_prompt(
-        cls,
-        sub_mode: str,
-        prompt: str,
-        user_transcript: str,
-        expected: str | None = None,
-        pitch_analysis: dict[str, Any] | None = None,
-        reaction_latency_ms: float | None = None,
-        timer_limit_ms: int | None = None,
-    ) -> tuple[str, str]:
-        sys = (
-            "Bạn là giám khảo CAO ĐỘ tiếng Nhật — đánh giá pitch accent, mora timing, devoicing, naturalness. "
-            "Phân biệt lexical pitch vs absolute Hz, mora vs length, devoicing là xu hướng không bắt buộc 100%. "
-            "Chấp nhận nhiều đáp án tự nhiên. "
-            "Trả về JSON: {success, score, grammar_score, naturalness_score, context_fit, pitch_accuracy, mora_accuracy, completeness, confidence, feedback, evidence}"
-        )
-        user = (
-            f"<pitch_eval>\n"
-            f"Sub-mode: {sub_mode}\n"
-            f"Prompt: {prompt}\n"
-            f"Expected: {expected or 'open'}\n"
-            f"PitchAnalysis: {pitch_analysis}\n"
-            f"User: {user_transcript}\n"
-            f"Reaction: {reaction_latency_ms}ms / {timer_limit_ms}ms\n"
-            f"</pitch_eval>"
         )
         return sys, user
 

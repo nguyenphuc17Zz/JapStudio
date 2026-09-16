@@ -159,7 +159,6 @@ async def get_sensei_diagnostic(
 
     reflex_attempts = [a for a in attempts if "reflex" in get_ex_type(a)]
     keigo_attempts = [a for a in attempts if "keigo" in get_ex_type(a)]
-    pitch_attempts = [a for a in attempts if "pitch" in get_ex_type(a) or "mora" in get_ex_type(a)]
     situational_attempts = [a for a in attempts if "situat" in get_ex_type(a)]
 
     def avg_score(items: list[ExerciseAttempt]) -> float:
@@ -183,13 +182,6 @@ async def get_sensei_diagnostic(
             "avg_score": avg_score(keigo_attempts),
             "status": "Thành thạo" if avg_score(keigo_attempts) >= 80 else "Đang cải thiện",
         },
-        "pitch": {
-            "name": "Cao Độ & Phách (Pitch & Mora)",
-            "icon": "🎵",
-            "count": len(pitch_attempts),
-            "avg_score": avg_score(pitch_attempts),
-            "status": "Thành thạo" if avg_score(pitch_attempts) >= 80 else "Đang cải thiện",
-        },
         "situations": {
             "name": "Tình Huống Thực Chiến (Situations)",
             "icon": "🎭",
@@ -205,7 +197,6 @@ async def get_sensei_diagnostic(
         f"- Tổng số lượt luyện tập: {len(attempts)}\n"
         f"- Phản xạ: {pillars['reflex']['count']} bài (Điểm TB: {pillars['reflex']['avg_score']})\n"
         f"- Kính ngữ: {pillars['keigo']['count']} bài (Điểm TB: {pillars['keigo']['avg_score']})\n"
-        f"- Cao độ & Phách: {pillars['pitch']['count']} bài (Điểm TB: {pillars['pitch']['avg_score']})\n"
         f"- Tình huống thực tế: {pillars['situations']['count']} bài (Điểm TB: {pillars['situations']['avg_score']})\n\n"
         f"Trả về đúng định dạng JSON:\n"
         f"{{\n"
@@ -214,7 +205,7 @@ async def get_sensei_diagnostic(
         f"  \"narrative\": \"Bạn đã hoàn thành các bài luyện với độ tập trung cao.\",\n"
         f"  \"top_strengths\": [\"Phản xạ câu đơn nhanh\", \"Nắm vững thể Desu/Masu\"],\n"
         f"  \"core_bottleneck\": \"Cần trau chuốt thêm về tính chuẩn xác Kính ngữ và ngữ điệu câu dài.\",\n"
-        f"  \"action_plan\": \"Dành 10 phút luyện Kính ngữ và 5 phút Cao độ Tokyo mỗi ngày.\",\n"
+        f"  \"action_plan\": \"Dành 10 phút luyện Kính ngữ và 5 phút Tình huống mỗi ngày.\",\n"
         f"  \"recommended_route\": \"/keigo\"\n"
         f"}}"
     )
@@ -243,7 +234,7 @@ async def get_sensei_diagnostic(
             "narrative": f"Bạn đã hoàn thành tổng cộng {len(attempts)} bài luyện. Nền tảng phản xạ và ngữ pháp đang ổn định.",
             "top_strengths": ["Phản xạ câu đơn nhanh", "Độ chính xác ngữ pháp cơ bản"],
             "core_bottleneck": "Cần trau chuốt thêm về tính chuẩn xác Kính ngữ và ngữ điệu câu dài.",
-            "action_plan": "Dành 10 phút luyện Kính ngữ và 5 phút Cao độ Tokyo mỗi ngày.",
+            "action_plan": "Dành 10 phút luyện Kính ngữ và 5 phút Tình huống mỗi ngày.",
             "recommended_route": "/keigo",
         }
 

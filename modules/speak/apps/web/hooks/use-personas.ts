@@ -29,16 +29,16 @@ export function usePersonas() {
     }
   }, []);
 
-  const createPersona = async (payload: PersonaCreateInput) => {
+  const createPersona = async (payload: PersonaCreateInput): Promise<Persona | null> => {
     setActionLoading(true);
     setError(null);
     try {
-      await personasApi.createPersona(payload);
+      const created = await personasApi.createPersona(payload);
       await fetchPersonas();
-      return true;
+      return created;
     } catch (err: any) {
       setError(err.message || "Failed to create persona");
-      return false;
+      return null;
     } finally {
       setActionLoading(false);
     }

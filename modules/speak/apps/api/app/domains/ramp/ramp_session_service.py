@@ -123,6 +123,7 @@ class RampSessionService:
         user_id: str,
         is_retry: bool = False,
         force_followup: bool = False,
+        force_ai: bool = False,
     ) -> tuple[Exercise, RampTaskSpec]:
         """Generate next exercise for session, persist as Exercise, return both."""
         session = await self.get_session(session_id, user_id)
@@ -163,6 +164,7 @@ class RampSessionService:
             previous_response=last_response,
             session_topic_context=topic_context,
             is_retry=is_retry,
+            force_ai=force_ai,
         )
 
         # Generate task spec

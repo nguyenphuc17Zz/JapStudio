@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import logger
 from app.domains.reflex.cache_service import ExerciseCacheService
+from app.shared.errors.exceptions import ValidationException
 from app.domains.ai.contracts import (
     AIMessage,
     AIMessageRole,
@@ -67,32 +68,12 @@ class AIReflexGenerator:
         category: str | None = None,
     ) -> dict[str, Any]:
         """
-        Orchestrates Adaptive Bandit, Spaced Decay Zero-Latency Serving, and Async Pool Growth.
-        Returns smart cached exercise instantly if available, while expanding the pool in the background.
+        100% fresh AI generation. If AI generation fails, raises an error immediately without mock fallback.
+        Saves fresh unique exercises to the SQLite database pool in the background.
         """
-        is_explore, pool_size = await self.cache_service.should_explore(
-            domain="reflex", sub_mode=sub_mode, difficulty=difficulty
-        )
-        if not is_explore:
-            cached = await self.cache_service.get_smart_exercise(
-                domain="reflex", sub_mode=sub_mode, difficulty=difficulty
-            )
-            if cached:
-                cached["timer_limit_ms"] = timer_for_level(pressure_level)
-                cached["pressure_level"] = pressure_level
-                # Trigger background expansion to continuously enrich pool without blocking user
-                self.cache_service.trigger_background_expansion(
-                    domain="reflex",
-                    sub_mode=sub_mode,
-                    difficulty=difficulty,
-                    generator_coroutine_factory=generator_coro_factory,
-                    category=category,
-                )
-                return cached
-
-        # Exploration turn or cache miss: generate fresh via Gemini
         fresh = await generator_coro_factory()
         if fresh and fresh.get("ai_generated") is not False:
+            fresh["generation_source"] = "ai"
             async def _save_bg(item):
                 try:
                     svc = ExerciseCacheService()
@@ -271,11 +252,8 @@ class AIReflexGenerator:
             })
             topic = data.get("topic", chosen_topic)
         except Exception as e:
-            logger.warning(f"[AIReflexGenerator] AI Q&A generation fallback: {e}")
-            result = self.factory.generate_qna(difficulty=difficulty, pressure_level=pressure_level)
-            result["ai_generated"] = False
-            result["fallback_reason"] = str(e)[:150]
-            return result
+            logger.error(f"[AIReflexGenerator] AI Q&A generation failed: {e}")
+            raise ValidationException(f"Không thể sinh câu hỏi Q&A từ AI: {e}. Vui lòng thử lại.")
 
         return {
             "title": f"瞬発 Q&A: {topic}",
@@ -342,15 +320,8 @@ class AIReflexGenerator:
             trans_vi = data.get("translation_vi", "Hôm nay tôi đi Tokyo.")
             cat = data.get("category", transformation_category or "casual")
         except Exception as e:
-            logger.warning(f"[AIReflexGenerator] AI Transformation fallback: {e}")
-            result = self.factory.generate_transformation(
-                difficulty=difficulty,
-                pressure_level=pressure_level,
-                transformation_category=transformation_category,
-            )
-            result["ai_generated"] = False
-            result["fallback_reason"] = str(e)[:150]
-            return result
+            logger.error(f"[AIReflexGenerator] AI Transformation failed: {e}")
+            raise ValidationException(f"Không thể sinh bài tập biến đổi câu từ AI: {e}. Vui lòng thử lại.")
 
         return {
             "title": f"瞬発・文型変換: {target_label}",
@@ -425,15 +396,8 @@ class AIReflexGenerator:
             idea_sparks = data.get("idea_sparks", [])
             cultural_note = data.get("cultural_note", "")
         except Exception as e:
-            logger.warning(f"[AIReflexGenerator] AI Contextual fallback: {e}")
-            result = self.factory.generate_context(
-                difficulty=difficulty,
-                pressure_level=pressure_level,
-                context_category=context_category,
-            )
-            result["ai_generated"] = False
-            result["fallback_reason"] = str(e)[:150]
-            return result
+            logger.error(f"[AIReflexGenerator] AI Contextual reaction failed: {e}")
+            raise ValidationException(f"Không thể sinh tình huống phản xạ từ AI: {e}. Vui lòng thử lại.")
 
         return {
             "title": f"瞬発・状況対応: {role}",

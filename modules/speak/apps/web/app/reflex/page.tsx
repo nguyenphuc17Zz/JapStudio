@@ -353,14 +353,6 @@ export default function ReflexPage() {
           setPressure={setPressure}
           duration={duration}
           setDuration={setDuration}
-          subtitleMode={subtitleMode}
-          setSubtitleMode={setSubtitleMode}
-          startTrigger={startTrigger}
-          setStartTrigger={setStartTrigger}
-          autoNext={autoNext}
-          setAutoNext={setAutoNext}
-          isReflexAdvancedOpen={isReflexAdvancedOpen}
-          setIsReflexAdvancedOpen={setIsReflexAdvancedOpen}
           filters={filters}
           keybindings={keybindings}
           timerMs={timerMs}

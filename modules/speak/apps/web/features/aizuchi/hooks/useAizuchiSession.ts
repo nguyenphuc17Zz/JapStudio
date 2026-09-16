@@ -5,6 +5,7 @@ import { useMicrophone } from "@/features/speaking/hooks/useMicrophone";
 import { useVoiceActivityDetection } from "@/features/speaking/hooks/useVoiceActivityDetection";
 import { useSpeechPreview } from "@/features/speaking/hooks/useSpeechPreview";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
+import { toast } from "@/lib/toast";
 import { useAizuchiWindow } from "./useAizuchiWindow";
 import * as aizuchiApi from "../services/aizuchi-api";
 import type {
@@ -64,6 +65,7 @@ export function useAizuchiSession(opts: UseAizuchiSessionOptions) {
   const [results, setResults] = useState<AizuchiResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const [isRegeneratingAI, setIsRegeneratingAI] = useState(false);
   const [stats, setStats] = useState({ total: 0, success: 0, bestLatency: Number.POSITIVE_INFINITY });
   const [streak, setStreak] = useState(0);
 
@@ -336,6 +338,43 @@ export function useAizuchiSession(opts: UseAizuchiSessionOptions) {
     }
   }, [playCurrentTurn]);
 
+  const regenerateWithAI = useCallback(async () => {
+    if (isRegeneratingAI) return;
+    setIsRegeneratingAI(true);
+    if (autoNextTimerRef.current) {
+      clearTimeout(autoNextTimerRef.current);
+      autoNextTimerRef.current = null;
+    }
+    try {
+      stopWebSpeech();
+    } catch {}
+    windowRef.current.stop();
+    micRef.current.releaseMicrophone();
+    speechPreviewRef.current.stopPreview();
+    setResult(null);
+    try {
+      const ex = await aizuchiApi.generateExercise({
+        subMode: optsRef.current.subMode,
+        relation: optsRef.current.relation,
+        windowProfile: optsRef.current.windowProfile,
+        speed: optsRef.current.speed ?? 1.0,
+        numTurns: 3,
+        force_ai: true,
+      });
+      if (!ex.npcTurns || ex.npcTurns.length === 0) {
+        throw new Error("Bài tập rỗng (NPC turns). Hãy thử lại.");
+      }
+      setExercise(ex);
+      setTurnIndex(0);
+      toast.success("✨ Đã sinh tình huống Aizuchi mới từ AI!");
+      setTimeout(() => playCurrentTurn(), 350);
+    } catch (e: any) {
+      toast.error(e?.message || "Không thể gọi AI sinh bài mới.");
+    } finally {
+      setIsRegeneratingAI(false);
+    }
+  }, [isRegeneratingAI, playCurrentTurn]);
+
   const stopSession = useCallback(() => {
     if (autoNextTimerRef.current) {
       clearTimeout(autoNextTimerRef.current);
@@ -448,6 +487,8 @@ export function useAizuchiSession(opts: UseAizuchiSessionOptions) {
     isPaused,
     setIsPaused,
     togglePause,
+    isRegeneratingAI,
+    regenerateWithAI,
     startSession,
     stopSession,
     nextTurn,

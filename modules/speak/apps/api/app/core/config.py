@@ -40,6 +40,18 @@ class Settings(BaseSettings):
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
 
+    def model_post_init(self, __context: object) -> None:
+        """Anchor relative SQLite paths to apps/api directory so running from root does not duplicate DB."""
+        api_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        if self.DATABASE_URL.startswith("sqlite+aiosqlite:///./"):
+            rel_file = self.DATABASE_URL[len("sqlite+aiosqlite:///./"):]
+            abs_path = os.path.join(api_dir, rel_file).replace("\\", "/")
+            self.DATABASE_URL = f"sqlite+aiosqlite:///{abs_path}"
+        if self.DATABASE_SYNC_URL.startswith("sqlite:///./"):
+            rel_file = self.DATABASE_SYNC_URL[len("sqlite:///./"):]
+            abs_path = os.path.join(api_dir, rel_file).replace("\\", "/")
+            self.DATABASE_SYNC_URL = f"sqlite:///{abs_path}"
+
 
 @lru_cache
 def get_settings() -> Settings:

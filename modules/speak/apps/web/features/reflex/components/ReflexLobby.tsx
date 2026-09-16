@@ -117,14 +117,6 @@ export interface ReflexLobbyProps {
   setPressure: (p: "infinite" | "relaxed" | "normal" | "fast" | "reflex" | "extreme") => void;
   duration: 0 | 3 | 5 | 10 | 20;
   setDuration: (d: 0 | 3 | 5 | 10 | 20) => void;
-  subtitleMode: "hidden" | "japanese" | "japanese_reading" | "vietnamese";
-  setSubtitleMode: (m: "hidden" | "japanese" | "japanese_reading" | "vietnamese") => void;
-  startTrigger: "manual" | "auto";
-  setStartTrigger: (t: "manual" | "auto") => void;
-  autoNext: boolean;
-  setAutoNext: React.Dispatch<React.SetStateAction<boolean>>;
-  isReflexAdvancedOpen: boolean;
-  setIsReflexAdvancedOpen: React.Dispatch<React.SetStateAction<boolean>>;
   filters: ReturnType<typeof useReflexFilters>;
   keybindings: any;
   timerMs: number;
@@ -139,14 +131,6 @@ export function ReflexLobby({
   setPressure,
   duration,
   setDuration,
-  subtitleMode,
-  setSubtitleMode,
-  startTrigger,
-  setStartTrigger,
-  autoNext,
-  setAutoNext,
-  isReflexAdvancedOpen,
-  setIsReflexAdvancedOpen,
   filters,
   keybindings,
   timerMs,
@@ -462,89 +446,6 @@ export function ReflexLobby({
             </div>
           </div>
 
-          {/* Progressive Disclosure: Subtitles, Start Trigger & Auto Next */}
-          <div className="border border-border/80 rounded-xl bg-muted/20 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setIsReflexAdvancedOpen((v) => !v)}
-              className="w-full px-2.5 py-1.5 flex items-center justify-between text-[11px] font-bold text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <span>Phụ đề & Chế độ xuất phát</span>
-              <span className="text-[10px] text-primary">{isReflexAdvancedOpen ? "▲" : "▼"}</span>
-            </button>
-
-            {isReflexAdvancedOpen && (
-              <div className="p-2.5 pt-1 space-y-2 border-t border-border/60 animate-in fade-in duration-150">
-                {/* Subtitle Mode */}
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-muted-foreground">Hiển thị đề bài:</span>
-                  <div className="grid grid-cols-3 gap-1 text-[10px]">
-                    {[
-                      { id: "japanese", label: "🇯🇵 Nhật" },
-                      { id: "vietnamese", label: "🇻🇳 Dịch" },
-                      { id: "hidden", label: "🎧 Ẩn" },
-                    ].map((opt) => (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => setSubtitleMode(opt.id as any)}
-                        className={cn(
-                          "py-1 rounded-lg font-bold border transition-all text-center",
-                          subtitleMode === opt.id
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-card border-border hover:bg-muted text-foreground"
-                        )}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Start Trigger Mode */}
-                <div className="space-y-1 pt-1 border-t border-border/40">
-                  <span className="text-[10px] font-bold text-muted-foreground">Chế độ xuất phát:</span>
-                  <div className="grid grid-cols-2 gap-1 text-[10px]">
-                    <button
-                      type="button"
-                      onClick={() => setStartTrigger("manual")}
-                      className={cn(
-                        "py-1 rounded-lg font-bold border transition-all text-center",
-                        startTrigger === "manual" ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border text-muted-foreground"
-                      )}
-                    >
-                      🎯 Chủ động
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setStartTrigger("auto")}
-                      className={cn(
-                        "py-1 rounded-lg font-bold border transition-all text-center",
-                        startTrigger === "auto" ? "bg-amber-500 text-white border-amber-500" : "bg-card border-border text-muted-foreground"
-                      )}
-                    >
-                      ⚡ Tự động
-                    </button>
-                  </div>
-                </div>
-
-                {/* Auto-Next */}
-                <div className="pt-1 border-t border-border/40 flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-muted-foreground">Tự chuyển câu:</span>
-                  <button
-                    type="button"
-                    onClick={() => setAutoNext((v) => !v)}
-                    className={cn(
-                      "px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all",
-                      autoNext ? "bg-emerald-600 text-white border-emerald-600" : "bg-muted border-border text-muted-foreground"
-                    )}
-                  >
-                    {autoNext ? "BẬT" : "TẮT"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Big CTA Start Button */}
           <Button

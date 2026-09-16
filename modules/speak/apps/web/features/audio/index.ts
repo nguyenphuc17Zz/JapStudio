@@ -9,13 +9,8 @@ export * from "./hooks/useAudioSession";
 export * from "./hooks/useAudioQueue";
 export * from "./hooks/useVAD";
 export * from "./hooks/useAudioLevelMeter";
-
-export * from "./components/AudioPlayButton";
-export * from "./components/SpeedSelector";
 export * from "./components/AudioLevelMeter";
-export * from "./components/RecordingButton";
 export * from "./components/RecordingWaveform";
-export * from "./components/PlaybackControls";
 export * from "./components/VoicePreview";
 export * from "./components/VoiceSelector";
 export * from "./components/MicrophoneCalibrationModal";
