@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PlaybackState } from "@/types/audio";
+import {
+  claimSpeechOutput,
+  releaseSpeechOutput,
+  type SpeechOutputOwner,
+} from "../services/speech-playback-coordinator";
 
 export interface UseAudioPlayerOptions {
   onPlaybackStarted?: () => void;
@@ -20,6 +25,8 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const activeBlobUrlRef = useRef<string | null>(null);
+  // Stable coordinator identity whose stop always calls the latest stop().
+  const ownerRef = useRef<SpeechOutputOwner>({ stop: () => {} });
 
   const cleanupActiveBlob = useCallback(() => {
     if (activeBlobUrlRef.current) {
@@ -29,6 +36,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   }, []);
 
   const stop = useCallback(() => {
+    releaseSpeechOutput(ownerRef.current);
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -39,6 +47,9 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
     setCurrentTime(0);
     setState("stopped");
   }, [cleanupActiveBlob]);
+
+  // Keep the coordinator owner pointed at the latest stop().
+  ownerRef.current.stop = stop;
 
   const pause = useCallback(() => {
     if (audioRef.current && state === "playing") {
@@ -76,6 +87,8 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   const playBase64 = useCallback(
     async (base64Data: string, format = "wav", speed = playbackSpeed): Promise<void> => {
       stop();
+      // Single-flight: cut any other speech output before starting ours.
+      claimSpeechOutput(ownerRef.current);
       if (!base64Data) return;
 
       setState("loading");
@@ -120,11 +133,13 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
           setState("completed");
           cleanupActiveBlob();
           setCurrentAudioUrl(null);
+          releaseSpeechOutput(ownerRef.current);
           options.onPlaybackEnded?.();
         };
 
         audio.onerror = () => {
           setState("error");
+          releaseSpeechOutput(ownerRef.current);
           const err = new Error("Audio playback failed");
           options.onError?.(err);
         };
@@ -133,6 +148,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       } catch (err: any) {
         console.error("[useAudioPlayer] Failed to play base64 audio:", err);
         setState("error");
+        releaseSpeechOutput(ownerRef.current);
         options.onError?.(err);
       }
     },
@@ -142,6 +158,8 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
   const playUrl = useCallback(
     async (url: string, speed = playbackSpeed): Promise<void> => {
       stop();
+      // Single-flight: cut any other speech output before starting ours.
+      claimSpeechOutput(ownerRef.current);
       if (!url) return;
 
       setState("loading");
@@ -172,11 +190,13 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
 
         audio.onended = () => {
           setState("completed");
+          releaseSpeechOutput(ownerRef.current);
           options.onPlaybackEnded?.();
         };
 
         audio.onerror = () => {
           setState("error");
+          releaseSpeechOutput(ownerRef.current);
           options.onError?.(new Error("Audio playback failed"));
         };
 
@@ -184,6 +204,7 @@ export function useAudioPlayer(options: UseAudioPlayerOptions = {}) {
       } catch (err: any) {
         console.error("[useAudioPlayer] Failed to play url:", err);
         setState("error");
+        releaseSpeechOutput(ownerRef.current);
         options.onError?.(err);
       }
     },

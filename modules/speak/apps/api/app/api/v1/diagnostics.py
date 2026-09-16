@@ -61,7 +61,7 @@ async def get_system_diagnostics(
         "speech": {
             "whisper_device": settings.WHISPER_DEVICE,
             "whisper_compute_type": settings.WHISPER_COMPUTE_TYPE,
-            "voicevox_url": settings.VOICEVOX_ENGINE_URL,
+            "default_tts_provider": settings.DEFAULT_TTS_PROVIDER,
         },
     }
 

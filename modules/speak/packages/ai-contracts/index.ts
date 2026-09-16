@@ -161,7 +161,7 @@ export interface AIUsageRecord {
 }
 
 export type STTProviderId = 'whisper_local' | 'whisper_api' | 'gemini_audio';
-export type TTSProviderId = 'voicevox' | 'gemini_tts' | 'edge_tts';
+export type TTSProviderId = 'edge_tts' | 'gemini_tts';
 
 export interface STTModelMetadata {
   id: string;

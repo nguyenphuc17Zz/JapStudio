@@ -6,6 +6,25 @@ export type BuilderSubMode = "sentence_assemble" | "sentence_expand" | "sentence
 export type BuilderSkill = "te_chain" | "relative_clause" | "conditional" | "nominalization" | "contraction";
 export type BuilderRelation = "casual_friend" | "business_polite";
 export type BuilderScaffold = "none" | "keyword_hint" | "sentence_starter" | "structured_options";
+export type BuilderControlLevel = "controlled" | "semi_controlled" | "free";
+
+export interface BuilderSuggestedVocab {
+  term: string;
+  reading?: string;
+  meaningVi: string;
+}
+
+export interface BuilderConnectorItem {
+  term: string;
+  meaningVi: string;
+  kind?: string;
+}
+
+export interface BuilderHintTier {
+  tier: 1 | 2 | 3 | 4;
+  title: string;
+  content: string;
+}
 
 export interface BuilderExercise {
   id: string;
@@ -22,12 +41,18 @@ export interface BuilderExercise {
   focusSkill: BuilderSkill;
   relation: BuilderRelation;
   scaffold: BuilderScaffold;
+  controlLevel: BuilderControlLevel;
   blind: boolean;
   timerMs: number;
   keywords: string[];
   starter: string | null;
   sourceSentence: string | null;
+  promptVi: string | null;
   situationVi: string | null;
+  template: string | null;
+  suggestedVocabulary: BuilderSuggestedVocab[];
+  connectorItems: BuilderConnectorItem[];
+  hints: BuilderHintTier[];
   expandRequirement: string | null;
   connectors: string[];
   canonical?: string;
@@ -109,18 +134,45 @@ export async function generateExercise(opts: GenerateOpts): Promise<BuilderExerc
   params.set("nonce", `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
   const data = (await apiClient.post(`/builder/exercises/generate?${params.toString()}`)) as any;
   const bc = data.extra_metadata?.builder_config || {};
+  const scaffold = bc.scaffold || opts.scaffold || "keyword_hint";
+  const controlLevel: BuilderControlLevel =
+    bc.control_level ||
+    (scaffold === "structured_options" || scaffold === "sentence_starter"
+      ? "controlled"
+      : scaffold === "keyword_hint"
+      ? "semi_controlled"
+      : "free");
+
   return {
     ...data,
     subMode: bc.sub_mode || data.exercise_type,
     focusSkill: bc.focus_skill || opts.focusSkill || "te_chain",
     relation: bc.relation || opts.relation || "casual_friend",
-    scaffold: bc.scaffold || opts.scaffold || "keyword_hint",
+    scaffold,
+    controlLevel,
     blind: !!bc.blind,
-    timerMs: bc.timer_limit_ms ?? opts.timerMs ?? 20000,
+    timerMs: bc.timer_limit_ms ?? opts.timerMs ?? 60000,
     keywords: bc.keywords || [],
     starter: bc.starter || data.scaffold_hint || null,
     sourceSentence: bc.source_sentence || null,
+    promptVi: bc.prompt_vi || bc.situation_vi || data.scenario || null,
     situationVi: bc.situation_vi || null,
+    template: bc.template || null,
+    suggestedVocabulary: (bc.suggested_vocabulary || []).map((v: any) => ({
+      term: v.term || "",
+      reading: v.reading || "",
+      meaningVi: v.meaning_vi || v.meaningVi || "",
+    })),
+    connectorItems: (bc.connector_items || []).map((c: any) => ({
+      term: c.term || "",
+      meaningVi: c.meaning_vi || c.meaningVi || "",
+      kind: c.kind || "connector",
+    })),
+    hints: (bc.hints || []).map((h: any) => ({
+      tier: h.tier,
+      title: h.title,
+      content: h.content,
+    })),
     expandRequirement: bc.expand_requirement || null,
     connectors: bc.connectors || [],
     canonical: bc.canonical || data.acceptable_variants?.[0] || "",

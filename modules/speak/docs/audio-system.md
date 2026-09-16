@@ -9,8 +9,8 @@
 ---
 
 ## 2. Text-to-Speech (TTS) Engine
-- **Engine**: Local VOICEVOX Engine (HTTP REST on port 50021).
-- **Voice Profiles**: High-quality Japanese personas (Zundamon, Shikikou, Tsugumi, Ritsu) with customizable speed (0.8x–1.5x) and pitch (-0.15 to +0.15).
+- **Engine**: Single-provider architecture: **Edge-TTS** (Microsoft Azure Neural online, ultra-natural Tokyo pitch accent).
+- **Voice Profiles**: Edge-TTS catalog loaded dynamically via `edge_tts.list_voices()` filtered to free `ja-JP` GA Neural voices only (verified live 2026-09-16: 2 voices — Nanami, Keita; Microsoft removed the rest from the free endpoint, 24h cache) with speed and volume controls.
 - **TTS Cache**: `InMemoryTTSCache` stores up to 500 audio chunks with a 2-hour TTL and total byte tracking to eliminate redundant synthesis of common Japanese phrases (`はい`, `そうです`, `わかりました`).
 
 ---

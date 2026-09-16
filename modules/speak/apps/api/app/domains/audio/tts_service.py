@@ -93,9 +93,9 @@ class TTSService:
                 f"[TTSService] Synthesis failed on provider '{request.provider}': {err}"
             )
             # 3. Fallback logic if enabled
-            if request.allow_fallback and request.provider != "voicevox":
-                logger.info(f"[TTSService] Falling back to default VOICEVOX provider for '{request.text[:20]}...'")
-                fallback_req = request.model_copy(update={"provider": "voicevox", "voice_id": "1", "allow_fallback": False})
+            if request.allow_fallback and request.provider != "edge_tts":
+                logger.info(f"[TTSService] Falling back to default edge_tts provider for '{request.text[:20]}...'")
+                fallback_req = request.model_copy(update={"provider": "edge_tts", "voice_id": "ja-JP-NanamiNeural", "allow_fallback": False})
                 return await self.synthesize(fallback_req)
             raise
 
@@ -103,7 +103,7 @@ class TTSService:
         self,
         text: str,
         voice_id: str,
-        provider: str = "voicevox",
+        provider: str = "edge_tts",
         speed: float = 1.0,
         pitch: float = 0.0,
         style: str | None = None,
@@ -126,32 +126,32 @@ class TTSService:
         health_list: list[ProviderHealth] = []
         now_str = datetime.now(timezone.utc).isoformat()
 
-        # Check VOICEVOX provider
-        try:
-            voicevox_provider = self.router.get_provider("voicevox")
-            health_dict = await voicevox_provider.health_check()
-            health_list.append(
-                ProviderHealth(
-                    provider_id="voicevox",
-                    name="VOICEVOX Engine (Local / Self-hosted)",
-                    is_available=health_dict.get("is_available", False),
-                    status_message=health_dict.get("status_message", "Unknown status"),
-                    checked_at=now_str,
-                    latency_ms=health_dict.get("latency_ms"),
-                    available_voices_count=health_dict.get("available_voices_count", 0),
+        for pid, prov in self.router._providers.items():
+            try:
+                h_dict = await prov.health_check()
+                name = "Edge-TTS (Azure Neural)" if pid == "edge_tts" else pid
+                health_list.append(
+                    ProviderHealth(
+                        provider_id=pid,
+                        name=name,
+                        is_available=h_dict.get("is_available", False),
+                        status_message=h_dict.get("status_message", "Unknown status"),
+                        checked_at=now_str,
+                        latency_ms=h_dict.get("latency_ms"),
+                        available_voices_count=h_dict.get("voices_count", 0),
+                    )
                 )
-            )
-        except Exception as e:
-            health_list.append(
-                ProviderHealth(
-                    provider_id="voicevox",
-                    name="VOICEVOX Engine",
-                    is_available=False,
-                    status_message=f"Offline ({str(e)})",
-                    checked_at=now_str,
-                    available_voices_count=0,
+            except Exception as e:
+                health_list.append(
+                    ProviderHealth(
+                        provider_id=pid,
+                        name=pid,
+                        is_available=False,
+                        status_message=f"Error ({str(e)})",
+                        checked_at=now_str,
+                        available_voices_count=0,
+                    )
                 )
-            )
 
         return health_list
 

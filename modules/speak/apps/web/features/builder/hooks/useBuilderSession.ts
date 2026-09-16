@@ -59,6 +59,8 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
   const [streak, setStreak] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isRegeneratingAI, setIsRegeneratingAI] = useState(false);
+  const [assembledText, setAssembledText] = useState("");
+  const [hintTier, setHintTier] = useState<1 | 2 | 3 | 4>(1);
 
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
@@ -261,6 +263,8 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
       stopWebSpeech();
     } catch {}
     setResult(null);
+    setAssembledText("");
+    setHintTier(1);
     void fetchExercise();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -297,6 +301,8 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
     setStats({ total: 0, success: 0 });
     setStreak(0);
     setIsPaused(false);
+    setAssembledText("");
+    setHintTier(1);
     void fetchExercise();
   }, [fetchExercise]);
 
@@ -409,6 +415,7 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
     timerRef.current.stop();
     setIsPaused(false);
     setResult(null);
+    setAssembledText("");
     setTimeout(() => playPrompt(), 350);
   }, [cancelAutoNext, playPrompt]);
 
@@ -434,6 +441,10 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
     error,
     stats,
     streak,
+    assembledText,
+    setAssembledText,
+    hintTier,
+    setHintTier,
     timer: { remainingMs: timer.remainingMs, totalMs: timer.totalMs, ratio: timer.ratio },
     combatTimer: { remainingMs: timer.remainingMs, totalLimitMs: timer.totalMs, progress: timer.ratio, state: timer.ratio > 0.5 ? "normal" as const : timer.ratio > 0.25 ? "warning" as const : "critical" as const, isActive: phase === "answering" },
     liveTranscript: speechPreview.interimTranscript,

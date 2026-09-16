@@ -18,6 +18,11 @@ import {
 } from "lucide-react";
 import type { ReflexResult } from "../services/reflex-api";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
+import {
+  claimSpeechOutput,
+  releaseSpeechOutput,
+  type SpeechOutputOwner,
+} from "@/features/audio/services/speech-playback-coordinator";
 import { UniversalFurigana } from "@/components/japanese/UniversalFurigana";
 import { cn } from "@/lib/utils";
 
@@ -190,6 +195,7 @@ function SummaryItemRow({ result, index }: { result: ReflexResult; index: number
   const [isPlayingUser, setIsPlayingUser] = useState(false);
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const userAudioOwnerRef = useRef<SpeechOutputOwner | null>(null);
 
   const isSuccess = result.success;
   const isTimeout = result.timedOut;
@@ -198,11 +204,27 @@ function SummaryItemRow({ result, index }: { result: ReflexResult; index: number
     if (!audioRef.current || !result.userAudioUrl) return;
     if (isPlayingUser) {
       audioRef.current.pause();
+      if (userAudioOwnerRef.current) {
+        releaseSpeechOutput(userAudioOwnerRef.current);
+        userAudioOwnerRef.current = null;
+      }
       setIsPlayingUser(false);
     } else {
       stopWebSpeech();
       setIsPlayingTTS(false);
-      audioRef.current.play().then(() => setIsPlayingUser(true)).catch(() => {});
+      const el = audioRef.current;
+      // Single-flight: cut any other speech before playing this recording.
+      const owner: SpeechOutputOwner = {
+        stop: () => {
+          try {
+            el.pause();
+          } catch {}
+          setIsPlayingUser(false);
+        },
+      };
+      userAudioOwnerRef.current = owner;
+      claimSpeechOutput(owner);
+      el.play().then(() => setIsPlayingUser(true)).catch(() => {});
     }
   };
 
@@ -233,7 +255,13 @@ function SummaryItemRow({ result, index }: { result: ReflexResult; index: number
         <audio
           ref={audioRef}
           src={result.userAudioUrl}
-          onEnded={() => setIsPlayingUser(false)}
+          onEnded={() => {
+            if (userAudioOwnerRef.current) {
+              releaseSpeechOutput(userAudioOwnerRef.current);
+              userAudioOwnerRef.current = null;
+            }
+            setIsPlayingUser(false);
+          }}
           onError={() => setIsPlayingUser(false)}
         />
       )}

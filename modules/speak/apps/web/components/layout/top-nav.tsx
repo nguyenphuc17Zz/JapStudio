@@ -18,19 +18,11 @@ export function TopNav({
 }) {
   // useHealth monitors background connectivity and triggers auto-alerts when an outage occurs
   const { isHealthy, loading } = useHealth();
-  const [currentDate, setCurrentDate] = useState<string>("");
   const [jpDate, setJpDate] = useState<string>("");
   const [isKeybindingsOpen, setIsKeybindingsOpen] = useState(false);
 
   React.useEffect(() => {
     const now = new Date();
-    setCurrentDate(
-      now.toLocaleDateString("vi-VN", {
-        day: "numeric",
-        month: "short",
-        weekday: "short",
-      })
-    );
     const jpDays = ["日", "月", "火", "水", "木", "金", "土"];
     setJpDate(`${now.getMonth() + 1}月${now.getDate()}日 (${jpDays[now.getDay()]})`);
   }, []);
@@ -38,19 +30,12 @@ export function TopNav({
   return (
     <>
       <header className="h-[56px] border-b border-border/60 bg-card/75 backdrop-blur-xl px-4 md:px-6 flex items-center justify-between shrink-0 gap-3 relative z-30 shadow-xs">
-        {/* Left — date + JLPT */}
+        {/* Left — date + ModeSwitcher */}
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
-          <span className="hidden sm:flex items-center gap-2 text-sm">
+          <span className="hidden sm:inline-flex items-center text-sm">
             <span className="font-medium text-foreground text-xs sm:text-sm font-jp" suppressHydrationWarning>
               {jpDate || "8月25日"}
             </span>
-            <span className="text-muted-foreground text-xs hidden lg:inline" suppressHydrationWarning>
-              • {currentDate}
-            </span>
-          </span>
-          <span className="hidden sm:block h-4 w-px bg-border/80" />
-          <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20 font-jp shrink-0">
-            JLPT N3
           </span>
           <span className="hidden sm:block h-4 w-px bg-border/80" />
           <ModeSwitcher />

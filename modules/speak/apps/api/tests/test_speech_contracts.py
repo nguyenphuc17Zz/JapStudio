@@ -49,7 +49,7 @@ def test_tts_options_and_output_contracts():
         format="wav",
         duration_ms=1200,
         voice="2",
-        provider="voicevox",
+        provider="edge_tts",
         processing_time_ms=85,
     )
     assert output.duration_ms == 1200
@@ -69,4 +69,4 @@ def test_stt_router_models_recommendation():
 async def test_tts_router_fallback_voices():
     voices = await tts_router.get_available_voices()
     assert len(voices) > 0
-    assert any("ずんだもん" in v.name or "Zundamon" in v.name for v in voices)
+    assert any("Nanami" in v.name for v in voices)

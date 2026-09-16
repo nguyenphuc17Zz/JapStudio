@@ -52,7 +52,7 @@ async def analyze_pronunciation(
         expected_reading=request.expected_reading,
         target_type=request.target_type,
         reference_type=request.reference_type,
-        voicevox_speaker_id=request.voicevox_speaker_id,
+        voice_id=request.voice_id,
         session_id=request.session_id,
         turn_id=request.turn_id,
     )

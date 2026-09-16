@@ -1,6 +1,7 @@
 import base64
 import io
 import wave
+
 import numpy as np
 import pytest
 from httpx import AsyncClient
@@ -20,7 +21,7 @@ def generate_dummy_wav() -> str:
 @pytest.mark.asyncio
 async def test_audio_voices_and_health_endpoints(client: AsyncClient):
     # 1. Voices
-    resp = await client.get("/api/v1/audio/voices?provider=voicevox")
+    resp = await client.get("/api/v1/audio/voices?provider=edge_tts")
     assert resp.status_code == 200
     data = resp.json()
     assert isinstance(data, list)
@@ -33,7 +34,7 @@ async def test_audio_voices_and_health_endpoints(client: AsyncClient):
     health_data = health_resp.json()
     assert isinstance(health_data, list)
     assert len(health_data) >= 1
-    assert health_data[0]["provider_id"] == "voicevox"
+    assert any(h["provider_id"] == "edge_tts" for h in health_data)
 
 
 @pytest.mark.asyncio
@@ -41,9 +42,9 @@ async def test_audio_voice_profiles_crud(client: AsyncClient):
     # 1. Create Profile
     create_payload = {
         "name": "Senpai Friendly",
-        "provider": "voicevox",
-        "voice_id": "2",
-        "description": "Zundamon friendly tone",
+        "provider": "edge_tts",
+        "voice_id": "ja-JP-NanamiNeural",
+        "description": "Nanami friendly tone",
         "settings_json": {"speed": 0.95, "pitch": 0.0},
         "is_default": True,
         "is_favorite": True,

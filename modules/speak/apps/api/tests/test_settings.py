@@ -9,7 +9,7 @@ async def test_get_and_patch_settings(client: AsyncClient):
     assert get_res.status_code == 200
     data = get_res.json()
     assert data["default_ai_provider"] == "gemini"
-    assert data["default_tts_provider"] == "voicevox"
+    assert data["default_tts_provider"] == "edge_tts"
     assert data["theme"] == "system"
 
     # 2. Patch settings

@@ -11,9 +11,10 @@ export interface SavedLobbyPreferences {
   stt_provider: string;
   stt_model: string;
   tts_provider: string;
-  tts_engine: "voicevox" | "web_speech" | "none";
+  tts_engine: "edge_tts" | "web_speech" | "none";
   tts_enabled: boolean;
   tts_voice: string;
+  tts_speed?: number;
   auto_end_of_speech: boolean;
   vad_sensitivity: VADSensitivity;
 }
@@ -24,10 +25,11 @@ export const DEFAULT_SAVED_PREFERENCES: SavedLobbyPreferences = {
   ai_model: "auto",
   stt_provider: "faster_whisper",
   stt_model: "base",
-  tts_provider: "voicevox",
-  tts_engine: "voicevox",
+  tts_provider: "edge_tts",
+  tts_engine: "edge_tts",
   tts_enabled: true,
-  tts_voice: "1",
+  tts_voice: "ja-JP-NanamiNeural",
+  tts_speed: 1.0,
   auto_end_of_speech: true,
   vad_sensitivity: "medium",
 };
@@ -45,10 +47,21 @@ export function getSavedLobbyPreferences(): SavedLobbyPreferences {
     if (!raw) return DEFAULT_SAVED_PREFERENCES;
 
     const parsed = JSON.parse(raw);
-    return {
+    const prefs = {
       ...DEFAULT_SAVED_PREFERENCES,
       ...parsed,
     };
+    // Migrate legacy 'voicevox'/'kokoro' preferences to 'edge_tts'
+    if (prefs.tts_provider === "voicevox" || prefs.tts_provider === "kokoro") {
+      prefs.tts_provider = "edge_tts";
+    }
+    if (prefs.tts_engine === "voicevox" || (prefs.tts_engine as string) === "kokoro") {
+      prefs.tts_engine = "edge_tts";
+    }
+    if (prefs.tts_voice === "1" || (typeof prefs.tts_voice === "string" && /^(jf_|jm_)/.test(prefs.tts_voice))) {
+      prefs.tts_voice = "ja-JP-NanamiNeural";
+    }
+    return prefs;
   } catch (err) {
     console.warn("[LobbyPreferences] Failed to load preferences from localStorage:", err);
     return DEFAULT_SAVED_PREFERENCES;
@@ -70,9 +83,36 @@ export function saveLobbyPreferences(updates: Partial<SavedLobbyPreferences>): S
       ...updates,
     };
     localStorage.setItem(LOBBY_STORAGE_KEY, JSON.stringify(next));
+    window.dispatchEvent(
+      new CustomEvent("speaking_lobby_prefs_changed", { detail: next })
+    );
     return next;
   } catch (err) {
     console.warn("[LobbyPreferences] Failed to save preferences to localStorage:", err);
     return { ...DEFAULT_SAVED_PREFERENCES, ...updates };
   }
+}
+
+/**
+ * Synchronizes lobby preferences from backend AudioSettings.
+ */
+export function syncLobbyPreferencesFromAudioSettings(settings: {
+  default_tts_provider?: string | null;
+  default_voice_profile_id?: string | null;
+  default_tts_speed?: number | null;
+}): SavedLobbyPreferences {
+  const updates: Partial<SavedLobbyPreferences> = {};
+  if (settings.default_tts_provider) {
+    updates.tts_provider = settings.default_tts_provider;
+    if (["edge_tts", "web_speech"].includes(settings.default_tts_provider)) {
+      updates.tts_engine = settings.default_tts_provider as any;
+    }
+  }
+  if (settings.default_voice_profile_id) {
+    updates.tts_voice = settings.default_voice_profile_id;
+  }
+  if (settings.default_tts_speed != null) {
+    updates.tts_speed = settings.default_tts_speed;
+  }
+  return saveLobbyPreferences(updates);
 }

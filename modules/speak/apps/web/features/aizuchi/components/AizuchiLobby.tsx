@@ -193,7 +193,7 @@ export function AizuchiLobby({
                   Phản Hồi Tức Thì
                 </h1>
                 <Badge variant="matcha" size="sm" className="text-[10px] font-mono font-bold px-1.5 py-0">
-                  相づち • MODE 7
+                  相づち
                 </Badge>
               </div>
               <p className="text-[11px] text-muted-foreground truncate hidden sm:block">

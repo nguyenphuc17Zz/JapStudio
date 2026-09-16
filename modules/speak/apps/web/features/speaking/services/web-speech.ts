@@ -5,10 +5,20 @@
  * 100% offline-first, zero-latency, reliable voice synthesis using local system voices.
  */
 
+import { speechApi } from "./speech-api";
+import { getSavedLobbyPreferences } from "./lobby-preferences";
+import {
+  claimSpeechOutput,
+  releaseSpeechOutput,
+  type SpeechOutputOwner,
+} from "@/features/audio/services/speech-playback-coordinator";
+
 export interface WebSpeechOptions {
   rate?: number; // 0.8 to 1.2, default 1.0
   pitch?: number; // 0.8 to 1.2, default 1.0
   voiceURI?: string;
+  provider?: "edge_tts" | "web_speech" | string;
+  voiceId?: string;
   onStart?: () => void;
   onEnd?: () => void;
   onError?: (err: any) => void;
@@ -107,20 +117,59 @@ export function getPreferredJapaneseVoice(preferredURI?: string): SpeechSynthesi
 // Global active utterances set to prevent V8 Garbage Collection mid-speech
 const activeUtterancesSet = new Set<SpeechSynthesisUtterance>();
 let activeSpeakTimeout: NodeJS.Timeout | null = null;
+let activeAudioElement: HTMLAudioElement | null = null;
+let activeAudioBlobUrl: string | null = null;
+let activeAudioAbortController: AbortController | null = null;
+const clientTtsCache = new Map<string, { base64: string; format: string }>();
 
 export function stopWebSpeech(): void {
-  if (!isWebSpeechSupported()) return;
+  releaseSpeechOutput(webSpeechOwner);
   if (activeSpeakTimeout) {
     clearTimeout(activeSpeakTimeout);
     activeSpeakTimeout = null;
   }
-  try {
-    window.speechSynthesis.cancel();
-  } catch (e) {
-    console.warn("[WebSpeech] Cancel error:", e);
+  if (activeAudioAbortController) {
+    try {
+      activeAudioAbortController.abort();
+    } catch {}
+    activeAudioAbortController = null;
+  }
+  if (activeAudioElement) {
+    try {
+      activeAudioElement.onplay = null;
+      activeAudioElement.onended = null;
+      activeAudioElement.onerror = null;
+      activeAudioElement.pause();
+      activeAudioElement.currentTime = 0;
+      activeAudioElement.removeAttribute("src");
+      activeAudioElement.load();
+    } catch {}
+  }
+  if (activeAudioBlobUrl) {
+    try {
+      URL.revokeObjectURL(activeAudioBlobUrl);
+    } catch {}
+    activeAudioBlobUrl = null;
+  }
+  if (isWebSpeechSupported()) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch (e) {
+      console.warn("[WebSpeech] Cancel error:", e);
+    }
   }
   activeUtterancesSet.clear();
 }
+
+// Single-flight owner for everything spoken through this module
+// (shared audio element + speechSynthesis utterances).
+const webSpeechOwner: SpeechOutputOwner = {
+  stop: () => {
+    try {
+      stopWebSpeech();
+    } catch {}
+  },
+};
 
 export function getVietnameseWebVoices(): SpeechSynthesisVoice[] {
   // Always try fresh getVoices() — Chrome loads voices async and cachedVoices may still be empty on first call
@@ -257,6 +306,7 @@ export function speakVietnameseText(text: string, options: WebSpeechOptions = {}
 
       utterance.onend = () => {
         activeUtterancesSet.delete(utterance);
+        releaseSpeechOutput(webSpeechOwner);
         options.onEnd?.();
       };
 
@@ -284,23 +334,8 @@ export function speakVietnameseText(text: string, options: WebSpeechOptions = {}
   return true;
 }
 
-/**
- * Speaks Japanese text cleanly, directly, and reliably using offline voices.
- * Automatically filters out any embedded Vietnamese/Latin notes in parentheses.
- */
-export function speakJapaneseText(text: string, options: WebSpeechOptions = {}): boolean {
-  if (!isWebSpeechSupported() || !text?.trim()) {
-    options.onEnd?.();
-    return false;
-  }
-
-  // Clean text of non-Japanese noise, parentheses translations, or special delimiters
-  const cleanText = extractJapaneseSpokenText(text);
-  if (!cleanText) {
-    // If text was 100% Vietnamese / Latin, gracefully speak with Vietnamese voice
-    if (/[a-zA-ZÀ-ỹà-ỹ]/.test(text)) {
-      return speakVietnameseText(text, options);
-    }
+function speakWithWebSpeech(cleanText: string, options: WebSpeechOptions = {}): boolean {
+  if (!isWebSpeechSupported() || !cleanText) {
     options.onEnd?.();
     return false;
   }
@@ -317,7 +352,6 @@ export function speakJapaneseText(text: string, options: WebSpeechOptions = {}):
     } catch {}
   }
 
-  // If previous speech was cancelled, wait 50ms for Windows Audio buffer to purge before new speak
   const delayMs = wasSpeaking ? 50 : 0;
 
   activeSpeakTimeout = setTimeout(() => {
@@ -343,6 +377,7 @@ export function speakJapaneseText(text: string, options: WebSpeechOptions = {}):
 
       utterance.onend = () => {
         activeUtterancesSet.delete(utterance);
+        releaseSpeechOutput(webSpeechOwner);
         options.onEnd?.();
       };
 
@@ -366,6 +401,174 @@ export function speakJapaneseText(text: string, options: WebSpeechOptions = {}):
       options.onEnd?.();
     }
   }, delayMs);
+
+  return true;
+}
+
+/**
+ * Speaks Japanese text cleanly, directly, and reliably.
+ * Automatically synchronizes with the user's preferred TTS provider & voice from Settings (Edge-TTS).
+ * Falls back gracefully to offline Web Speech API if backend is unavailable.
+ */
+export function speakJapaneseText(text: string, options: WebSpeechOptions = {}): boolean {
+  if (!text?.trim()) {
+    options.onEnd?.();
+    return false;
+  }
+
+  // Single-flight: stop any other speech output and cancel our own
+  // previous in-flight synthesis so spam clicks can't stack audio.
+  if (activeAudioAbortController) {
+    try {
+      activeAudioAbortController.abort();
+    } catch {}
+    activeAudioAbortController = null;
+  }
+  claimSpeechOutput(webSpeechOwner);
+
+  // Clean text of non-Japanese noise, parentheses translations, or special delimiters
+  const cleanText = extractJapaneseSpokenText(text);
+  if (!cleanText) {
+    // If text was 100% Vietnamese / Latin, gracefully speak with Vietnamese voice
+    if (/[a-zA-ZÀ-ỹà-ỹ]/.test(text)) {
+      return speakVietnameseText(text, options);
+    }
+    options.onEnd?.();
+    return false;
+  }
+
+  // Read active TTS preferences
+  const prefs = getSavedLobbyPreferences();
+  const provider = (options.provider || prefs.tts_engine || prefs.tts_provider || "edge_tts").toLowerCase();
+  const voiceId = options.voiceId || prefs.tts_voice || "ja-JP-NanamiNeural";
+  const speed = options.rate ?? prefs.tts_speed ?? 1.0;
+  const pitch = options.pitch ?? 0.0;
+
+  // If user explicitly chose web_speech (browser), or disabled TTS
+  if (provider === "web_speech" || provider === "none" || !prefs.tts_enabled) {
+    return speakWithWebSpeech(cleanText, options);
+  }
+
+  // Otherwise, use Neural TTS (Edge-TTS) via speechApi
+  stopWebSpeech();
+
+  const cacheKey = `${provider}:${voiceId}:${speed.toFixed(2)}:${cleanText}`;
+
+  // Helper to play base64 audio
+  const playBase64 = (audioBase64: string, format = "mp3") => {
+    let hasStartedPlaying = false;
+    let isPlaybackFinished = false;
+
+    try {
+      const byteCharacters = atob(audioBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: `audio/${format}` });
+      const objectUrl = URL.createObjectURL(blob);
+
+      if (activeAudioBlobUrl) {
+        try {
+          URL.revokeObjectURL(activeAudioBlobUrl);
+        } catch {}
+      }
+      activeAudioBlobUrl = objectUrl;
+
+      if (!activeAudioElement) {
+        activeAudioElement = new Audio();
+      }
+
+      const audio = activeAudioElement;
+      // Detach any previous listeners before binding new source
+      audio.onplay = null;
+      audio.onended = null;
+      audio.onerror = null;
+
+      audio.src = objectUrl;
+      audio.playbackRate = 1.0;
+
+      audio.onplay = () => {
+        hasStartedPlaying = true;
+        options.onStart?.();
+      };
+
+      audio.onended = () => {
+        isPlaybackFinished = true;
+        // Clean up listeners immediately so setting src / revoking does not trigger onerror
+        audio.onplay = null;
+        audio.onended = null;
+        audio.onerror = null;
+        releaseSpeechOutput(webSpeechOwner);
+        try {
+          audio.removeAttribute("src");
+          audio.load();
+        } catch {}
+        if (activeAudioBlobUrl === objectUrl) {
+          try {
+            URL.revokeObjectURL(objectUrl);
+          } catch {}
+          activeAudioBlobUrl = null;
+        }
+        options.onEnd?.();
+      };
+
+      audio.onerror = (e) => {
+        audio.onplay = null;
+        audio.onended = null;
+        audio.onerror = null;
+        // If audio already started playing or ended, NEVER trigger fallback duplicate voice!
+        if (hasStartedPlaying || isPlaybackFinished) {
+          return;
+        }
+        console.warn("[UniversalTTS] Audio element error before playback, falling back to Web Speech:", e);
+        speakWithWebSpeech(cleanText, options);
+      };
+
+      audio.play().catch((playErr) => {
+        if (hasStartedPlaying || isPlaybackFinished) return;
+        console.warn("[UniversalTTS] Autoplay blocked, falling back to Web Speech:", playErr);
+        speakWithWebSpeech(cleanText, options);
+      });
+    } catch (err) {
+      if (hasStartedPlaying || isPlaybackFinished) return;
+      console.warn("[UniversalTTS] Base64 decode error, falling back to Web Speech:", err);
+      speakWithWebSpeech(cleanText, options);
+    }
+  };
+
+  // Check in-memory client cache
+  const cached = clientTtsCache.get(cacheKey);
+  if (cached) {
+    playBase64(cached.base64, cached.format);
+    return true;
+  }
+
+  // Fetch from backend
+  const abortCtrl = new AbortController();
+  activeAudioAbortController = abortCtrl;
+
+  speechApi
+    .synthesize(cleanText, voiceId, speed, pitch, provider)
+    .then((res) => {
+      if (abortCtrl.signal.aborted) return;
+      if (res && res.audio_base64) {
+        if (clientTtsCache.size >= 200) {
+          const firstKey = clientTtsCache.keys().next().value;
+          if (firstKey) clientTtsCache.delete(firstKey);
+        }
+        clientTtsCache.set(cacheKey, { base64: res.audio_base64, format: res.format || "mp3" });
+        playBase64(res.audio_base64, res.format || "mp3");
+      } else {
+        speakWithWebSpeech(cleanText, options);
+      }
+    })
+    .catch((err) => {
+      if (abortCtrl.signal.aborted) return;
+      console.warn("[UniversalTTS] Backend synthesis failed, falling back to Web Speech:", err);
+      speakWithWebSpeech(cleanText, options);
+    });
 
   return true;
 }

@@ -73,320 +73,117 @@ export const SAMPLE_PHRASES: SamplePhrase[] = [
 
 export function getVoiceCharacterMeta(voice: VoiceProfile): VoiceCharacterMeta {
   const name = (voice.name || "").toLowerCase();
+  const id = (voice.voice_id || voice.id || "").toLowerCase();
 
-  // Zundamon
-  if (name.includes("zundamon") || name.includes("ずんだもん")) {
-    return {
-      gender: "mascot",
-      genderLabel: "Linh vật / Anime",
-      vibe: "energetic",
-      vibeLabel: "Nhí nhảnh · Dễ thương",
-      avatarLetter: "ず",
-      gradient: "from-emerald-400 to-lime-500",
-      borderAccent: "border-emerald-500/40",
-      badgeClass: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/30",
-      recommendedFor: "Luyện phản xạ nhanh, vui vẻ",
-      descriptionVi: "Giọng linh vật đậu nành Zundamon đặc trưng, cao vút và tràn đầy năng lượng.",
-    };
-  }
-
-  // Shikoku Metan
-  if (name.includes("metan") || name.includes("めたん")) {
+  // 1. Edge-TTS Voices
+  if (id.includes("nanami") || name.includes("nanami") || name.includes("七海")) {
     return {
       gender: "female",
       genderLabel: "Nữ",
       vibe: "calm",
-      vibeLabel: "Điềm tĩnh · Trong trẻo",
-      avatarLetter: "め",
-      gradient: "from-pink-400 to-rose-500",
+      vibeLabel: "Chuẩn mực · Ấm áp",
+      avatarLetter: "七",
+      gradient: "from-pink-500 to-rose-600",
       borderAccent: "border-pink-500/40",
       badgeClass: "bg-pink-500/15 text-pink-600 dark:text-pink-300 border-pink-500/30",
-      recommendedFor: "Luyện phát âm chuẩn N5 - N3",
-      descriptionVi: "Giọng nữ thanh lịch, phát âm rõ từng mora, rất thích hợp cho người mới bắt đầu.",
+      recommendedFor: "Chuẩn Pitch Accent Tokyo, Shadowing, Tin tức",
+      descriptionVi: "Giọng nữ Tokyo chuẩn mực, phát âm rõ từng mora, ngữ điệu truyền hình tự nhiên tuyệt đối.",
     };
   }
 
-  // Kasukabe Tsumugi
-  if (name.includes("tsumugi") || name.includes("つむぎ")) {
+  if (id.includes("keita") || name.includes("keita") || name.includes("圭太")) {
+    return {
+      gender: "male",
+      genderLabel: "Nam",
+      vibe: "cool",
+      vibeLabel: "Lịch thiệp · Tự nhiên",
+      avatarLetter: "圭",
+      gradient: "from-blue-500 to-indigo-600",
+      borderAccent: "border-blue-500/40",
+      badgeClass: "bg-blue-500/15 text-blue-600 dark:text-blue-300 border-blue-500/30",
+      recommendedFor: "Giao tiếp công sở, Hội thoại thanh niên",
+      descriptionVi: "Giọng nam lịch thiệp, giọng điệu tự nhiên, rất phù hợp luyện hội thoại thực tế.",
+    };
+  }
+
+  if (id.includes("aoi") || name.includes("aoi") || name.includes("葵")) {
     return {
       gender: "female",
       genderLabel: "Nữ",
-      vibe: "cute",
-      vibeLabel: "Hoạt bát · Tự nhiên",
-      avatarLetter: "つ",
+      vibe: "energetic",
+      vibeLabel: "Tươi vui · Trẻ trung",
+      avatarLetter: "葵",
       gradient: "from-amber-400 to-orange-500",
       borderAccent: "border-amber-500/40",
       badgeClass: "bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/30",
-      recommendedFor: "Giao tiếp hàng ngày, ngữ điệu thực tế",
-      descriptionVi: "Giọng nữ trẻ trung như bạn bè cùng lớp, ngữ điệu tươi vui và tự nhiên.",
+      recommendedFor: "Giao tiếp bạn bè, đời sống hàng ngày",
+      descriptionVi: "Giọng nữ tươi tắn, năng động, mang năng lượng tích cực khi giao tiếp thường ngày.",
     };
   }
 
-  // Amehare Hau
-  if (name.includes("hau") || name.includes("はう")) {
+  if (id.includes("daichi") || name.includes("daichi") || name.includes("大智")) {
+    return {
+      gender: "male",
+      genderLabel: "Nam",
+      vibe: "deep",
+      vibeLabel: "Trầm ấm · Đĩnh đạc",
+      avatarLetter: "大",
+      gradient: "from-slate-600 to-zinc-800",
+      borderAccent: "border-slate-500/40",
+      badgeClass: "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30",
+      recommendedFor: "Thuyết trình, Kính ngữ Keigo, Phỏng vấn",
+      descriptionVi: "Giọng nam trầm ấm, phát âm dứt khoát, rất thích hợp luyện ngữ điệu trang trọng và kính ngữ.",
+    };
+  }
+
+  if (id.includes("mayu") || name.includes("mayu") || name.includes("真夕")) {
     return {
       gender: "female",
       genderLabel: "Nữ",
       vibe: "gentle",
-      vibeLabel: "Dịu dàng · Y tá",
-      avatarLetter: "は",
+      vibeLabel: "Dịu dàng · Tình cảm",
+      avatarLetter: "真",
       gradient: "from-teal-400 to-emerald-500",
       borderAccent: "border-teal-500/40",
       badgeClass: "bg-teal-500/15 text-teal-600 dark:text-teal-300 border-teal-500/30",
-      recommendedFor: "Ngữ điệu ân cần, hướng dẫn",
-      descriptionVi: "Giọng nữ y tá Amehare Hau trong trẻo, ân cần và từ tốn.",
+      recommendedFor: "Luyện nghe chậm, Hội thoại thân mật",
+      descriptionVi: "Giọng nữ nhẹ nhàng, ân cần, giúp người nghe cảm thấy thư giãn và dễ tiếp thu.",
     };
   }
 
-  // Namino Ritsu
-  if (name.includes("ritsu") || name.includes("リツ")) {
-    return {
-      gender: "female",
-      genderLabel: "Nữ",
-      vibe: "cool",
-      vibeLabel: "Cá tính · Rõ ràng",
-      avatarLetter: "り",
-      gradient: "from-indigo-400 to-purple-500",
-      borderAccent: "border-indigo-500/40",
-      badgeClass: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border-indigo-500/30",
-      recommendedFor: "Shadowing tốc độ cao",
-      descriptionVi: "Giọng nữ đĩnh đạc, phát âm sắc nét và dứt khoát.",
-    };
-  }
-
-  // Kurono Takehiro
-  if (name.includes("takehiro") || name.includes("kurono") || name.includes("玄野")) {
+  if (id.includes("naoki") || name.includes("naoki") || name.includes("直樹")) {
     return {
       gender: "male",
       genderLabel: "Nam",
       vibe: "energetic",
-      vibeLabel: "Trẻ trung · Thân thiện",
-      avatarLetter: "玄",
-      gradient: "from-blue-400 to-cyan-500",
-      borderAccent: "border-blue-500/40",
-      badgeClass: "bg-blue-500/15 text-blue-600 dark:text-blue-300 border-blue-500/30",
-      recommendedFor: "Hội thoại bạn bè, đời sống",
-      descriptionVi: "Giọng nam thanh niên tươi sáng, lịch sự và gần gũi.",
-    };
-  }
-
-  // Shirakami Kotaro
-  if (name.includes("kotaro") || name.includes("虎太郎") || name.includes("白上")) {
-    return {
-      gender: "male",
-      genderLabel: "Nam",
-      vibe: "cute",
-      vibeLabel: "Nhí nhảnh · Cậu bé",
-      avatarLetter: "虎",
-      gradient: "from-amber-500 to-yellow-600",
-      borderAccent: "border-amber-500/40",
-      badgeClass: "bg-amber-500/15 text-amber-600 dark:text-amber-300 border-amber-500/30",
-      recommendedFor: "Hội thoại đời thường dễ thương",
-      descriptionVi: "Giọng bé trai Shirakami Kotaro vui vẻ, hồn nhiên.",
-    };
-  }
-
-  // Aoyama Ryusei
-  if (name.includes("ryusei") || name.includes("aoyama") || name.includes("青山")) {
-    return {
-      gender: "male",
-      genderLabel: "Nam",
-      vibe: "deep",
-      vibeLabel: "Trầm ấm · Chuẩn mực",
-      avatarLetter: "青",
-      gradient: "from-slate-600 to-indigo-800",
-      borderAccent: "border-slate-500/40",
-      badgeClass: "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30",
-      recommendedFor: "Kính ngữ, phỏng vấn, tin tức",
-      descriptionVi: "Giọng nam trầm ấm, phát âm đĩnh đạc như phát thanh viên đài NHK.",
-    };
-  }
-
-  // Meimei Himari
-  if (name.includes("himari") || name.includes("冥鳴")) {
-    return {
-      gender: "female",
-      genderLabel: "Nữ",
-      vibe: "gentle",
-      vibeLabel: "Dịu dàng · Thì thầm",
-      avatarLetter: "冥",
-      gradient: "from-purple-400 to-pink-500",
-      borderAccent: "border-purple-500/40",
-      badgeClass: "bg-purple-500/15 text-purple-600 dark:text-purple-300 border-purple-500/30",
-      recommendedFor: "Luyện nghe ngữ điệu nhẹ nhàng",
-      descriptionVi: "Giọng nữ mềm mại, thì thầm ngọt ngào.",
-    };
-  }
-
-  // Kyushu Sora
-  if (name.includes("sora") || name.includes("九州")) {
-    return {
-      gender: "female",
-      genderLabel: "Nữ",
-      vibe: "calm",
-      vibeLabel: "Cô giáo · Ôn hòa",
-      avatarLetter: "空",
-      gradient: "from-sky-400 to-blue-500",
-      borderAccent: "border-sky-500/40",
-      badgeClass: "bg-sky-500/15 text-sky-600 dark:text-sky-300 border-sky-500/30",
-      recommendedFor: "Bài giảng, chỉ dẫn ngữ pháp",
-      descriptionVi: "Giọng nữ dịu dàng như cô giáo người Nhật hướng dẫn phát âm.",
-    };
-  }
-
-  // Mochiko-san
-  if (name.includes("mochiko") || name.includes("もち子")) {
-    return {
-      gender: "female",
-      genderLabel: "Nữ",
-      vibe: "calm",
-      vibeLabel: "Chị gái · Trưởng thành",
-      avatarLetter: "餅",
-      gradient: "from-rose-400 to-amber-500",
-      borderAccent: "border-rose-500/40",
-      badgeClass: "bg-rose-500/15 text-rose-600 dark:text-rose-300 border-rose-500/30",
-      recommendedFor: "Hội thoại tự nhiên chuẩn mực",
-      descriptionVi: "Giọng nữ Mochiko-san trưởng thành, ấm áp và gần gũi.",
-    };
-  }
-
-  // Kenzaki Mesuo
-  if (name.includes("mesuo") || name.includes("剣崎")) {
-    return {
-      gender: "male",
-      genderLabel: "Nam",
-      vibe: "energetic",
-      vibeLabel: "Bác sĩ · Tri thức",
-      avatarLetter: "剣",
-      gradient: "from-emerald-600 to-teal-700",
-      borderAccent: "border-emerald-500/40",
-      badgeClass: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/30",
-      recommendedFor: "Chuyên môn, đàm thoại",
-      descriptionVi: "Giọng Kenzaki Mesuo bác sĩ trí tuệ và linh hoạt.",
-    };
-  }
-
-  // WhiteCUL
-  if (name.includes("whitecul") || name.includes("cul")) {
-    return {
-      gender: "female",
-      genderLabel: "Nữ",
-      vibe: "cool",
-      vibeLabel: "Lạnh lùng · Trong suốt",
-      avatarLetter: "W",
-      gradient: "from-slate-300 to-indigo-400",
-      borderAccent: "border-indigo-400/40",
-      badgeClass: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-300 border-indigo-500/30",
-      recommendedFor: "Luyện phát âm rõ ràng",
-      descriptionVi: "Giọng nữ WhiteCUL trong trẻo, phong cách anime cuốn hút.",
-    };
-  }
-
-  // Tohoku Trio: Zunko, Kiritan, Itako
-  if (name.includes("ずん子") || name.includes("zunko")) {
-    return {
-      gender: "female",
-      genderLabel: "Nữ",
-      vibe: "calm",
-      vibeLabel: "Trang nhã · Dịu dàng",
-      avatarLetter: "ず",
-      gradient: "from-emerald-500 to-green-600",
-      borderAccent: "border-emerald-500/40",
-      badgeClass: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/30",
-      recommendedFor: "Phát âm chuẩn tiếng Nhật",
-      descriptionVi: "Giọng nữ Tohoku Zunko chuẩn mực, êm dịu.",
-    };
-  }
-
-  if (name.includes("きりたん") || name.includes("kiritan")) {
-    return {
-      gender: "female",
-      genderLabel: "Nữ",
-      vibe: "cute",
-      vibeLabel: "Dễ thương · Nhí nhảnh",
-      avatarLetter: "き",
-      gradient: "from-amber-400 to-rose-400",
-      borderAccent: "border-rose-400/40",
-      badgeClass: "bg-rose-500/15 text-rose-600 dark:text-rose-300 border-rose-500/30",
-      recommendedFor: "Phản xạ nhanh, vui tươi",
-      descriptionVi: "Giọng bé gái Tohoku Kiritan tinh nghịch và đáng yêu.",
-    };
-  }
-
-  if (name.includes("イタコ") || name.includes("itako")) {
-    return {
-      gender: "female",
-      genderLabel: "Nữ",
-      vibe: "gentle",
-      vibeLabel: "Trang nghiêm · Kính ngữ",
-      avatarLetter: "イ",
-      gradient: "from-purple-500 to-indigo-600",
-      borderAccent: "border-purple-500/40",
-      badgeClass: "bg-purple-500/15 text-purple-600 dark:text-purple-300 border-purple-500/30",
-      recommendedFor: "Luyện kính ngữ Keigo",
-      descriptionVi: "Giọng chị cả Tohoku Itako thanh nhã, phù hợp đàm thoại lịch thiệp.",
-    };
-  }
-
-  // Chibi Shikijii
-  if (name.includes("式じい") || name.includes("shikijii")) {
-    return {
-      gender: "male",
-      genderLabel: "Nam",
-      vibe: "deep",
-      vibeLabel: "Cụ già · Uyên bác",
-      avatarLetter: "爺",
-      gradient: "from-stone-600 to-amber-800",
-      borderAccent: "border-amber-700/40",
-      badgeClass: "bg-amber-700/15 text-amber-700 dark:text-amber-300 border-amber-700/30",
-      recommendedFor: "Truyện kể, phong thái cổ kính",
-      descriptionVi: "Giọng ông lão Chibi Shikijii hóm hỉnh và uyên thâm.",
-    };
-  }
-
-  // Nurse Robot
-  if (name.includes("ナースロボ") || name.includes("nurse")) {
-    return {
-      gender: "female",
-      genderLabel: "Nữ",
-      vibe: "cool",
-      vibeLabel: "Robot · Trong trẻo",
-      avatarLetter: "Ｔ",
-      gradient: "from-cyan-400 to-blue-500",
+      vibeLabel: "Hào hứng · Nhanh nhẹn",
+      avatarLetter: "直",
+      gradient: "from-cyan-500 to-blue-600",
       borderAccent: "border-cyan-500/40",
       badgeClass: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-300 border-cyan-500/30",
-      recommendedFor: "Luyện nghe ngữ điệu đều đặn",
-      descriptionVi: "Giọng y tá robot Type T độc đáo, rành mạch và dễ bắt âm.",
+      recommendedFor: "Luyện phản xạ nhanh N3 - N1",
+      descriptionVi: "Giọng nam trẻ trung, tốc độ linh hoạt, lý tưởng cho các bài tập phản xạ tốc độ cao.",
     };
   }
 
-  // Chugoku Usagi
-  if (name.includes("うさぎ") || name.includes("usagi")) {
+  if (id.includes("shiori") || name.includes("shiori") || name.includes("詩織")) {
     return {
       gender: "female",
       genderLabel: "Nữ",
-      vibe: "cute",
-      vibeLabel: "Ngây thơ · Mềm mại",
-      avatarLetter: "兎",
-      gradient: "from-pink-300 to-rose-400",
-      borderAccent: "border-pink-400/40",
-      badgeClass: "bg-pink-400/15 text-pink-600 dark:text-pink-300 border-pink-400/30",
-      recommendedFor: "Luyện phát âm nhẹ nhàng",
-      descriptionVi: "Giọng nữ Chugoku Usagi mềm mại, ngọt ngào như thỏ con.",
+      vibe: "calm",
+      vibeLabel: "Truyền cảm · Điềm đạm",
+      avatarLetter: "詩",
+      gradient: "from-violet-500 to-purple-600",
+      borderAccent: "border-violet-500/40",
+      badgeClass: "bg-violet-500/15 text-violet-600 dark:text-violet-300 border-violet-500/30",
+      recommendedFor: "Đọc diễn cảm, Thuyết minh bài học",
+      descriptionVi: "Giọng đọc truyền cảm và rõ ràng, thích hợp cho đọc sách nói và bài khóa dài.",
     };
   }
 
-  // Male names detection
-  const MALE_LOOKUP = [
-    "玄野", "虎太郎", "青山", "剣崎", "式じい", "紅桜", "雀松", "麒ヶ島", "まろん", "ナマハゲ"
-  ];
-  const isMale =
-    voice.gender === "male" ||
-    MALE_LOOKUP.some((m) => name.includes(m.toLowerCase())) ||
-    name.includes("男") ||
-    name.includes("male");
-
-  const avatarChar = (voice.name || "V").slice(0, 1).toUpperCase();
+  // Generic fallback
+  const isMale = voice.gender === "male" || name.includes("nam") || name.includes("male");
+  const avatarChar = (voice.name || "J").slice(0, 1).toUpperCase();
 
   return {
     gender: isMale ? "male" : "female",
@@ -400,55 +197,15 @@ export function getVoiceCharacterMeta(voice: VoiceProfile): VoiceCharacterMeta {
       ? "bg-blue-500/15 text-blue-600 dark:text-blue-300 border-blue-500/30"
       : "bg-rose-500/15 text-rose-600 dark:text-rose-300 border-rose-500/30",
     recommendedFor: "Luyện giao tiếp tiếng Nhật",
-    descriptionVi: voice.description || `Giọng đọc ${voice.name} tự nhiên từ VOICEVOX.`,
+    descriptionVi: voice.description || `Giọng đọc ${voice.name} tự nhiên.`,
   };
 }
 
-export const VOICEVOX_FALLBACK_CATALOG: VoiceProfile[] = [
-  { id: "1", voice_id: "1", provider: "voicevox", name: "四国めたん (Shikoku Metan - Normal)", style: "Normal", gender: "female", is_default: true },
-  { id: "2", voice_id: "2", provider: "voicevox", name: "四国めたん (Shikoku Metan - あまあま)", style: "あまあま", gender: "female" },
-  { id: "3", voice_id: "3", provider: "voicevox", name: "四国めたん (Shikoku Metan - ツンツン)", style: "ツンツン", gender: "female" },
-  { id: "4", voice_id: "4", provider: "voicevox", name: "四国めたん (Shikoku Metan - セクシー)", style: "セクシー", gender: "female" },
-  { id: "5", voice_id: "5", provider: "voicevox", name: "ずんだもん (Zundamon - Normal)", style: "Normal", gender: "female" },
-  { id: "6", voice_id: "6", provider: "voicevox", name: "ずんだもん (Zundamon - あまあま)", style: "あまあま", gender: "female" },
-  { id: "7", voice_id: "7", provider: "voicevox", name: "ずんだもん (Zundamon - ツンツン)", style: "ツンツン", gender: "female" },
-  { id: "8", voice_id: "8", provider: "voicevox", name: "ずんだもん (Zundamon - セクシー)", style: "セクシー", gender: "female" },
-  { id: "9", voice_id: "9", provider: "voicevox", name: "ずんだもん (Zundamon - ささやき)", style: "ささやき", gender: "female" },
-  { id: "10", voice_id: "10", provider: "voicevox", name: "春日部つむぎ (Kasukabe Tsumugi - Normal)", style: "Normal", gender: "female" },
-  { id: "11", voice_id: "11", provider: "voicevox", name: "雨晴はう (Amehare Hau - Normal)", style: "Normal", gender: "female" },
-  { id: "12", voice_id: "12", provider: "voicevox", name: "波音リツ (Namino Ritsu - Normal)", style: "Normal", gender: "female" },
-  { id: "13", voice_id: "13", provider: "voicevox", name: "波音リツ (Namino Ritsu - クイーン)", style: "クイーン", gender: "female" },
-  { id: "14", voice_id: "14", provider: "voicevox", name: "玄野武宏 (Kurono Takehiro - Normal)", style: "Normal", gender: "male" },
-  { id: "15", voice_id: "15", provider: "voicevox", name: "玄野武宏 (Kurono Takehiro - 喜び)", style: "喜び", gender: "male" },
-  { id: "16", voice_id: "16", provider: "voicevox", name: "玄野武宏 (Kurono Takehiro - ツンツン)", style: "ツンツン", gender: "male" },
-  { id: "17", voice_id: "17", provider: "voicevox", name: "白上虎太郎 (Shirakami Kotaro - ふつう)", style: "ふつう", gender: "male" },
-  { id: "18", voice_id: "18", provider: "voicevox", name: "白上虎太郎 (Shirakami Kotaro - わーい)", style: "わーい", gender: "male" },
-  { id: "19", voice_id: "19", provider: "voicevox", name: "青山龍星 (Aoyama Ryusei - Normal)", style: "Normal", gender: "male" },
-  { id: "20", voice_id: "20", provider: "voicevox", name: "青山龍星 (Aoyama Ryusei - 熱血)", style: "熱血", gender: "male" },
-  { id: "21", voice_id: "21", provider: "voicevox", name: "冥鳴ひまり (Meimei Himari - Normal)", style: "Normal", gender: "female" },
-  { id: "22", voice_id: "22", provider: "voicevox", name: "九州そら (Kyushu Sora - Normal)", style: "Normal", gender: "female" },
-  { id: "23", voice_id: "23", provider: "voicevox", name: "九州そら (Kyushu Sora - あまあま)", style: "あまあま", gender: "female" },
-  { id: "24", voice_id: "24", provider: "voicevox", name: "九州そら (Kyushu Sora - ツンツン)", style: "ツンツン", gender: "female" },
-  { id: "25", voice_id: "25", provider: "voicevox", name: "もち子さん (Mochiko-san - Normal)", style: "Normal", gender: "female" },
-  { id: "26", voice_id: "26", provider: "voicevox", name: "剣崎雌雄 (Kenzaki Mesuo - Normal)", style: "Normal", gender: "male" },
-  { id: "27", voice_id: "27", provider: "voicevox", name: "WhiteCUL (WhiteCUL - Normal)", style: "Normal", gender: "female" },
-  { id: "28", voice_id: "28", provider: "voicevox", name: "WhiteCUL (WhiteCUL - たのしい)", style: "たのしい", gender: "female" },
-  { id: "29", voice_id: "29", provider: "voicevox", name: "WhiteCUL (WhiteCUL - かなしい)", style: "かなしい", gender: "female" },
-  { id: "30", voice_id: "30", provider: "voicevox", name: "後鬼 (Goki - 人間ver.)", style: "人間ver.", gender: "female" },
-  { id: "31", voice_id: "31", provider: "voicevox", name: "後鬼 (Goki - 鬼ver.)", style: "鬼ver.", gender: "female" },
-  { id: "32", voice_id: "32", provider: "voicevox", name: "No.7 (Seven - Normal)", style: "Normal", gender: "female" },
-  { id: "33", voice_id: "33", provider: "voicevox", name: "No.7 (Seven - アナウンス)", style: "アナウンス", gender: "female" },
-  { id: "34", voice_id: "34", provider: "voicevox", name: "ちび式じい (Chibi Shikijii - Normal)", style: "Normal", gender: "male" },
-  { id: "35", voice_id: "35", provider: "voicevox", name: "小夜/SORYU (Sayo - Normal)", style: "Normal", gender: "female" },
-  { id: "36", voice_id: "36", provider: "voicevox", name: "ナースロボ＿タイプＴ (Nurse Robot Type T - Normal)", style: "Normal", gender: "female" },
-  { id: "37", voice_id: "37", provider: "voicevox", name: "ナースロボ＿タイプＴ (Nurse Robot Type T - 楽々)", style: "楽々", gender: "female" },
-  { id: "38", voice_id: "38", provider: "voicevox", name: "東北ずん子 (Tohoku Zunko - Normal)", style: "Normal", gender: "female" },
-  { id: "39", voice_id: "39", provider: "voicevox", name: "東北きりたん (Tohoku Kiritan - Normal)", style: "Normal", gender: "female" },
-  { id: "40", voice_id: "40", provider: "voicevox", name: "東北イタコ (Tohoku Itako - Normal)", style: "Normal", gender: "female" },
-  { id: "41", voice_id: "41", provider: "voicevox", name: "中国うさぎ (Chugoku Usagi - Normal)", style: "Normal", gender: "female" },
-  { id: "42", voice_id: "42", provider: "voicevox", name: "中国うさぎ (Chugoku Usagi - おどろき)", style: "おどろき", gender: "female" },
-  { id: "43", voice_id: "43", provider: "voicevox", name: "栗田まろん (Kurita Maron - Normal)", style: "Normal", gender: "male" },
-  { id: "44", voice_id: "44", provider: "voicevox", name: "あいえるたん (Aiel Tan - Normal)", style: "Normal", gender: "female" },
-  { id: "45", voice_id: "45", provider: "voicevox", name: "満別花丸 (Manbetsu Hanamaru - Normal)", style: "Normal", gender: "female" },
-  { id: "46", voice_id: "46", provider: "voicevox", name: "琴詠ニア (Kotoyomi Nia - Normal)", style: "Normal", gender: "female" },
+export const EDGE_TTS_VOICES_CATALOG: VoiceProfile[] = [
+  { id: "ja-JP-NanamiNeural", voice_id: "ja-JP-NanamiNeural", provider: "edge_tts", name: "Nanami (七海 - Nữ Tokyo chuẩn mực)", style: "Polite", gender: "female", is_default: true },
+  { id: "ja-JP-KeitaNeural", voice_id: "ja-JP-KeitaNeural", provider: "edge_tts", name: "Keita (圭太 - Nam tự nhiên, lịch thiệp)", style: "Polite", gender: "male" },
+];
+
+export const DEFAULT_VOICE_CATALOG: VoiceProfile[] = [
+  ...EDGE_TTS_VOICES_CATALOG,
 ];

@@ -8,7 +8,7 @@ User speaks Japanese
        ↓
 Faster-Whisper STT
        ↓
-AI Conversation Response & VOICEVOX TTS (Realtime Path — Zero Blocking)
+AI Conversation Response & Edge-TTS (Realtime Path — Zero Blocking)
        ↓
 User continues conversation seamlessly
        ↓

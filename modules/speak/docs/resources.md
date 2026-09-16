@@ -9,7 +9,6 @@
 | praat-parselmouth | 0.4+ | GPL-3.0 / BSD (Praat) | https://github.com/YannickJadoul/Parselmouth | Praat to_pitch, formant | GPL, allow | Secondary F0 cross-check |
 | WhisperX / faster-whisper | 1.0+ | MIT / Apache | https://github.com/m-bain/whisperX | Forced alignment per mora | MIT | Mora alignment WhisperX |
 | wordfreq | 3.x | MIT | https://github.com/rspeer/wordfreq | Frequency lookup | MIT | Corpus frequency (optional) |
-| jamdict/JMDict | - | CC BY-SA 3.0 | https://www.edrdg.org/jmdict/ | Lexical gloss with keigo tags | CC BY-SA, attribution required | Keigo lexical provider (optional) |
-| VOICEVOX Engine | - | GPL-3.0 | https://voicevox.hiroshiba.jp | TTS reference audio | GPL | Reference audio synthesis |
+| Edge-TTS | 6.1.19+ | Microsoft Service Agreement / MIT wrapper | https://github.com/rany2/edge-tts | High-quality online TTS reference audio | Allowed | Cloud neural TTS (Nanami, Keita...) |
 
 > App supports replacing any resource without rewriting Mode 3 via provider interfaces `JapanesePitchResourceProvider`, `JapaneseLanguageResourceProvider`.

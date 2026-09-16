@@ -25,7 +25,7 @@ Use this checklist before cutting a release or starting long-term continuous tra
 ### 4. Hardware & Speech Engines
 - [x] **Faster-Whisper CUDA Auto-Detection**: GPU accelerated inference active (`device="cuda"`), with CPU fallback.
 - [x] **LRU Whisper Eviction**: Loaded models capped at 2 to prevent VRAM exhaustion.
-- [x] **VOICEVOX Engine**: Endpoint reachable at `http://127.0.0.1:50021` with in-memory caching (500 items, 2h TTL).
+- [x] **TTS Engines**: Edge-TTS online with in-memory caching (500 items, 2h TTL).
 
 ### 5. Background Workers & Resiliency
 - [x] **Stale Job Recovery**: All workers automatically rescue orphaned `processing` jobs on startup.

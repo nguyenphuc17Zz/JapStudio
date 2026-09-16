@@ -20,7 +20,7 @@ class TargetType(str, Enum):
 
 class ReferenceType(str, Enum):
     HUMAN = "human"
-    SYNTHETIC = "synthetic"  # VOICEVOX or TTS
+    SYNTHETIC = "synthetic"  # Edge-TTS or synthetic TTS
     YOUTUBE = "youtube"
     UNKNOWN = "unknown"
 
@@ -214,4 +214,4 @@ class PronunciationTarget(BaseModel):
     target_type: TargetType = TargetType.SENTENCE
     reference_type: ReferenceType = ReferenceType.SYNTHETIC
     reference_audio_bytes: bytes | None = None
-    voicevox_speaker_id: int | None = 1
+    voice_id: str | None = "ja-JP-NanamiNeural"

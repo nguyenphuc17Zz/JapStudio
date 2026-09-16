@@ -6,7 +6,7 @@
 |---|---|---|---|
 | **Phase 1** | **Foundation Architecture** | ✅ Production Ready | FastAPI backend, Next.js 14 frontend, SQLAlchemy async, Fernet AES credential encryption, Docker Compose PostgreSQL & Redis. |
 | **Phase 2** | **AI Provider & Model System** | ✅ Production Ready | Normalized `AIRequest`/`AIResponse`, Multi-provider adapters (Gemini, Groq, OpenRouter), `AIRouter` with automatic fallback & circuit breaker, usage telemetry. |
-| **Phase 3** | **Voice Conversation MVP** | ✅ Production Ready | Web Audio VAD, Faster-Whisper local STT, Persona JLPT levels (N5–N1), VOICEVOX TTS synthesis, anti-echo suppression, real-time speaking room. |
+| **Phase 3** | **Voice Conversation MVP** | ✅ Production Ready | Web Audio VAD, Faster-Whisper local STT, Persona JLPT levels (N5–N1), Edge-TTS synthesis, anti-echo suppression, real-time speaking room. |
 | **Phase 4** | **Conversation Intelligence** | ✅ Production Ready | Asynchronous linguistic analysis worker, Pedagogical Prioritizer (`MUST_FIX`, `SHOULD_FIX`, `NATIVE_ALTERNATIVE`), session reviews, learner feedback ratings. |
 | **Phase 5** | **Learner Memory & Error Intelligence** | ✅ Production Ready | Persistent `LearnerMemory` store, immutable `MemoryEvidence` log, mathematical confidence & weakness scoring, JLPT sub-skill radar. |
 | **Phase 6** | **Pronunciation Engine** | ✅ Production Ready | Pitch contour extraction (F0 tracking), mora timing & rhythm assessment, phoneme accuracy scoring, visual pitch comparison vs synthetic reference. |
@@ -22,7 +22,7 @@
 
 ## Technical Specifications
 - **STT**: Faster-Whisper (`base`, `small`, `turbo`), GPU CUDA accelerated + CPU fallback.
-- **TTS**: VOICEVOX Engine (`50021`), 500-entry in-memory cache (2-hour TTL).
+- **TTS**: Edge-TTS (Azure Neural), 500-entry in-memory cache (2-hour TTL).
 - **LLM**: Google Gemini 1.5 (`Flash` & `Pro`), Groq LPU (`Llama-3.3-70B`, `Llama-3.1-8B-Instant`).
 - **Database**: PostgreSQL 16 (Async connection pool: 10 + 20 overflow) / SQLite (WAL mode).
 - **Cache**: Redis 7.0 + Graceful In-Memory fallback.

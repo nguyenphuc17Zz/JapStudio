@@ -48,7 +48,7 @@ async def test_speech_api_endpoints(client: AsyncClient):
         format="wav",
         duration_ms=800,
         voice="1",
-        provider="voicevox",
+        provider="edge_tts",
     )
 
     with patch.object(tts_router, "synthesize", new_callable=AsyncMock) as mock_tts:

@@ -2,7 +2,7 @@ import { apiClient } from "@/services/api-client";
 import { STTModelOption, TTSVoiceOption } from "../types";
 
 export const speechApi = {
-  async getVoices(provider = "voicevox"): Promise<TTSVoiceOption[]> {
+  async getVoices(provider = "edge_tts"): Promise<TTSVoiceOption[]> {
     return apiClient.get<TTSVoiceOption[]>(`/speech/voices?provider=${provider}`);
   },
 
@@ -33,13 +33,14 @@ export const speechApi = {
 
   async synthesize(
     text: string,
-    voiceId = "1",
+    voiceId = "ja-JP-NanamiNeural",
     speed = 1.0,
-    pitch = 0.0
+    pitch = 0.0,
+    provider = "edge_tts"
   ): Promise<{ audio_base64: string; format: string; duration_ms?: number }> {
     return apiClient.post<{ audio_base64: string; format: string; duration_ms?: number }>(
       "/speech/synthesize",
-      { text, voice_id: voiceId, speed, pitch, return_base64: true },
+      { text, voice_id: voiceId, speed, pitch, provider, return_base64: true },
       { timeoutMs: 60000 }
     );
   },

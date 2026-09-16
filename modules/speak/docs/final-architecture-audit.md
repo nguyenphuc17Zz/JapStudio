@@ -46,7 +46,7 @@ Pedagogical Strategy & Explanation
 |---|---|---|
 | **AI Router (`domains/ai`)** | Multi-provider orchestration, fallbacks, token budget guard, deduplication | Google Gemini, Groq, OpenRouter |
 | **Speech (`domains/speech`)** | STT transcription, Faster-Whisper GPU/CPU model management, LRU caching | `ctranslate2`, `faster_whisper` |
-| **Audio Platform (`domains/audio`)** | VOICEVOX TTS synthesis, audio normalization, in-memory TTS cache | VOICEVOX Engine |
+| **Audio Platform (`domains/audio`)** | Edge-TTS synthesis, audio normalization, in-memory TTS cache | `edge-tts` |
 | **Conversation (`domains/conversation`)** | Live session lifecycle, turns, transcripts, latency metrics | `domains/speech`, `domains/ai`, `domains/audio` |
 | **Intelligence (`domains/conversation_intelligence`)** | Background linguistic analysis, grammar corrections, naturalness | `domains/ai`, `domains/conversation` |
 | **Learner Memory (`domains/learner_memory`)** | Persistent error memory, mastery scoring, recurring weaknesses | `domains/conversation_intelligence` |

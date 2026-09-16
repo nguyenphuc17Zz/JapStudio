@@ -7,7 +7,7 @@ export default function SpeakingLoading() {
       variant="studio"
       title="Đang chuẩn bị phòng Luyện Nói Tự Do..."
       ja="AI会話ルーム準備中..."
-      description="Hệ thống đang nạp danh sách Đối tác AI, giọng đọc VOICEVOX và phòng thu âm..."
+      description="Hệ thống đang nạp danh sách Đối tác AI, giọng đọc AI chuẩn mực và phòng thu âm..."
     />
   );
 }

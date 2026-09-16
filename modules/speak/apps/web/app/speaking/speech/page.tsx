@@ -336,7 +336,7 @@ export default function SpeechPage() {
           <div className="relative flex items-center gap-3">
             <span className="h-9 w-9 rounded-xl bg-primary/10 border flex items-center justify-center text-primary"><Mic className="h-5 w-5"/></span>
             <div>
-              <h1 className="text-xl font-black">1分間スピーチ <span className="text-sm font-normal text-muted-foreground">Monologue Lab — Mode 5</span></h1>
+              <h1 className="text-xl font-black">1分間スピーチ <span className="text-sm font-normal text-muted-foreground">Monologue Lab</span></h1>
               <p className="text-sm text-muted-foreground">Sustain thought, structure ideas, speak continuously — AI generates fresh topic/genre/constraint each time</p>
             </div>
           </div>

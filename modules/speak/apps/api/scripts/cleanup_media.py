@@ -28,7 +28,8 @@ def cleanup_temp_media(dry_run: bool = True, max_age_hours: float = 2.0) -> int:
     patterns = [
         os.path.join(temp_dir, "tmp*.wav"),
         os.path.join(temp_dir, "whisper_*.wav"),
-        os.path.join(temp_dir, "voicevox_*.wav"),
+        os.path.join(temp_dir, "tts_*.wav"),
+        os.path.join(temp_dir, "tts_*.mp3"),
     ]
 
     now = time.time()

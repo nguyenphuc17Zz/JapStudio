@@ -23,6 +23,11 @@ import {
 } from "lucide-react";
 import { useVocabularyLookup } from "../context/VocabularyLookupContext";
 import { dispatchToast } from "@/lib/toast";
+import {
+  claimSpeechOutput,
+  releaseSpeechOutput,
+  type SpeechOutputOwner,
+} from "@/features/audio/services/speech-playback-coordinator";
 
 const JLPT_OPTIONS = [
   { value: "", label: "Tự động nhận diện cấp độ (All)" },
@@ -108,13 +113,29 @@ export function AIVocabularyLookupBox() {
 
     try {
       window.speechSynthesis.cancel();
+      // Single-flight: cut any other speech before speaking this word.
+      const owner: SpeechOutputOwner = {
+        stop: () => {
+          try {
+            window.speechSynthesis.cancel();
+          } catch {}
+          setIsPlayingAudio(false);
+        },
+      };
+      claimSpeechOutput(owner);
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
       utterance.lang = "ja-JP";
       utterance.rate = 0.9;
 
       utterance.onstart = () => setIsPlayingAudio(true);
-      utterance.onend = () => setIsPlayingAudio(false);
-      utterance.onerror = () => setIsPlayingAudio(false);
+      utterance.onend = () => {
+        releaseSpeechOutput(owner);
+        setIsPlayingAudio(false);
+      };
+      utterance.onerror = () => {
+        releaseSpeechOutput(owner);
+        setIsPlayingAudio(false);
+      };
 
       window.speechSynthesis.speak(utterance);
     } catch {

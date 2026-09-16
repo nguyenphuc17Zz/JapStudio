@@ -17,3 +17,4 @@ ruff>=0.3.0
 mypy>=1.9.0
 youtube-transcript-api>=0.6.3
 yt-dlp>=2024.1.0
+edge-tts>=6.1.0

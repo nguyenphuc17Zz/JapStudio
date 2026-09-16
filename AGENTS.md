@@ -20,7 +20,7 @@
 
 ### Module 1: JapSpeak (`modules/speak/`)
 - **Frontend**: Next.js 14+ App Router, React 18, TailwindCSS, Framer Motion, Lucide icons (Port 3000).
-- **Backend**: FastAPI, Faster-Whisper, VoiceVox client, SQLite `speaking_training.db` (Port 8000).
+- **Backend**: FastAPI, Faster-Whisper, Edge-TTS & Kokoro-82M TTS, SQLite `speaking_training.db` (Port 8000).
 - 🚨 **RULE**: **KHÔNG ĐƯỢC CHẠY `npm run build`** khi dev đang chạy. Dùng `npm run typecheck` (`tsc --noEmit`).
 
 ### Module 2: JapWrite (`modules/write/`)

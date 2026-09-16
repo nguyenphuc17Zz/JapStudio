@@ -14,6 +14,11 @@ import {
 } from "lucide-react";
 import { PracticeAttemptFeedback } from "@/types/shadowing";
 import { soundFX } from "@/lib/sound-fx";
+import {
+  claimSpeechOutput,
+  releaseSpeechOutput,
+  type SpeechOutputOwner,
+} from "@/features/audio/services/speech-playback-coordinator";
 import { cn } from "@/lib/utils";
 
 export interface CoroScoreCardProps {
@@ -51,9 +56,28 @@ export function CoroScoreCard({
 
     const audio = new Audio(feedback.user_audio_url);
     audioRef.current = audio;
-    audio.onended = () => setIsPlayingAudio(false);
-    audio.onerror = () => setIsPlayingAudio(false);
-    audio.play().catch(() => setIsPlayingAudio(false));
+    // Single-flight: cut any other speech before playing this recording.
+    const owner: SpeechOutputOwner = {
+      stop: () => {
+        try {
+          audio.pause();
+        } catch {}
+        setIsPlayingAudio(false);
+      },
+    };
+    claimSpeechOutput(owner);
+    audio.onended = () => {
+      releaseSpeechOutput(owner);
+      setIsPlayingAudio(false);
+    };
+    audio.onerror = () => {
+      releaseSpeechOutput(owner);
+      setIsPlayingAudio(false);
+    };
+    audio.play().catch(() => {
+      releaseSpeechOutput(owner);
+      setIsPlayingAudio(false);
+    });
     setIsPlayingAudio(true);
   };
 

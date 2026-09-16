@@ -21,6 +21,11 @@ import {
 } from "lucide-react";
 import type { ReflexResult, ReflexExercise } from "../services/reflex-api";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
+import {
+  claimSpeechOutput,
+  releaseSpeechOutput,
+  type SpeechOutputOwner,
+} from "@/features/audio/services/speech-playback-coordinator";
 import { formatJapaneseConjugationTarget } from "./ReflexPromptCard";
 import { UniversalFurigana } from "@/components/japanese/UniversalFurigana";
 import { soundFX } from "@/lib/sound-fx";
@@ -58,6 +63,7 @@ export function ReflexResultCard({
   const [isRevealed, setIsRevealed] = useState(false);
 
   const userAudioRef = useRef<HTMLAudioElement | null>(null);
+  const userAudioOwnerRef = useRef<SpeechOutputOwner | null>(null);
 
   // Reset revealed state on new exercise
   useEffect(() => {
@@ -206,11 +212,27 @@ export function ReflexResultCard({
 
     if (isUserAudioPlaying) {
       userAudioRef.current.pause();
+      if (userAudioOwnerRef.current) {
+        releaseSpeechOutput(userAudioOwnerRef.current);
+        userAudioOwnerRef.current = null;
+      }
       setIsUserAudioPlaying(false);
     } else {
       stopWebSpeech();
       setIsTTSPlaying(false);
-      userAudioRef.current.play().then(() => {
+      const el = userAudioRef.current;
+      // Single-flight: cut any other speech before playing this recording.
+      const owner: SpeechOutputOwner = {
+        stop: () => {
+          try {
+            el.pause();
+          } catch {}
+          setIsUserAudioPlaying(false);
+        },
+      };
+      userAudioOwnerRef.current = owner;
+      claimSpeechOutput(owner);
+      el.play().then(() => {
         setIsUserAudioPlaying(true);
       }).catch((e) => {
         console.warn("[ReflexResultCard] Audio play error:", e);
@@ -314,6 +336,10 @@ export function ReflexResultCard({
             }
           }}
           onEnded={() => {
+            if (userAudioOwnerRef.current) {
+              releaseSpeechOutput(userAudioOwnerRef.current);
+              userAudioOwnerRef.current = null;
+            }
             setIsUserAudioPlaying(false);
             setUserAudioCurrentTime(0);
           }}

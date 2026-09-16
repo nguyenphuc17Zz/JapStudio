@@ -24,7 +24,8 @@ import { CombatCapsuleHUD } from "@/features/reflex/components/CombatCapsuleHUD"
 import { StudioSpeakingController } from "@/features/reflex/components/StudioSpeakingController";
 import { BuilderResultCard } from "@/features/builder/components/BuilderArena";
 import { BuilderSummary } from "@/features/builder/components/BuilderArena";
-import { BuilderCoachPanel } from "@/features/builder/components/BuilderCoachPanel";
+import { BuilderTaskCard } from "@/features/builder/components/BuilderTaskCard";
+import { BuilderInteractiveBoard } from "@/features/builder/components/BuilderInteractiveBoard";
 import { BuilderLobby } from "@/features/builder/components/BuilderLobby";
 import { BuilderCheatsheetModal } from "@/features/builder/components/BuilderCheatsheetModal";
 import { GlobalKeybindingsModal } from "@/components/layout/global-keybindings-modal";
@@ -187,14 +188,15 @@ export default function BuilderPage() {
 
   const handleDirectSubmit = useCallback(
     async (allowEmpty = false) => {
-      const text = transcriptInput.trim() || session.liveTranscript.trim();
+      const text = transcriptInput.trim() || session.assembledText.trim() || session.liveTranscript.trim();
       if (!text && !allowEmpty) return;
       setTranscriptInput("");
+      session.setAssembledText("");
       soundFX.playTaiko();
       await session.submitManual(text);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [transcriptInput, session.liveTranscript]
+    [transcriptInput, session.assembledText, session.liveTranscript]
   );
 
   const lastResultId = session.result ? session.result.exerciseId : null;
@@ -221,6 +223,10 @@ export default function BuilderPage() {
       } else if (matchesAction(e, "builderSkip") && (isAnswering || isResult || isPrompt)) {
         e.preventDefault();
         session.skip();
+      } else if (e.key.toLowerCase() === "h" && !e.ctrlKey && !e.metaKey && !e.altKey && !isEvaluating) {
+        e.preventDefault();
+        soundFX.playTaiko();
+        session.setHintTier(((session.hintTier % 4) + 1) as 1 | 2 | 3 | 4);
       } else if (matchesAction(e, "builderListenPrompt") && ex) {
         e.preventDefault();
         playPromptAudio();
@@ -234,7 +240,7 @@ export default function BuilderPage() {
           e.preventDefault();
           session.startAnsweringNow();
         } else if (isAnswering) {
-          const text = transcriptInput.trim() || session.liveTranscript.trim();
+          const text = transcriptInput.trim() || session.assembledText.trim() || session.liveTranscript.trim();
           if (text) {
             e.preventDefault();
             void handleDirectSubmit(true);
@@ -259,6 +265,7 @@ export default function BuilderPage() {
         soundFX.playTaiko();
         void session.regenerateWithAI();
         setTranscriptInput("");
+        session.setAssembledText("");
       } else if (e.key === "Escape") {
         if (showCheatsheet) setShowCheatsheet(false);
         else if (showHelp) setShowHelp(false);
@@ -267,7 +274,7 @@ export default function BuilderPage() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, isReady, isAnswering, isResult, isPrompt, transcriptInput, showCheatsheet, showHelp]);
+  }, [phase, isReady, isAnswering, isResult, isPrompt, transcriptInput, session.assembledText, session.hintTier, showCheatsheet, showHelp]);
 
   const furiganaMode =
     subtitleMode === "hidden" ? "hidden" : subtitleMode === "japanese" ? "kanji" : "kanji_reading";
@@ -370,67 +377,47 @@ export default function BuilderPage() {
             />
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 h-full min-h-0">
-            {/* COL 1: prompt + laser timer */}
-            <div className="lg:col-span-4 h-full flex flex-col justify-between rounded-3xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-[#111622]/90 backdrop-blur-2xl p-4 sm:p-5 relative overflow-hidden shadow-lg">
-              <div className="absolute top-[-50px] left-1/2 -translate-x-1/2 w-64 h-32 bg-primary/10 blur-3xl rounded-full pointer-events-none -z-10" />
-              <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Focus: {ex?.focusSkill} {ex?.blind ? "· Blind 自力" : ""}
-                    </p>
-                    <ExerciseSourceBadge source={ex?.generationSource} isFallback={ex?.isFallback} />
-                  </div>
-                  <button onClick={playPromptAudio} className="flex items-center gap-1 text-xs text-primary hover:underline" title={`Nghe đề (${formatKeyDisplay(keybindings.builderListenPrompt)})`}>
-                    <Volume2 className="h-3.5 w-3.5" /> Nghe đề
-                  </button>
-                </div>
-                {isAssemble ? (
-                  <>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(ex?.keywords || []).map((k) => (
-                        <span key={k} className="rounded-xl bg-sky-500/10 border border-sky-500/30 px-3 py-1.5 text-base font-bold text-sky-700">
-                          <UniversalFurigana text={k} forceDisplayMode={furiganaMode as any} fontSize="sm" />
-                        </span>
-                      ))}
-                    </div>
-                    {ex?.starter ? (
-                      <p className="rounded-xl bg-muted/60 px-3 py-2 text-sm">
-                        <Lightbulb className="mr-1 inline h-3.5 w-3.5" />Gợi ý mở đầu:{" "}
-                        <UniversalFurigana text={ex.starter} forceDisplayMode={furiganaMode as any} fontSize="sm" />
-                      </p>
-                    ) : (
-                      <p className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-sm">
-                        Blind mode — Tình huống: {ex?.situationVi || "tự chọn từ, tự nối!"}
-                      </p>
-                    )}
-                  </>
-                ) : ex?.sourceSentence ? (
-                  <div>
-                    <p className="text-xs text-muted-foreground">{(ex?.subMode || "") === "sentence_expand" ? "Câu gốc (hãy mở rộng):" : "Câu lủng củng (hãy sửa):"}</p>
-                    <div className="mt-1 text-xl leading-relaxed">
-                      <UniversalFurigana text={ex.sourceSentence} forceDisplayMode={furiganaMode as any} fontSize="lg" showAudioButton enableClickToSpeak />
-                    </div>
-                    {ex?.expandRequirement ? <p className="mt-2 text-sm text-muted-foreground">Yêu cầu thêm: <b>{ex.expandRequirement}</b></p> : null}
-                  </div>
-                ) : null}
-              </div>
-              <div className="pt-2 shrink-0 border-t border-border/60 dark:border-white/10 space-y-1.5">
-                <BuilderTimerBar
-                  variant="laser-bar"
-                  remainingMs={session.combatTimer.remainingMs}
-                  timerLimitMs={session.combatTimer.totalLimitMs || 20000}
-                  progress={session.combatTimer.progress}
-                  state={session.combatTimer.state}
-                  isActive={session.combatTimer.isActive}
-                  isPaused={session.isPaused}
-                />
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 lg:gap-3 h-full min-h-0">
+            {/* COL 1 (4 cols): Task Card, Vietnamese Prompt & Vocabulary */}
+            <div className="lg:col-span-4 h-full min-h-0 overflow-hidden flex flex-col">
+              <BuilderTaskCard
+                exercise={session.exercise}
+                currentTaskIndex={session.stats.total}
+                onNextTask={() => session.startNext()}
+                isGeneratingNext={session.isRegeneratingAI || isEvaluating}
+                onRegenerateWithAI={async () => {
+                  soundFX.playTaiko();
+                  await session.regenerateWithAI();
+                  setTranscriptInput("");
+                }}
+                isRegeneratingAI={session.isRegeneratingAI}
+                onPlayPrompt={playPromptAudio}
+                onInsertVocab={(term) => {
+                  session.setAssembledText((prev) => {
+                    const next = prev ? `${prev}${term}` : term;
+                    setTranscriptInput(next);
+                    return next;
+                  });
+                }}
+              />
             </div>
 
-            {/* COL 2 (4 cols): Sensei AI Coach Panel when practicing / Result Card after submission */}
-            <div className="lg:col-span-4 h-full min-h-0 relative">
+            {/* COL 2 (5 cols): Interactive Sentence Builder Board & Progressive Hints */}
+            <div className="lg:col-span-5 h-full min-h-0 overflow-hidden flex flex-col">
+              <BuilderInteractiveBoard
+                exercise={session.exercise}
+                assembledText={session.assembledText || transcriptInput}
+                onAssembledTextChange={(text) => {
+                  session.setAssembledText(text);
+                  setTranscriptInput(text);
+                }}
+                hintTier={session.hintTier}
+                onSelectHintTier={(tier) => session.setHintTier(tier)}
+              />
+            </div>
+
+            {/* COL 3 (3 cols): Studio Speaking Controller OR Result Card */}
+            <div className="lg:col-span-3 h-full min-h-0 overflow-hidden flex flex-col">
               {phase === "result" && session.result ? (
                 <BuilderResultCard
                   result={session.result}
@@ -443,74 +430,63 @@ export default function BuilderPage() {
                   onRetry={() => session.retry()}
                 />
               ) : (
-                <BuilderCoachPanel
-                  exercise={session.exercise}
-                  onInsertText={handleInsertText}
-                  onPlayAudio={(text) => {
-                    stopWebSpeech();
-                    speakJapaneseText(text, { rate: 0.95 });
+                <StudioSpeakingController
+                  phase={
+                    isEvaluating
+                      ? "evaluating"
+                      : isAnswering
+                      ? "recording"
+                      : isPrompt
+                      ? "prompt_playing"
+                      : isReady
+                      ? "ready"
+                      : "idle"
+                  }
+                  liveTranscript={session.liveTranscript}
+                  onStartRecord={() => {
+                    if (isReady) session.startAnsweringNow();
+                    else if (isPrompt) session.rushToAnswer();
+                    else session.startAnsweringNow();
                   }}
+                  onStopRecord={() => {
+                    const text = transcriptInput.trim() || session.assembledText.trim() || session.liveTranscript.trim();
+                    if (text) {
+                      void handleDirectSubmit(true);
+                    }
+                  }}
+                  onSubmit={(text) => {
+                    if (text) setTranscriptInput(text);
+                    void handleDirectSubmit(true);
+                  }}
+                  onRetry={() => {
+                    try { stopWebSpeech(); } catch {}
+                    session.retry();
+                  }}
+                  onNext={() => {
+                    try { stopWebSpeech(); } catch {}
+                    session.startNext();
+                  }}
+                  onSkip={() => {
+                    try { stopWebSpeech(); } catch {}
+                    session.skip();
+                  }}
+                  onResetTranscript={() => {
+                    setTranscriptInput("");
+                    session.setAssembledText("");
+                  }}
+                  isWhisperMode={session.isWhisperMode}
+                  onToggleWhisperMode={() => session.toggleWhisperMode?.()}
+                  volumeLevel={session.volumeLevel}
+                  textInput={transcriptInput || session.assembledText}
+                  onTextInputChange={(val) => {
+                    setTranscriptInput(val);
+                    session.setAssembledText(val);
+                  }}
+                  placeholder="Nói hoặc gõ câu tiếng Nhật..."
+                  promptSpeakerLabel={modeInfo.label}
+                  onPlayPrompt={playPromptAudio}
                 />
               )}
-            </div>
-
-            {/* COL 3 (4 cols): Studio Speaking Controller (Chuẩn Ergonomics) */}
-            <div className="lg:col-span-4 h-full min-h-0">
-              <StudioSpeakingController
-                phase={
-                  isEvaluating
-                    ? "evaluating"
-                    : isAnswering
-                    ? "recording"
-                    : isPrompt
-                    ? "prompt_playing"
-                    : isReady
-                    ? "ready"
-                    : isResult
-                    ? "result"
-                    : "idle"
-                }
-                liveTranscript={session.liveTranscript}
-                onStartRecord={() => {
-                  if (isReady) session.startAnsweringNow();
-                  else if (isPrompt) session.rushToAnswer();
-                  else if (isResult) session.startNext();
-                  else session.startAnsweringNow();
-                }}
-                onStopRecord={() => {
-                  const text = transcriptInput.trim() || session.liveTranscript.trim();
-                  if (text) {
-                    void handleDirectSubmit(true);
-                  }
-                }}
-                onSubmit={(text) => {
-                  if (text) setTranscriptInput(text);
-                  void handleDirectSubmit(true);
-                }}
-                onRetry={() => {
-                  try { stopWebSpeech(); } catch {}
-                  session.retry();
-                }}
-                onNext={() => {
-                  try { stopWebSpeech(); } catch {}
-                  session.startNext();
-                }}
-                onSkip={() => {
-                  try { stopWebSpeech(); } catch {}
-                  session.skip();
-                }}
-                onResetTranscript={() => {
-                  setTranscriptInput("");
-                }}
-                isWhisperMode={session.isWhisperMode}
-                onToggleWhisperMode={() => session.toggleWhisperMode?.()}
-                volumeLevel={session.volumeLevel}
-                textInput={transcriptInput}
-                onTextInputChange={setTranscriptInput}
-                placeholder="Nói hoặc gõ câu xây dựng tiếng Nhật..."
-                promptSpeakerLabel={modeInfo.label}
-                onPlayPrompt={playPromptAudio}
-              />
             </div>
           </div>
         )}
@@ -518,9 +494,9 @@ export default function BuilderPage() {
 
       <div className="h-7 shrink-0 border-t border-border/60 dark:border-white/10 flex items-center justify-between text-[11px] text-muted-foreground px-1">
         <div className="flex items-center gap-3 overflow-hidden">
-          <span className="whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.builderStartVoice)} / {formatKeyDisplay(keybindings.builderSubmitOrNext)}</kbd> Xây ngay / Nộp</span>
-          <span className="hidden sm:inline whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">N</kbd> Qua câu</span>
-          <span className="hidden sm:inline whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">R</kbd> Xây lại</span>
+          <span className="whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">{formatKeyDisplay(keybindings.builderStartVoice)} / {formatKeyDisplay(keybindings.builderSubmitOrNext)}</kbd> Thu âm / Nộp</span>
+          <span className="hidden sm:inline whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">H</kbd> Gợi ý ({session.hintTier}/4)</span>
+          <span className="hidden sm:inline whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">R</kbd> Bài tiếp theo</span>
           <span className="hidden md:inline whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">L</kbd> Nghe đề</span>
           <span className="hidden sm:inline whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">P</kbd> Tạm dừng</span>
           <span className="hidden lg:inline whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">Alt+R</kbd> ✨ Đổi bài AI</span>

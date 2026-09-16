@@ -20,7 +20,7 @@ Configurable learner preferences.
 - `timezone` (VARCHAR(50), default 'Asia/Tokyo')
 - `default_ai_provider` (VARCHAR(50), default 'gemini')
 - `default_ai_model` (VARCHAR(100), default 'gemini-1.5-flash')
-- `default_tts_provider` (VARCHAR(50), default 'voicevox')
+- `default_tts_provider` (VARCHAR(50), default 'edge_tts')
 - `default_stt_provider` (VARCHAR(50), default 'whisper_local')
 - `created_at` (TIMESTAMP with timezone)
 - `updated_at` (TIMESTAMP with timezone)

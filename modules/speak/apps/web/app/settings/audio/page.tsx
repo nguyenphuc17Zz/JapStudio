@@ -173,7 +173,7 @@ export default function AudioSettingsPage() {
               }
               className="w-full px-3 py-2 bg-background border border-border rounded-xl text-xs text-foreground focus:outline-none focus:border-primary"
             >
-              <option value="voicevox">VOICEVOX (Local / Self-hosted)</option>
+              <option value="edge_tts">Edge-TTS (Azure Neural - Khuyên dùng)</option>
             </select>
           </div>
 

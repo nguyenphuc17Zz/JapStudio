@@ -9,11 +9,11 @@ This document explicitly outlines the environmental boundaries and known limitat
 - **Dialectal Variation**: Faster-Whisper is primarily tuned for Standard Japanese (Hyojungo / Tokyo dialect). Regional dialects (Kansai-ben, Tohoku-ben) may occasionally experience lower confidence scores.
 
 ## 2. Text-to-Speech (TTS)
-- **VOICEVOX Dependency**: High-quality Japanese pitch accent voice synthesis requires the free, open-source VOICEVOX Engine running locally on port 50021. If offline, the web application continues in text-first mode.
+- **TTS Availability**: Online Azure Neural voice synthesis (Edge-TTS) requires active internet access. There is no offline TTS fallback — without internet, voice synthesis is unavailable (text-only mode still works).
 
 ## 3. Pronunciation & Pitch Contour
 - **F0 Fundamental Frequency Estimation**: Pitch contour analysis uses librosa / pyin. High ambient background noise or room reverberation may introduce noise artifacts into the estimated F0 curve.
-- **Reference Audio**: Pitch comparisons in pronunciation exercises compare the learner's voice against native synthetic reference audio (VOICEVOX).
+- **Reference Audio**: Pitch comparisons in pronunciation exercises compare the learner's voice against native synthetic reference audio (Edge-TTS).
 
 ## 4. YouTube Shadowing
 - **YouTube Availability**: Some YouTube videos may have region locks, disabled embeds, or automated bot-blocking on IP addresses that block `yt-dlp`. Videos with available Japanese closed captions provide the highest timestamp precision.

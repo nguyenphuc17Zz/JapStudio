@@ -134,14 +134,14 @@ def test_ai_request_deduplicator():
 
 def test_tts_cache_stats():
     cache = InMemoryTTSCache(max_entries=10, default_ttl_seconds=300.0)
-    key = TTSCacheKey.create("こんにちは", "voicevox", "1")
+    key = TTSCacheKey.create("こんにちは", "edge_tts", "ja-JP-NanamiNeural")
 
     res = TTSResult(
         text="こんにちは",
         audio_bytes=b"dummy_wav_bytes_12345",
         audio_format="wav",
-        provider="voicevox",
-        voice_id="1",
+        provider="edge_tts",
+        voice_id="ja-JP-NanamiNeural",
     )
     cache.put(key, res)
 

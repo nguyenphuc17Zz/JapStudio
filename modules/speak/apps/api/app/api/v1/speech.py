@@ -14,11 +14,11 @@ router = APIRouter(prefix="/speech", tags=["Speech"])
 
 class SynthesizeRequest(BaseModel):
     text: str
-    voice_id: str = "1"
-    speaker_id: int = 1
+    voice_id: str = "ja-JP-NanamiNeural"
+    speaker_id: int | str = "ja-JP-NanamiNeural"
     speed: float = 1.0
     pitch: float = 0.0
-    provider: str | None = "voicevox"
+    provider: str | None = "edge_tts"
     return_base64: bool = False
 
 
@@ -57,7 +57,7 @@ async def transcribe_audio(
 async def synthesize_speech(
     request: SynthesizeRequest,
 ):
-    """Standalone Japanese speech synthesis with VOICEVOX."""
+    """Standalone Japanese speech synthesis with Edge-TTS."""
     if not request.text.strip():
         raise ValidationException("Text to synthesize cannot be empty.")
 
@@ -83,15 +83,17 @@ async def synthesize_speech(
             voice=output.voice,
         )
 
+    media_type = "audio/mpeg" if output.format == "mp3" else "audio/wav"
+    ext = output.format
     return Response(
         content=output.audio_bytes,
-        media_type="audio/wav",
-        headers={"Content-Disposition": 'inline; filename="speech.wav"'},
+        media_type=media_type,
+        headers={"Content-Disposition": f'inline; filename="speech.{ext}"'},
     )
 
 
 @router.get("/voices", response_model=list[TTSVoice])
-async def list_available_voices(provider: str | None = "voicevox"):
+async def list_available_voices(provider: str | None = "edge_tts"):
     """List available speaker voices for speech synthesis."""
     return await tts_router.get_available_voices(provider)
 

@@ -16,7 +16,7 @@ export function RampCheatsheetModal({ isOpen, onClose }: RampCheatsheetModalProp
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Cẩm Nang Phục Hồi Phát Ngôn (Mode 6 Cheatsheet)"
+      title="Cẩm Nang Phục Hồi Phát Ngôn (Speaking Ramp)"
       description="Sơ đồ 11 nấc thang phát triển câu và mẫu từ nối chuẩn tiếng Nhật tự nhiên."
       className="max-w-2xl sm:max-w-3xl"
     >
@@ -153,7 +153,7 @@ export function RampCheatsheetModal({ isOpen, onClose }: RampCheatsheetModalProp
         {/* Quy tắc vàng */}
         <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 text-xs space-y-1.5">
           <span className="font-bold text-primary flex items-center gap-1.5">
-            <Sparkles className="h-4 w-4" /> Quy tắc vàng trong Mode 6:
+            <Sparkles className="h-4 w-4" /> Quy tắc vàng khi luyện nấc thang nói:
           </span>
           <p className="text-muted-foreground leading-relaxed">
             Đừng sợ sai ngữ pháp nhỏ! Mục tiêu của bạn là <strong>biến từ ngữ trong đầu thành câu nói trọn vẹn</strong>. Khi gặp câu hỏi, hãy luôn tự nhủ: <em>"Nói xong 1 câu, hãy thêm 1 lý do hoặc 1 ví dụ!"</em>

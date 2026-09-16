@@ -17,7 +17,7 @@ class VoiceProfileModel(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         index=True,
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    provider: Mapped[str] = mapped_column(String(50), default="voicevox", nullable=False)
+    provider: Mapped[str] = mapped_column(String(50), default="edge_tts", nullable=False)
     voice_id: Mapped[str] = mapped_column(String(50), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 

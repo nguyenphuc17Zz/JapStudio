@@ -28,6 +28,11 @@ import {
 } from "lucide-react";
 import type { KeigoResult, KeigoExercise } from "../services/keigo-api";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
+import {
+  claimSpeechOutput,
+  releaseSpeechOutput,
+  type SpeechOutputOwner,
+} from "@/features/audio/services/speech-playback-coordinator";
 import { UniversalFurigana } from "@/components/japanese/UniversalFurigana";
 import { soundFX } from "@/lib/sound-fx";
 import { cn } from "@/lib/utils";
@@ -61,6 +66,7 @@ export function KeigoResultCard({
   const [isTTSPlaying, setIsTTSPlaying] = useState(false);
 
   const userAudioRef = useRef<HTMLAudioElement | null>(null);
+  const userAudioOwnerRef = useRef<SpeechOutputOwner | null>(null);
 
   const handlePlayModelTTSRef = useRef<(() => void) | null>(null);
 
@@ -134,11 +140,27 @@ export function KeigoResultCard({
 
     if (isUserAudioPlaying) {
       userAudioRef.current.pause();
+      if (userAudioOwnerRef.current) {
+        releaseSpeechOutput(userAudioOwnerRef.current);
+        userAudioOwnerRef.current = null;
+      }
       setIsUserAudioPlaying(false);
     } else {
       stopWebSpeech();
       setIsTTSPlaying(false);
-      userAudioRef.current
+      const el = userAudioRef.current;
+      // Single-flight: cut any other speech before playing this recording.
+      const owner: SpeechOutputOwner = {
+        stop: () => {
+          try {
+            el.pause();
+          } catch {}
+          setIsUserAudioPlaying(false);
+        },
+      };
+      userAudioOwnerRef.current = owner;
+      claimSpeechOutput(owner);
+      el
         .play()
         .then(() => setIsUserAudioPlaying(true))
         .catch(() => setIsUserAudioPlaying(false));
@@ -234,6 +256,10 @@ export function KeigoResultCard({
             if (userAudioRef.current) setUserAudioCurrentTime(userAudioRef.current.currentTime || 0);
           }}
           onEnded={() => {
+            if (userAudioOwnerRef.current) {
+              releaseSpeechOutput(userAudioOwnerRef.current);
+              userAudioOwnerRef.current = null;
+            }
             setIsUserAudioPlaying(false);
             setUserAudioCurrentTime(0);
           }}

@@ -44,7 +44,7 @@ class PronunciationService:
         expected_reading: str | None = None,
         target_type: TargetType = TargetType.SENTENCE,
         reference_type: ReferenceType = ReferenceType.SYNTHETIC,
-        voicevox_speaker_id: int | None = 1,
+        voice_id: str | None = "ja-JP-NanamiNeural",
         session_id: str | None = None,
         turn_id: str | None = None,
     ) -> PronunciationAttemptResponse:
@@ -59,12 +59,13 @@ class PronunciationService:
         if not target_text or not target_text.strip():
             raise ValidationException("Target text cannot be empty.")
 
+        resolved_voice = voice_id or "ja-JP-NanamiNeural"
         target = PronunciationTarget(
             reference_text=target_text.strip(),
             expected_reading=expected_reading,
             target_type=target_type,
             reference_type=reference_type,
-            voicevox_speaker_id=voicevox_speaker_id,
+            voice_id=resolved_voice,
         )
 
         # 1. High-accuracy STT transcription anchored by target reference text

@@ -127,20 +127,13 @@ export interface AudioSettings {
   tts_fallback_voice_id: string;
   auto_play_ai_response: boolean;
   auto_play_references: boolean;
-  voicevox_engine_url: string;
-  voicevox_engine_path: string;
 }
 
-export interface VoicevoxEngine {
-  url: string;
-  path: string;
-  path_exists: boolean;
-  run_exe_path: string;
-  run_exe_exists: boolean;
-  is_available: boolean;
+export interface TTSEngineStatus {
+  edge_tts_available: boolean;
+  edge_tts_latency_ms?: number | null;
   status_message: string;
-  latency_ms?: number | null;
-  available_voices_count: number;
+  active_provider: string;
 }
 
 export type AudioSessionType = "conversation" | "pronunciation" | "shadowing" | "exercise";

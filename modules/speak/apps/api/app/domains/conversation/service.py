@@ -178,7 +178,7 @@ class ConversationService:
 
         # 3. Synthesize opening turn audio if TTS enabled
         opening_audio_base64 = None
-        tts_provider_used = (conv_session.tts_provider_preference or "voicevox").lower().strip()
+        tts_provider_used = (conv_session.tts_provider_preference or "edge_tts").lower().strip()
         if tts_provider_used not in ("none", "off", "disabled", "web_speech"):
             try:
                 tts_req = TTSRequest(
@@ -371,7 +371,7 @@ class ConversationService:
         audio_base64 = None
         tts_error_msg = None
         tts_ms = 0
-        tts_provider_used = (conv_session.tts_provider_preference or "voicevox").lower().strip()
+        tts_provider_used = (conv_session.tts_provider_preference or "edge_tts").lower().strip()
 
         if tts_provider_used not in ("none", "off", "disabled", "web_speech"):
             try:
@@ -585,7 +585,7 @@ class ConversationService:
         audio_base64 = None
         tts_error_msg = None
         tts_ms = 0
-        tts_provider_used = (conv_session.tts_provider_preference or "voicevox").lower().strip()
+        tts_provider_used = (conv_session.tts_provider_preference or "edge_tts").lower().strip()
 
         if tts_provider_used not in ("none", "off", "disabled", "web_speech"):
             try:
@@ -615,7 +615,7 @@ class ConversationService:
             client_turn_id=client_turn_id,
             ai_provider=ai_response.provider,
             ai_model=ai_response.model,
-            tts_provider=conv_session.tts_provider_preference or "voicevox",
+            tts_provider=conv_session.tts_provider_preference or "edge_tts",
             tts_voice=conv_session.tts_voice_preference,
             processing_time_ms=total_turn_ms,
             metrics={"ai_ms": ai_ms, "tts_ms": tts_ms, "total_ms": total_turn_ms, "scaffolding": scaffolding_data},

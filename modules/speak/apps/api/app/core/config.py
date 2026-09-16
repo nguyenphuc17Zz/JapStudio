@@ -21,9 +21,8 @@ class Settings(BaseSettings):
 
     ENCRYPTION_KEY: str = "dGhpc19pc19hXzMyX2J5dGVfZmZXcm5ldF9rZXkxMjM0NTY="
 
-    # Speech Configuration (Phase 3)
-    VOICEVOX_ENGINE_URL: str = "http://127.0.0.1:50021"
-    VOICEVOX_ENGINE_PATH: str = "E:\\VoiceVox"
+    # Speech Configuration
+    DEFAULT_TTS_PROVIDER: str = "edge_tts"
     WHISPER_DEFAULT_MODEL: str = "base"
     WHISPER_DEVICE: str = "auto"
     WHISPER_COMPUTE_TYPE: str = "auto"

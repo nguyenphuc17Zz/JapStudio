@@ -3,8 +3,8 @@ from app.domains.pronunciation.infrastructure.audio_preprocessor import AudioPre
 from app.domains.pronunciation.infrastructure.audio_quality_analyzer import AudioQualityAnalyzer
 from app.domains.pronunciation.infrastructure.pitch_extractor import PitchExtractor
 from app.domains.pronunciation.infrastructure.reference_audio_provider import (
+    DefaultReferenceAudioProvider,
     ReferenceAudioProvider,
-    VoicevoxReferenceAudioProvider,
 )
 from app.domains.pronunciation.infrastructure.vad_analyzer import VADAnalyzer
 
@@ -15,5 +15,5 @@ __all__ = [
     "PitchExtractor",
     "AlignmentEngine",
     "ReferenceAudioProvider",
-    "VoicevoxReferenceAudioProvider",
+    "DefaultReferenceAudioProvider",
 ]

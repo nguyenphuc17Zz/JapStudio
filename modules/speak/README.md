@@ -23,10 +23,10 @@ An AI-first, domain-driven training platform for mastering Japanese speaking thr
 ### ✅ Phase 3 — Voice Conversation MVP
 - **Real-Time Voice Pipeline**:
   ```text
-  Browser Mic (Web Audio API) ➔ Utterance VAD ➔ Faster-Whisper STT ➔ Context Engine ➔ AI Router ➔ VOICEVOX TTS ➔ AI Spoken Response
+  Browser Mic (Web Audio API) ➔ Utterance VAD ➔ Faster-Whisper STT ➔ Context Engine ➔ AI Router ➔ Edge-TTS ➔ AI Spoken Response
   ```
 - **Faster-Whisper STT Subsystem**: In-process singleton model caching (`tiny`, `base`, `small`, `turbo`), non-blocking threadpool execution (`asyncio.to_thread`), hardware auto-detection (CUDA / CPU + INT8).
-- **VOICEVOX TTS Subsystem**: Japanese voice synthesis via HTTP engine (`/audio_query` + `/synthesis`), speaker voice catalog, and offline fallback resilience.
+- **TTS Subsystem (Edge-TTS)**: Ultra-realistic Azure Neural Japanese speech synthesis via Edge-TTS, zero external background applications needed.
 - **Conversation Engine & Prompts**: `ConversationPromptBuilder` with spoken Japanese constraints (1–3 sentences max), Persona JLPT levels (N5–N1), and dual modes: `Conversation` (pure immersion) and `Coaching` (gentle `💡 Better:` hints).
 - **Context Window Manager**: `ConversationContextBuilder` retaining system prompt + recent $N$ dialogue turns.
 - **Echo Prevention & Audio Suppression**: Microphones are muted during AI speech (`ai_speaking`) with anti-echo delay buffers.
@@ -241,7 +241,7 @@ An AI-first, domain-driven training platform for mastering Japanese speaking thr
     - `VoiceSelector`: Searchable voice catalog with preview buttons and capability pills.
     - `VoicePreview`: Voice card with live sample audio trigger.
     - `MicrophoneCalibrationModal`: Step-by-step microphone test and quality analysis modal.
-    - `AudioDiagnosticsCard`: Real-time health status card for VOICEVOX, Faster-Whisper, and cache stats.
+    - `AudioDiagnosticsCard`: Real-time health status card for Edge-TTS, Faster-Whisper, and cache stats.
 ### ✅ Phase 10 — RPG & Gamification Engine
 - **Immutable XP Ledger (`XPTransaction`)**: Append-only transaction ledger with deduplication protection (`uq_user_event_dedup`).
 - **Non-Linear Leveling Curve**: Scaled progression formula with 50 rank tiers from *見習い侍 (Apprentice Samurai)* to *伝説の達人 (Legendary Master)*.
@@ -326,9 +326,6 @@ Web UI is accessible at `http://localhost:3000`.
 ```bash
 # Start PostgreSQL & Redis (Optional - App includes SQLite & In-Memory fallback)
 docker compose up -d
-
-# Start VOICEVOX Engine (for local Japanese speech synthesis)
-# Run locally on http://127.0.0.1:50021
 ```
 
 ### 5. Running Tests & Audits

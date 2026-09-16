@@ -9,13 +9,11 @@ class UserSettingsBase(BaseModel):
     timezone: str = "Asia/Tokyo"
     default_ai_provider: str = "gemini"
     default_ai_model: str = "gemini-1.5-flash"
-    default_tts_provider: str = "voicevox"
+    default_tts_provider: str = "edge_tts"
     default_stt_provider: str = "whisper_local"
     routing_mode: str = "auto"
     fallback_enabled: bool = True
     fallback_priority: str = "gemini,groq,openrouter"
-    voicevox_engine_url: str = "http://127.0.0.1:50021"
-    voicevox_engine_path: str = "E:\\VoiceVox"
 
 
 class UserSettingsUpdate(BaseModel):
@@ -29,8 +27,6 @@ class UserSettingsUpdate(BaseModel):
     routing_mode: str | None = None
     fallback_enabled: bool | None = None
     fallback_priority: str | None = None
-    voicevox_engine_url: str | None = None
-    voicevox_engine_path: str | None = None
 
 
 class UserSettingsRead(UserSettingsBase):

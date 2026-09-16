@@ -57,15 +57,56 @@ class BuilderExerciseFactory:
         timer = timer_limit_ms or TIMER_BY_SCAFFOLD.get(scaffold, 20000)
         blind = scaffold == "none"
 
+        control_level = "controlled" if scaffold in ("structured_options", "sentence_starter") else ("semi_controlled" if scaffold == "keyword_hint" else "free")
+        prompt_vi = seed.get("prompt_vi") or seed.get("situation_vi") or "Hãy xây một câu hoàn chỉnh tự nhiên"
+        template = seed.get("template") or ""
+        
+        # Build suggested vocab
+        raw_vocab = seed.get("suggested_vocabulary") or []
+        suggested_vocab = []
+        if raw_vocab:
+            suggested_vocab = raw_vocab
+        else:
+            for kw in seed.get("keywords", []):
+                suggested_vocab.append({"term": kw, "reading": "", "meaning_vi": ""})
+
+        # Build connector items
+        raw_conn = seed.get("connector_items") or []
+        connector_items = []
+        if raw_conn:
+            connector_items = raw_conn
+        else:
+            for c in seed.get("connectors", []):
+                connector_items.append({"term": c, "meaning_vi": "", "kind": "connector"})
+
+        # Build progressive hints (4 tiers)
+        raw_hints = seed.get("hints") or []
+        hints = []
+        if raw_hints:
+            hints = raw_hints
+        else:
+            hints = [
+                {"tier": 1, "title": "Hướng tư duy ngữ pháp", "content": f"Trọng tâm: {skill}. Chú ý cách chia thể động từ/tính từ phù hợp."},
+                {"tier": 2, "title": "Gợi ý từ nối", "content": ", ".join(seed.get("connectors", [])) or "〜て, 〜から, 〜ので"},
+                {"tier": 3, "title": "Khung sườn cấu trúc", "content": template or (seed.get("starter") or (seed.get("keywords", [""])[0] + "…"))},
+                {"tier": 4, "title": "Câu mẫu hoàn chỉnh", "content": seed.get("canonical", "")},
+            ]
+
         if sub_mode == "sentence_expand":
             return {
-                "title": "文拡大 — mở rộng câu",
+                "title": "文拡大 — Mở rộng câu",
                 "objective": "Mở rộng câu cụt thành câu dài tự nhiên.",
                 "scenario": seed["source"],
                 "instructions": f"Câu gốc: 「{seed['source']}」. Hãy nói lại thành câu dài hơn, bắt buộc thêm: {seed.get('requirement', 'mệnh đề mới')}. Focus: {skill}.",
                 "source_sentence": seed["source"],
                 "expand_requirement": seed.get("requirement"),
+                "prompt_vi": prompt_vi,
                 "situation_vi": seed.get("situation_vi"),
+                "template": template,
+                "suggested_vocabulary": suggested_vocab,
+                "connector_items": connector_items,
+                "hints": hints,
+                "control_level": control_level,
                 "canonical": seed.get("canonical", ""),
                 "canonical_vi": seed.get("canonical_vi", ""),
                 "keywords": [], "starter": None,
@@ -75,13 +116,19 @@ class BuilderExerciseFactory:
             }
         if sub_mode == "sentence_repair":
             return {
-                "title": "文修理 — sửa câu lủng củng",
+                "title": "文修理 — Sửa câu lủng củng",
                 "objective": "Nói lại câu lủng củng thành bản tự nhiên như bản xứ.",
                 "scenario": seed["source"],
                 "instructions": f"Câu lủng củng: 「{seed['source']}」. Hãy nói lại tự nhiên ({seed.get('fix_hint', '')}). Focus: {skill}.",
                 "source_sentence": seed["source"],
                 "fix_hint": seed.get("fix_hint"),
+                "prompt_vi": prompt_vi,
                 "situation_vi": seed.get("situation_vi"),
+                "template": template,
+                "suggested_vocabulary": suggested_vocab,
+                "connector_items": connector_items,
+                "hints": hints,
+                "control_level": control_level,
                 "canonical": seed.get("canonical", ""),
                 "canonical_vi": seed.get("canonical_vi", ""),
                 "keywords": [], "starter": None,
@@ -98,14 +145,20 @@ class BuilderExerciseFactory:
         if starter:
             instr += f" Gợi ý mở đầu: 「{starter}」"
         else:
-            instr += f" Tình huống: {seed.get('situation_vi', '')} (blind — tự chọn từ!)"
+            instr += f" Tình huống: {seed.get('situation_vi', '')} (tự chọn từ và liên từ!)"
         return {
-            "title": "文立て — nối từ thành câu",
+            "title": "文立て — Lắp ghép xây câu",
             "objective": "Nối từ khóa rời thành 1 câu dài tự nhiên.",
             "scenario": " / ".join(keywords),
             "instructions": instr,
             "keywords": keywords, "starter": starter,
+            "prompt_vi": prompt_vi,
             "situation_vi": seed.get("situation_vi"),
+            "template": template,
+            "suggested_vocabulary": suggested_vocab,
+            "connector_items": connector_items,
+            "hints": hints,
+            "control_level": control_level,
             "canonical": seed.get("canonical", ""),
             "canonical_vi": seed.get("canonical_vi", ""),
             "source_sentence": None,

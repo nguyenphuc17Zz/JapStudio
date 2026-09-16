@@ -241,7 +241,7 @@ export function InterpretLobby({
                   Phản Xạ Dịch Việt - Nhật
                 </h1>
                 <Badge variant="matcha" size="sm" className="text-[10px] font-mono font-bold px-1.5 py-0">
-                  越日通訳 • MODE 9
+                  越日通訳
                 </Badge>
               </div>
               <p className="text-[11px] text-muted-foreground truncate hidden sm:block">

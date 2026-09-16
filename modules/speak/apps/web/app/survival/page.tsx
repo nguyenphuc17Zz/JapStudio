@@ -104,7 +104,7 @@ export default function SurvivalSpeakingPage() {
       {/* 1. Combat Capsule HUD */}
       <CombatCapsuleHUD
         questionNumber={completedTasksCount + 1}
-        subModeLabel={mode === "circumlocution" ? "Diễn Đạt Vòng (Taboo)" : "Cứu Nguy Hội Thoại"}
+        subModeLabel={mode === "circumlocution" ? "Diễn Đạt Vòng" : "Cứu Nguy Hội Thoại"}
         subModeJa="生還"
         currentStreak={streak}
         duration={0}

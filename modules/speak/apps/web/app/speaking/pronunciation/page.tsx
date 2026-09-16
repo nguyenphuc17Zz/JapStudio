@@ -29,6 +29,11 @@ import {
 } from "lucide-react";
 import { ZenUnifiedInputBar } from "@/components/ui/zen-unified-input-bar";
 import { useAudioRecorder, convertToWavBlob } from "@/features/audio";
+import {
+  claimSpeechOutput,
+  releaseSpeechOutput,
+  type SpeechOutputOwner,
+} from "@/features/audio/services/speech-playback-coordinator";
 
 export default function PronunciationPracticePage() {
   // Target Selection State
@@ -105,13 +110,31 @@ export default function PronunciationPracticePage() {
       const res = await speechApi.synthesize(textToSpeak, "1", 1.0, 0.0);
       if (res.audio_base64) {
         const audioUrl = `data:audio/wav;base64,${res.audio_base64}`;
+        // Stop any previous reference clip (spam-click safe).
+        if (referenceAudioRef.current) {
+          try {
+            referenceAudioRef.current.pause();
+          } catch {}
+        }
         const audio = new Audio(audioUrl);
         referenceAudioRef.current = audio;
 
+        // Single-flight: cut any other speech before playing this reference.
+        const owner: SpeechOutputOwner = {
+          stop: () => {
+            try {
+              audio.pause();
+            } catch {}
+            setIsPlayingReference(false);
+          },
+        };
+        claimSpeechOutput(owner);
         audio.onended = () => {
+          releaseSpeechOutput(owner);
           setIsPlayingReference(false);
         };
         audio.onerror = () => {
+          releaseSpeechOutput(owner);
           setIsPlayingReference(false);
         };
 
@@ -236,6 +259,16 @@ export default function PronunciationPracticePage() {
   const handlePlayUserAudio = () => {
     if (recordedAudioUrl) {
       const audio = new Audio(recordedAudioUrl);
+      const owner: SpeechOutputOwner = {
+        stop: () => {
+          try {
+            audio.pause();
+          } catch {}
+        },
+      };
+      claimSpeechOutput(owner);
+      audio.onended = () => releaseSpeechOutput(owner);
+      audio.onerror = () => releaseSpeechOutput(owner);
       audio.play();
     }
   };

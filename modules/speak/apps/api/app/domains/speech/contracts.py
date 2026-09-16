@@ -59,7 +59,7 @@ class STTProvider(Protocol):
 class TTSVoice(BaseModel):
     id: str
     name: str
-    speaker_id: int | str
+    speaker_id: int | str = ""
     gender: str = "female"
     style: str | None = "Normal"
     preview_url: str | None = None
@@ -69,10 +69,10 @@ class TTSVoice(BaseModel):
 
 
 class TTSOptions(BaseModel):
-    voice_id: str = "1"
-    speaker_id: int = 1
-    pitch: float = 0.0  # VOICEVOX pitch default is 0.0
-    speed: float = 1.0  # VOICEVOX speed default is 1.0
+    voice_id: str = "ja-JP-NanamiNeural"
+    speaker_id: int | str = "ja-JP-NanamiNeural"
+    pitch: float = 0.0
+    speed: float = 1.0
     volume: float = 1.0
     style: str | None = None
     format: str = "wav"
@@ -91,7 +91,7 @@ class TTSAudioOutput(BaseModel):
 
 
 class TTSProvider(Protocol):
-    """Protocol for Text-to-Speech engines (VOICEVOX, Gemini TTS, etc.)."""
+    """Protocol for Text-to-Speech engines (Edge-TTS, etc.)."""
 
     provider_id: str
 

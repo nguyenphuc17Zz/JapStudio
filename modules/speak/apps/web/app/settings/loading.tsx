@@ -7,7 +7,7 @@ export default function SettingsLoading() {
       variant="card"
       title="Đang nạp Cài Đặt Hệ Thống & Âm Thanh..."
       ja="設定読み込み中..."
-      description="Hệ thống đang kiểm tra trạng thái động cơ giọng đọc VOICEVOX và Micro..."
+      description="Hệ thống đang kiểm tra trạng thái động cơ giọng đọc AI và Micro..."
     />
   );
 }

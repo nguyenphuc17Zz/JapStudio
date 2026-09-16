@@ -216,24 +216,17 @@ class AudioService:
     # 3. Audio Settings
     async def get_audio_settings(self, user_id: str) -> AudioSettingsDTO:
         user_settings = await self.settings_service.get_or_create_settings(user_id)
-        # Backfill for existing rows created before voicevox columns
-        if not getattr(user_settings, "voicevox_engine_path", None):
-            user_settings.voicevox_engine_path = "E:\\VoiceVox"
-        if not getattr(user_settings, "voicevox_engine_url", None):
-            user_settings.voicevox_engine_url = "http://127.0.0.1:50021"
         return AudioSettingsDTO(
-            default_tts_provider=getattr(user_settings, "default_tts_provider", "voicevox"),
+            default_tts_provider=getattr(user_settings, "default_tts_provider", "edge_tts"),
             default_stt_provider=getattr(user_settings, "default_stt_provider", "faster_whisper"),
             default_voice_profile_id=getattr(user_settings, "default_voice_profile_id", None),
             default_tts_speed=getattr(user_settings, "default_tts_speed", 1.0),
             default_tts_pitch=getattr(user_settings, "default_tts_pitch", 0.0),
             tts_fallback_enabled=getattr(user_settings, "tts_fallback_enabled", True),
-            tts_fallback_provider=getattr(user_settings, "tts_fallback_provider", "voicevox"),
-            tts_fallback_voice_id=getattr(user_settings, "tts_fallback_voice_id", "1"),
+            tts_fallback_provider=getattr(user_settings, "tts_fallback_provider", "edge_tts"),
+            tts_fallback_voice_id=getattr(user_settings, "tts_fallback_voice_id", "ja-JP-NanamiNeural"),
             auto_play_ai_response=getattr(user_settings, "auto_play_ai_response", True),
             auto_play_references=getattr(user_settings, "auto_play_references", True),
-            voicevox_engine_url=getattr(user_settings, "voicevox_engine_url", "http://127.0.0.1:50021"),
-            voicevox_engine_path=getattr(user_settings, "voicevox_engine_path", "E:\\VoiceVox"),
         )
 
     async def update_audio_settings(

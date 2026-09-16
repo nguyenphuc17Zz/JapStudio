@@ -18,6 +18,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+    insp = sa.inspect(conn)
+    if "ramp_sessions" in insp.get_table_names():
+        return
+
     op.create_table(
         "ramp_sessions",
         sa.Column("id", sa.String(36), primary_key=True, nullable=False),

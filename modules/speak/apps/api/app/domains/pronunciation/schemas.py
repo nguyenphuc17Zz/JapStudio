@@ -16,7 +16,7 @@ class PronunciationAnalyzeRequest(BaseModel):
     expected_reading: str | None = Field(default=None, description="Optional canonical reading.")
     target_type: TargetType = Field(default=TargetType.SENTENCE)
     reference_type: ReferenceType = Field(default=ReferenceType.SYNTHETIC)
-    voicevox_speaker_id: int | None = Field(default=1)
+    voice_id: str | None = Field(default="ja-JP-NanamiNeural")
     session_id: str | None = Field(default=None)
     turn_id: str | None = Field(default=None)
 

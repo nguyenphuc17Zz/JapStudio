@@ -35,7 +35,7 @@ export function useTTS(options: UseTTSOptions = {}) {
     async (
       text: string,
       voiceId: string,
-      provider = "voicevox",
+      provider = "edge_tts",
       speed = 1.0,
       pitch = 0.0,
       style?: string

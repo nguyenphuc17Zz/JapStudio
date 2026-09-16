@@ -14,7 +14,7 @@ export interface AnalyzePronunciationParams {
   expectedReading?: string | null;
   targetType?: TargetType;
   referenceType?: ReferenceType;
-  voicevoxSpeakerId?: number;
+  voiceId?: string;
   sessionId?: string | null;
   turnId?: string | null;
 }
@@ -31,7 +31,7 @@ export const pronunciationApi = {
       expected_reading: params.expectedReading || null,
       target_type: params.targetType || "sentence",
       reference_type: params.referenceType || "synthetic",
-      voicevox_speaker_id: params.voicevoxSpeakerId || 1,
+      voice_id: params.voiceId || "ja-JP-NanamiNeural",
       session_id: params.sessionId || null,
       turn_id: params.turnId || null,
     };

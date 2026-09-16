@@ -15,8 +15,8 @@ async def test_voice_service_resolution_hierarchy(db_session: AsyncSession):
 
     # 1. Base defaults
     prov, v_id, spd, ptch = await voice_service.resolve_voice_configuration(user_id=user.id)
-    assert prov == "voicevox"
-    assert v_id == "1"
+    assert prov == "edge_tts"
+    assert v_id == "ja-JP-NanamiNeural"
     assert spd == 1.0
     assert ptch == 0.0
 
@@ -24,8 +24,8 @@ async def test_voice_service_resolution_hierarchy(db_session: AsyncSession):
     profile = VoiceProfileModel(
         user_id=user.id,
         name="My Default Voice",
-        provider="voicevox",
-        voice_id="8",
+        provider="edge_tts",
+        voice_id="ja-JP-KeitaNeural",
         settings_json={"speed": 0.9, "pitch": 0.05},
         is_default=True,
     )
@@ -33,7 +33,7 @@ async def test_voice_service_resolution_hierarchy(db_session: AsyncSession):
     await db_session.commit()
 
     prov, v_id, spd, ptch = await voice_service.resolve_voice_configuration(user_id=user.id)
-    assert v_id == "8"
+    assert v_id == "ja-JP-KeitaNeural"
     assert spd == 0.9
     assert ptch == 0.05
 
@@ -47,22 +47,22 @@ async def test_voice_service_resolution_hierarchy(db_session: AsyncSession):
         speaking_style="Casual Tameguchi",
     )
     # Give persona custom voice via dynamic attributes or preferences
-    setattr(persona, "tts_voice_id", "11")
+    setattr(persona, "tts_voice_id", "ja-JP-AoiNeural")
     setattr(persona, "tts_speed", 1.05)
     setattr(persona, "tts_pitch", 0.0)
 
     prov, v_id, spd, ptch = await voice_service.resolve_voice_configuration(
         user_id=user.id, persona=persona
     )
-    assert v_id == "11"
+    assert v_id == "ja-JP-AoiNeural"
     assert spd == 1.05
 
     # 4. Session explicit override takes top priority
     prov, v_id, spd, ptch = await voice_service.resolve_voice_configuration(
         user_id=user.id,
         persona=persona,
-        session_override_voice="3",
+        session_override_voice="ja-JP-KeitaNeural",
         session_override_speed=0.75,
     )
-    assert v_id == "3"
+    assert v_id == "ja-JP-KeitaNeural"
     assert spd == 0.75

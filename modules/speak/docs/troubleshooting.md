@@ -20,13 +20,12 @@
 
 ---
 
-### 3. VOICEVOX Engine Offline or Missing Audio
+### 3. TTS Engine Offline or Missing Audio
 - **Symptom**: AI text responses stream in real-time, but audio playback does not play.
-- **Cause**: VOICEVOX Engine software is not running locally on port `50021`.
-- **Check**: Open `http://127.0.0.1:50021/version` in your browser.
+- **Cause**: Internet connection interrupted (Edge-TTS requires internet).
 - **Fix**:
-  1. Download and start VOICEVOX Engine locally (or launch via Docker).
-  2. The application will continue operating in text-first mode gracefully if VOICEVOX is offline.
+  1. For Edge-TTS: Check internet connection.
+  2. The application will continue operating gracefully with Web Speech or text-first mode if TTS is unavailable.
 
 ---
 

@@ -11,7 +11,7 @@ export const audioApi = {
   /**
    * Lists available TTS voices from the specified provider with capability tags.
    */
-  async getVoices(provider = "voicevox"): Promise<VoiceProfile[]> {
+  async getVoices(provider = "edge_tts"): Promise<VoiceProfile[]> {
     return apiClient.get<VoiceProfile[]>(`/audio/voices?provider=${provider}`);
   },
 
@@ -28,7 +28,7 @@ export const audioApi = {
   async previewVoice(
     text: string,
     voiceId: string,
-    provider = "voicevox",
+    provider = "edge_tts",
     speed = 1.0,
     pitch = 0.0,
     style?: string
@@ -141,14 +141,11 @@ export const audioApi = {
     return apiClient.get<Record<string, any>>("/audio/diagnostics");
   },
 
-  async getEngine(): Promise<import("@/types/audio").VoicevoxEngine> {
-    return apiClient.get<import("@/types/audio").VoicevoxEngine>("/audio/engine");
+  async getEngine(): Promise<import("@/types/audio").TTSEngineStatus> {
+    return apiClient.get<import("@/types/audio").TTSEngineStatus>("/audio/engine");
   },
-  async updateEngine(data: { path?: string; url?: string }): Promise<import("@/types/audio").VoicevoxEngine> {
-    return apiClient.put<import("@/types/audio").VoicevoxEngine>("/audio/engine", data);
-  },
-  async startEngine(): Promise<import("@/types/audio").VoicevoxEngine> {
-    return apiClient.post<import("@/types/audio").VoicevoxEngine>("/audio/engine/start", {});
+  async updateEngine(data: { default_tts_provider?: string }): Promise<import("@/types/audio").TTSEngineStatus> {
+    return apiClient.put<import("@/types/audio").TTSEngineStatus>("/audio/engine", data);
   },
   async listSTTModels(activeModel = "base"): Promise<import("@/types/audio").STTModelInfo[]> {
     return apiClient.get<import("@/types/audio").STTModelInfo[]>(`/speech/stt-models?active_model=${activeModel}`);

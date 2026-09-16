@@ -5,6 +5,7 @@ from app.core.logging import logger
 from app.domains.audio.contracts import VoiceCapability, VoiceProfileDTO
 from app.domains.audio.models import VoiceProfileModel
 from app.domains.personas.models import Persona
+from app.domains.settings.models import UserSettings
 from app.domains.speech.tts_router import tts_router
 
 
@@ -17,7 +18,7 @@ class VoiceService:
     def __init__(self, session: AsyncSession | None = None):
         self.session = session
 
-    async def list_available_voices(self, provider_id: str = "voicevox") -> list[VoiceProfileDTO]:
+    async def list_available_voices(self, provider_id: str = "edge_tts") -> list[VoiceProfileDTO]:
         """Lists voices from TTS provider formatted as VoiceProfileDTOs."""
         try:
             voices = await tts_router.get_available_voices(provider_id)
@@ -65,13 +66,30 @@ class VoiceService:
         Returns: (provider_id, voice_id, speed, pitch)
         """
         # 1. Start with system defaults
-        provider = "voicevox"
-        voice_id = "1"
+        provider = "edge_tts"
+        voice_id = "ja-JP-NanamiNeural"
         speed = 1.0
         pitch = 0.0
 
-        # 2. Check User default profile if session available
+        # 2. Check User default settings and profile if session available
         if self.session and user_id:
+            try:
+                settings_res = await self.session.execute(
+                    select(UserSettings).where(UserSettings.user_id == user_id)
+                )
+                user_settings = settings_res.scalar_one_or_none()
+                if user_settings:
+                    if user_settings.default_tts_provider:
+                        provider = user_settings.default_tts_provider
+                    if user_settings.default_voice_profile_id:
+                        voice_id = user_settings.default_voice_profile_id
+                    if user_settings.default_tts_speed is not None:
+                        speed = float(user_settings.default_tts_speed)
+                    if user_settings.default_tts_pitch is not None:
+                        pitch = float(user_settings.default_tts_pitch)
+            except Exception as se:
+                logger.warning(f"[VoiceService] Could not load UserSettings: {se}")
+
             res = await self.session.execute(
                 select(VoiceProfileModel).where(
                     VoiceProfileModel.user_id == user_id,
@@ -83,8 +101,8 @@ class VoiceService:
                 provider = user_default_profile.provider
                 voice_id = user_default_profile.voice_id
                 settings = user_default_profile.settings_json or {}
-                speed = float(settings.get("speed", 1.0))
-                pitch = float(settings.get("pitch", 0.0))
+                speed = float(settings.get("speed", speed))
+                pitch = float(settings.get("pitch", pitch))
 
         # 3. Persona configured settings
         if persona:

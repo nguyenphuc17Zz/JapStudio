@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 class VoiceProfileCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    provider: str = "voicevox"
+    provider: str = "edge_tts"
     voice_id: str
     description: str | None = None
     settings_json: dict[str, Any] = Field(default_factory=dict)
@@ -63,8 +63,8 @@ class AudioPresetResponse(BaseModel):
 
 class TTSPreviewRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=200)
-    provider: str = "voicevox"
-    voice_id: str = "1"
+    provider: str = "edge_tts"
+    voice_id: str = "ja-JP-NanamiNeural"
     speed: float = 1.0
     pitch: float = 0.0
     style: str | None = None
@@ -85,30 +85,23 @@ class AudioQualityCheckRequest(BaseModel):
 
 
 class AudioSettingsDTO(BaseModel):
-    default_tts_provider: str = "voicevox"
+    default_tts_provider: str = "edge_tts"
     default_stt_provider: str = "faster_whisper"
     default_voice_profile_id: str | None = None
     default_tts_speed: float = 1.0
     default_tts_pitch: float = 0.0
     tts_fallback_enabled: bool = True
-    tts_fallback_provider: str = "voicevox"
-    tts_fallback_voice_id: str = "1"
+    tts_fallback_provider: str = "edge_tts"
+    tts_fallback_voice_id: str = "ja-JP-NanamiNeural"
     auto_play_ai_response: bool = True
     auto_play_references: bool = True
-    voicevox_engine_url: str = "http://127.0.0.1:50021"
-    voicevox_engine_path: str = "E:\\VoiceVox"
 
 
-class VoicevoxEngineDTO(BaseModel):
-    url: str
-    path: str
-    path_exists: bool
-    run_exe_path: str
-    run_exe_exists: bool
-    is_available: bool
-    status_message: str
-    latency_ms: int | None = None
-    available_voices_count: int = 0
+class TTSEngineStatusDTO(BaseModel):
+    edge_tts_available: bool = True
+    edge_tts_latency_ms: int | None = None
+    status_message: str = ""
+    active_provider: str = "edge_tts"
 
 
 class AudioSettingsUpdateRequest(BaseModel):
@@ -122,5 +115,3 @@ class AudioSettingsUpdateRequest(BaseModel):
     tts_fallback_voice_id: str | None = None
     auto_play_ai_response: bool | None = None
     auto_play_references: bool | None = None
-    voicevox_engine_url: str | None = None
-    voicevox_engine_path: str | None = None

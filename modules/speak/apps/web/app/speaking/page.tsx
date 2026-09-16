@@ -37,7 +37,11 @@ import {
   SessionSummaryModal,
   MicrophonePermissionModal,
 } from "@/features/speaking";
-import { getSavedLobbyPreferences } from "@/features/speaking/services/lobby-preferences";
+import {
+  getSavedLobbyPreferences,
+  syncLobbyPreferencesFromAudioSettings,
+} from "@/features/speaking/services/lobby-preferences";
+import { audioApi } from "@/features/audio/services/audio-api";
 
 const DIFFICULTIES = [
   { id: "All", label: "Tất cả" },
@@ -121,7 +125,6 @@ export default function SpeakingPage() {
   const [isLobbyOpen, setIsLobbyOpen] = useState(false);
 
   // Dynamic Custom Situation & Generator States
-  const [customSituationInput, setCustomSituationInput] = useState("");
   const [isInstantGenerating, setIsInstantGenerating] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
 
@@ -172,6 +175,16 @@ export default function SpeakingPage() {
     }
   }, [summary, state]);
 
+  // Synchronize lobby preferences with global Audio Settings on mount
+  useEffect(() => {
+    audioApi
+      .getSettings()
+      .then((s) => {
+        if (s) syncLobbyPreferencesFromAudioSettings(s);
+      })
+      .catch(() => {});
+  }, []);
+
   const handleCloseSummary = () => {
     setIsSummaryOpen(false);
     setActivePersona(null);
@@ -199,13 +212,13 @@ export default function SpeakingPage() {
   });
 
   const handleInstantCreateAndStart = async (scenarioOverride?: string) => {
-    const rawTarget = (scenarioOverride || customSituationInput).trim();
+    const rawTarget = (scenarioOverride || searchKeyword).trim();
     let themeToUse = rawTarget;
 
     if (!themeToUse) {
       const randomScenario = INSPIRATION_SCENARIOS[Math.floor(Math.random() * INSPIRATION_SCENARIOS.length)];
       themeToUse = randomScenario.theme;
-      setCustomSituationInput(randomScenario.label);
+      setSearchKeyword(randomScenario.label);
     }
 
     setIsInstantGenerating(true);
@@ -276,7 +289,7 @@ export default function SpeakingPage() {
 
   const handleInfiniteRandomGen = async () => {
     const randomScenario = INSPIRATION_SCENARIOS[Math.floor(Math.random() * INSPIRATION_SCENARIOS.length)];
-    setCustomSituationInput(randomScenario.label);
+    setSearchKeyword(randomScenario.label);
     await handleInstantCreateAndStart(randomScenario.theme);
   };
 
@@ -445,10 +458,10 @@ export default function SpeakingPage() {
         </div>
       ) : (
         <div className="space-y-3.5 sm:space-y-4">
-          {/* Zen Toolbar */}
+          {/* Zen Unified Smart Toolbar */}
           <div className="rounded-2xl border border-border/70 bg-card/65 backdrop-blur-2xl p-3 sm:p-4 shadow-glass-card hover:shadow-glass-hover transition-all duration-300 space-y-3">
             {/* Top Bar: Title + Quick Link + Action Buttons */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-border/60">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <div className="flex items-center gap-2.5 flex-wrap">
                 <span className="h-7 w-7 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center text-primary shadow-xs shrink-0">
                   <Mic className="h-3.5 w-3.5" />
@@ -461,14 +474,6 @@ export default function SpeakingPage() {
                     {filteredPersonas.length} đối tác
                   </span>
                 </div>
-                <Link
-                  href="/ramp"
-                  prefetch={true}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 hover:bg-primary/15 border border-primary/25 text-primary text-[11px] font-semibold transition-all ml-1"
-                >
-                  <Sparkles className="h-3 w-3" />
-                  <span>Mode 6: Nấc thang nói</span>
-                </Link>
               </div>
 
               {/* Partner Management Action Buttons */}
@@ -497,160 +502,103 @@ export default function SpeakingPage() {
               </div>
             </div>
 
-            {/* Direct Custom Situation Input Bar */}
-            <div className="pt-1 pb-1 space-y-2.5">
-              <div className="flex flex-col sm:flex-row items-stretch gap-2">
-                <div className="relative flex-1">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-primary">
-                    <Sparkles className="h-4 w-4 animate-pulse" />
-                  </div>
-                  <input
-                    type="text"
-                    value={customSituationInput}
-                    onChange={(e) => setCustomSituationInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleInstantCreateAndStart();
-                      }
-                    }}
-                    placeholder="Nhập bất kỳ tình huống nào muốn luyện... (VD: Đi khám nha khoa, Phỏng vấn IT Roppongi, Lạc đường đêm Shinjuku...)"
-                    className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-primary/30 bg-background/90 text-xs sm:text-sm font-medium placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/40 shadow-inner"
-                  />
-                  {customSituationInput && (
-                    <button
-                      type="button"
-                      onClick={() => setCustomSituationInput("")}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
+            {/* Unified 1-Row Filter & Search Bar */}
+            <div className="pt-2 border-t border-border/60 flex flex-col md:flex-row items-stretch md:items-center gap-2 text-xs">
+              {/* Smart Search & Topic Input */}
+              <div className="relative flex-1 min-w-[200px]">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <Search className="h-3.5 w-3.5" />
                 </div>
+                <input
+                  type="text"
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleInstantCreateAndStart(searchKeyword);
+                    }
+                  }}
+                  placeholder="Tìm đối tác hoặc nhập chủ đề để AI tạo ngay (VD: Đi khám nha khoa, Phỏng vấn IT...)"
+                  className="w-full pl-9 pr-24 py-2 text-xs rounded-xl border border-border/80 bg-background/90 text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary/40 shadow-xs"
+                />
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    disabled={isInstantGenerating}
-                    onClick={() => handleInstantCreateAndStart()}
-                    className="h-10 px-3.5 rounded-xl text-xs font-bold shadow-md shadow-primary/25 gap-1.5 cursor-pointer whitespace-nowrap"
-                    title="AI sinh ngay nhân vật hoàn chỉnh và đưa bạn vào phòng luyện tập tức thì (Enter)"
-                  >
-                    {isInstantGenerating ? (
-                      <>
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                        <span>AI Đang Thiết Kế...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>Vào Luyện Ngay</span>
-                        <kbd className="hidden md:inline-block text-[10px] font-mono px-1 py-0.2 rounded bg-black/20 text-white font-bold ml-0.5">
-                          Enter
-                        </kbd>
-                      </>
-                    )}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={isInstantGenerating}
-                    onClick={handleInfiniteRandomGen}
-                    className="h-10 px-3 rounded-xl text-xs font-bold border-border/80 hover:border-primary/50 text-foreground bg-card hover:bg-primary/10 gap-1.5 cursor-pointer whitespace-nowrap shadow-xs"
-                    title="Sinh một tình huống & nhân vật hoàn toàn ngẫu nhiên và bắt đầu đàm thoại"
-                  >
-                    <Dices className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="hidden sm:inline">🎲 Sinh Ngẫu Nhiên</span>
-                    <span className="sm:hidden">🎲 Random</span>
-                  </Button>
-                </div>
-              </div>
-
-              {/* Inspiration Chips Carousel */}
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 text-xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground shrink-0 flex items-center gap-1">
-                  <span>💡 Gợi ý thực chiến:</span>
-                </span>
-                {INSPIRATION_SCENARIOS.map((sc, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setCustomSituationInput(sc.label);
-                      handleInstantCreateAndStart(sc.theme);
-                    }}
-                    className="shrink-0 px-2.5 py-1 rounded-lg bg-muted/60 hover:bg-primary/15 border border-border/70 hover:border-primary/40 text-[11px] font-semibold text-foreground hover:text-primary transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
-                    title={sc.theme}
-                  >
-                    <span>{sc.icon}</span>
-                    <span>{sc.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Filter Deck: Search + Category Pills + Level Pills */}
-            <div className="pt-2.5 border-t border-border/60 flex flex-wrap items-center justify-between gap-2.5 text-xs">
-              <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-                {/* Search Input */}
-                <div className="relative min-w-[140px] max-w-[200px]">
-                  <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                  <input
-                    type="text"
-                    value={searchKeyword}
-                    onChange={(e) => setSearchKeyword(e.target.value)}
-                    placeholder="Tìm tên, vai trò..."
-                    className="w-full pl-8 pr-2.5 py-1 text-xs rounded-lg border border-border/70 bg-background/80 focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
+                <div className="absolute inset-y-0 right-1 flex items-center gap-1">
                   {searchKeyword && (
                     <button
                       type="button"
                       onClick={() => setSearchKeyword("")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-[10px]"
+                      className="p-1 text-muted-foreground hover:text-foreground rounded"
                     >
-                      ✕
+                      <X className="h-3 w-3" />
                     </button>
                   )}
-                </div>
 
-                {/* Category Pills */}
-                <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-muted/40 border border-border/60 overflow-x-auto scrollbar-none">
-                  {CATEGORIES.map((cat) => (
-                    <button
-                      key={cat.key}
-                      onClick={() => setSelectedCategory(cat.key)}
-                      className={cn(
-                        "px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all whitespace-nowrap flex items-center gap-1",
-                        selectedCategory === cat.key
-                          ? "bg-primary text-primary-foreground shadow-xs font-bold"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <span className="text-xs">{cat.icon}</span>
-                      <span>{cat.label}</span>
-                    </button>
-                  ))}
+                  <button
+                    type="button"
+                    disabled={isInstantGenerating}
+                    onClick={() => handleInstantCreateAndStart(searchKeyword)}
+                    className="h-7 px-2 rounded-lg bg-primary/15 hover:bg-primary text-primary hover:text-primary-foreground text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                    title="AI tạo ngay đối tác và tình huống này để luyện nói (Enter)"
+                  >
+                    {isInstantGenerating ? (
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <>
+                        <Sparkles className="h-3 w-3" />
+                        <span className="hidden sm:inline">Tạo AI</span>
+                      </>
+                    )}
+                  </button>
                 </div>
+              </div>
 
-                {/* Level Pills */}
-                <div className="flex items-center gap-0.5 p-0.5 rounded-lg bg-muted/40 border border-border/60 overflow-x-auto scrollbar-none">
+              {/* Random Scenario Dice */}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isInstantGenerating}
+                onClick={handleInfiniteRandomGen}
+                className="h-8 px-2.5 rounded-xl text-xs font-bold border-border/80 hover:border-primary/50 text-foreground bg-card hover:bg-primary/10 gap-1 cursor-pointer shrink-0 shadow-xs"
+                title="Sinh ngẫu nhiên tình huống và đối tác để đàm thoại tức thì"
+              >
+                <Dices className="h-3.5 w-3.5 text-amber-500" />
+                <span className="hidden lg:inline">Ngẫu nhiên</span>
+              </Button>
+
+              {/* Category Filter Chips */}
+              <div className="flex items-center gap-0.5 p-0.5 rounded-xl bg-muted/40 border border-border/60 overflow-x-auto scrollbar-none shrink-0">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.key}
+                    onClick={() => setSelectedCategory(cat.key)}
+                    className={cn(
+                      "px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-all whitespace-nowrap flex items-center gap-1 cursor-pointer",
+                      selectedCategory === cat.key
+                        ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <span className="text-xs">{cat.icon}</span>
+                    <span className="hidden xl:inline">{cat.label}</span>
+                    <span className="xl:hidden">{cat.label.split(" ")[0]}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Difficulty Level Dropdown */}
+              <div className="shrink-0">
+                <select
+                  value={selectedDifficulty}
+                  onChange={(e) => setSelectedDifficulty(e.target.value)}
+                  className="h-8 px-2.5 py-1 text-[11px] font-semibold rounded-xl border border-border/80 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                >
                   {DIFFICULTIES.map((diff) => (
-                    <button
-                      key={diff.id}
-                      onClick={() => setSelectedDifficulty(diff.id)}
-                      className={cn(
-                        "px-2 py-1 text-[11px] font-semibold rounded-md transition-all whitespace-nowrap",
-                        selectedDifficulty === diff.id
-                          ? "bg-primary text-primary-foreground shadow-xs font-bold"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
+                    <option key={diff.id} value={diff.id} className="bg-card text-foreground">
                       {diff.label}
-                    </button>
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
             </div>
           </div>

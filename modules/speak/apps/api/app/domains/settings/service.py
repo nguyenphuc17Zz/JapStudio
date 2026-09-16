@@ -28,7 +28,7 @@ class SettingsService:
                 timezone="Asia/Tokyo",
                 default_ai_provider="gemini",
                 default_ai_model="gemini-1.5-flash",
-                default_tts_provider="voicevox",
+                default_tts_provider="edge_tts",
                 default_stt_provider="whisper_local",
             )
             self.session.add(settings)

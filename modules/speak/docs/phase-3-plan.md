@@ -17,7 +17,7 @@ Conversation Engine & Context Window Manager
                     ↓
 AI Router (Gemini default / Groq fallback)
                     ↓
-VOICEVOX TTS Engine (Japanese Speech Synthesis)
+Edge-TTS Engine (Japanese Speech Synthesis)
                     ↓
 Browser Audio Playback & Microphone Suppression (Echo Prevention)
                     ↓
@@ -32,7 +32,7 @@ Continuous Multi-turn Conversation & Session Summary
 The `ConversationService` coordinates conversation state, turn progression, and context management **without knowing SDK details**. It interacts strictly via:
 - `STTRouter` ➔ `STTProvider` (`FasterWhisperAdapter`)
 - `AIRouter` ➔ `AIProvider` (`GeminiAdapter`, `GroqAdapter`, `OpenRouterAdapter`)
-- `TTSRouter` ➔ `TTSProvider` (`VoicevoxAdapter`)
+- `TTSRouter` ➔ `TTSProvider` (`EdgeTTSAdapter`)
 
 ```text
                                ┌───────────────────────────┐
@@ -45,7 +45,7 @@ The `ConversationService` coordinates conversation state, turn progression, and 
          └────────┬────────┘       └─────────┬─────────┘       └────────┬────────┘
                   ▼                          ▼                          ▼
        ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
-       │FasterWhisperAdapter │    │Gemini/Groq Adapters │    │   VoicevoxAdapter   │
+       │FasterWhisperAdapter │    │Gemini/Groq Adapters │           │EdgeTTSAdapter       │
        └─────────────────────┘    └─────────────────────┘    └─────────────────────┘
 ```
 
@@ -89,15 +89,8 @@ class TTSAudioOutput(BaseModel):
     metadata: dict[str, Any] = {}
 ```
 
-### 4.2 VOICEVOX Integration
-- **Engine URL**: Configured via `VOICEVOX_ENGINE_URL` (default `http://127.0.0.1:50021`).
-- **Two-Step Synthesis**: Calls `POST /audio_query` followed by `POST /synthesis`.
-- **Speaker Discovery**: Calls `GET /speakers` to dynamically populate available character voices and styles.
-- **Default Persona Mapping**:
-  - *Friendly Senpai (Takeshi / Sakura)*: Natural conversational voice (e.g. Shikishima Ririko / Zundamon / WhiteCUL).
-  - *Japanese Teacher (Sakura-sensei)*: Clear, articulate pacing (e.g. Tsugumi Hattori / Kasukabe Tsumugi).
-  - *Interviewer (Tanaka-san)*: Formal, polite cadence (e.g. Namahage / Kurono Takehiro).
-- **Resilience**: If the local VOICEVOX engine is offline or unreachable, returns a structured error with the AI text response intact, allowing the session to continue without crashing.
+### 4.2 Edge-TTS Integration
+- **Edge-TTS**: Async streaming neural voices (Nanami, Keita, etc.) with customizable rate/pitch. Zero local resource overhead.
 
 ---
 
@@ -132,7 +125,7 @@ Prompts are centrally constructed with strict constraints for **spoken natural J
   - `model_preference`: e.g. `"gemini-1.5-flash"`
   - `stt_provider_preference`: e.g. `"faster_whisper"`
   - `stt_model_preference`: e.g. `"base"`
-  - `tts_provider_preference`: e.g. `"voicevox"`
+  - `tts_provider_preference`: e.g. `"edge_tts"`
   - `tts_voice_preference`: e.g. `"1"`
 - `started_at`, `ended_at`, `duration_seconds`
 
@@ -162,7 +155,7 @@ Prompts are centrally constructed with strict constraints for **spoken natural J
 
 ### 7.2 Speech Endpoints (`/api/v1/speech`)
 - `POST /transcribe`: Standalone audio transcription using Faster-Whisper.
-- `POST /synthesize`: Standalone text synthesis using VOICEVOX.
+- `POST /synthesize`: Standalone text synthesis using Edge-TTS.
 - `GET /voices`: List available TTS voices and speakers.
 - `GET /stt-models`: List available STT models and hardware recommendations.
 
@@ -221,7 +214,7 @@ Explicit state transitions without conflicting boolean flags:
    - `test_conversation_context_builder.py`: Context window truncation, system prompt preservation.
    - `test_persona_prompts.py`: Persona prompt formatting, spoken Japanese guidelines, mode rules.
    - `test_stt_contracts.py` & `test_faster_whisper.py`: Faster-Whisper lifecycle, cache reuse, mocked inference.
-   - `test_tts_contracts.py` & `test_voicevox.py`: VOICEVOX query generation, speaker listing, offline handling.
+    - `test_tts_contracts.py`, `test_edge_tts.py`: Voice synthesis, stream generation, speaker listing.
 2. **API Integration Tests**:
    - `test_conversation_api.py`: Create session, audio turn processing, turn pagination, session conclusion, and summary.
    - `test_speech_api.py`: Direct STT and TTS endpoint validations.
@@ -229,4 +222,4 @@ Explicit state transitions without conflicting boolean flags:
    - State transition verification in `useVoiceSession`.
    - TypeScript compilation and Next.js lint validation.
 4. **End-to-End Manual Verification**:
-   - Verify microphone capture, Faster-Whisper transcription, Gemini/Groq LLM response generation, and VOICEVOX voice playback in the browser.
+    - Verify microphone capture, Faster-Whisper transcription, Gemini/Groq LLM response generation, and Edge-TTS voice playback in the browser.

@@ -75,7 +75,7 @@ Learning Engine
 ## 6. Phase D — API/Audio/AI
 
 - Prefer `POST /learning/exercises/generate {exercise_type: keigo_*}` + `POST /learning/exercises/{id}/submit {keigo_metrics}`, chỉ khi không đủ mới thêm `/keigo/*` orchestration (mirror `reflex.py`: `GET/POST /keigo/exercises/generate?sub_mode=keigo_*`, `POST /keigo/exercises/{id}/submit`, `GET /keigo/progress`, `GET /keigo/pressure-profiles`).
-- Reuse `STTRouter/Faster-Whisper 16kHz`, `TTSRouter/VOICEVOX VoiceStyle.POLITE/PROFESSIONAL`, `useAudioRecorder 16kHz`, `useVAD high`, timer `useKeigoTimer` (re-export `useReflexTimer`).
+- Reuse `STTRouter/Faster-Whisper 16kHz`, `TTSRouter/Edge-TTS VoiceStyle.POLITE/PROFESSIONAL`, `useAudioRecorder 16kHz`, `useVAD high`, timer `useKeigoTimer` (re-export `useReflexTimer`).
 - `AIRouter` thêm `KEIGO_GENERATION/KEIGO_EVALUATION` (2 tasks), `PromptBudgetGuard`, strict JSON, AI nhận deterministic evidence `{context, linguistic_analysis, candidates, known_rules, learner_answer}`.
 
 ---

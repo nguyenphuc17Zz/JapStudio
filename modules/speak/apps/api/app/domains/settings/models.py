@@ -24,7 +24,7 @@ class UserSettings(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 
     default_ai_provider: Mapped[str] = mapped_column(String(50), default="gemini", nullable=False)
     default_ai_model: Mapped[str] = mapped_column(String(100), default="gemini-1.5-flash", nullable=False)
-    default_tts_provider: Mapped[str] = mapped_column(String(50), default="voicevox", nullable=False)
+    default_tts_provider: Mapped[str] = mapped_column(String(50), default="edge_tts", nullable=False)
     default_stt_provider: Mapped[str] = mapped_column(String(50), default="whisper_local", nullable=False)
 
     # Phase 2 Routing Configurations
@@ -33,19 +33,15 @@ class UserSettings(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     fallback_priority: Mapped[str] = mapped_column(String(255), default="gemini,groq,openrouter", nullable=False)
     feature_routing: Mapped[str | None] = mapped_column(Text, default="{}", nullable=True)
 
-    # Phase 9 Audio Experience Configurations
+    # Audio Experience Configurations
     default_voice_profile_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     default_tts_speed: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
     default_tts_pitch: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     tts_fallback_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    tts_fallback_provider: Mapped[str] = mapped_column(String(50), default="voicevox", nullable=False)
-    tts_fallback_voice_id: Mapped[str] = mapped_column(String(50), default="1", nullable=False)
+    tts_fallback_provider: Mapped[str] = mapped_column(String(50), default="edge_tts", nullable=False)
+    tts_fallback_voice_id: Mapped[str] = mapped_column(String(50), default="ja-JP-NanamiNeural", nullable=False)
     auto_play_ai_response: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     auto_play_references: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-
-    # VOICEVOX engine customization (user-editable path + URL)
-    voicevox_engine_url: Mapped[str] = mapped_column(String(255), default="http://127.0.0.1:50021", nullable=False)
-    voicevox_engine_path: Mapped[str] = mapped_column(String(500), default="E:\\VoiceVox", nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="settings")
 

@@ -53,7 +53,7 @@ async def test_conversation_session_lifecycle_and_turns(client: AsyncClient):
         format="wav",
         duration_ms=2000,
         voice="1",
-        provider="voicevox",
+        provider="edge_tts",
     )
 
     with (

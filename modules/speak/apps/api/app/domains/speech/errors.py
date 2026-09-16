@@ -39,7 +39,7 @@ class TTSProviderError(SpeechError):
 
 
 class TTSUnavailableError(SpeechError):
-    """Text-to-Speech engine unreachable or offline (e.g. VOICEVOX offline)."""
+    """Text-to-Speech engine unreachable, missing models, or offline."""
 
     def __init__(self, message: str, provider_id: str, raw_error: Any = None):
         super().__init__(message=message, provider_id=provider_id, status_code=503, raw_error=raw_error)

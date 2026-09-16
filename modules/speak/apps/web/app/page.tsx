@@ -68,7 +68,7 @@ export default function HomePage() {
               </div>
 
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Hội thoại tiếng Nhật thời gian thực với VAD siêu nhạy, Faster-Whisper STT nhận diện giọng nói chuẩn xác, VoiceVox TTS biểu cảm và hệ thống chấm điểm phát âm đa tầng.
+                Hội thoại tiếng Nhật thời gian thực với VAD siêu nhạy, Faster-Whisper STT nhận diện giọng nói chuẩn xác, Edge-TTS biểu cảm và hệ thống chấm điểm phát âm đa tầng.
               </p>
 
               {/* Tags */}
@@ -80,7 +80,7 @@ export default function HomePage() {
                   ⚡ Faster-Whisper
                 </span>
                 <span className="text-[11px] px-2.5 py-1 rounded-lg bg-muted border border-border/60 text-muted-foreground font-medium">
-                  🔊 VoiceVox TTS
+                  🔊 Edge-TTS
                 </span>
                 <span className="text-[11px] px-2.5 py-1 rounded-lg bg-muted border border-border/60 text-muted-foreground font-medium">
                   🧠 AI Error Diagnosis

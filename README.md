@@ -9,7 +9,7 @@ Hệ điều hành học tiếng Nhật đa chế độ với trí tuệ nhân t
 | Chế Độ | Tên Module | Trạng Thái | Cổng Mạng | Công Nghệ Chính |
 | :--- | :--- | :--- | :--- | :--- |
 | **🌐 Hub Portal** | Master Web Hub | ✅ Hoạt động | `http://localhost:3000` | Next.js 14, TailwindCSS, Glassmorphism UI |
-| **🎙️ Luyện Nói** | `modules/speak` | ✅ Hoạt động | Web `3000` • API `8000` | Faster-Whisper, VoiceVox, VAD, Next.js, FastAPI |
+| **🎙️ Luyện Nói** | `modules/speak` | ✅ Hoạt động | Web `3000` • API `8000` | Faster-Whisper, Edge-TTS, Kokoro-82M, VAD, Next.js, FastAPI |
 | **✍️ Luyện Viết** | `modules/write` | ✅ Hoạt động | Web `5173` • API `8001` | 23 Cấp độ, Alembic, Vite, React 19, CSS Tokens |
 | **🎧 Luyện Nghe** | `modules/listen` | 🔒 Sắp ra mắt | Web `5174` • API `8002` | Biến âm, đa tốc độ 0.8x–1.5x, phương ngữ Nhật |
 | **📖 Luyện Đọc** | `modules/read` | 🔒 Sắp ra mắt | Web `5175` • API `8003` | Báo chí NHK, bóc tách Kanji & Furigana |

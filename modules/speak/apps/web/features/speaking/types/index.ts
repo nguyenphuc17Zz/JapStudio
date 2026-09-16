@@ -250,10 +250,10 @@ export interface VoiceSettingsConfig {
   ai_model: string;
   stt_provider: string; // 'faster_whisper'
   stt_model: string; // 'auto' | 'tiny' | 'base' | 'small' | 'medium' | 'turbo' | 'large-v3'
-  tts_provider: string; // 'voicevox' | 'web_speech' | 'none'
-  tts_voice: string; // '1' | '2' | ...
+  tts_provider: string; // 'edge_tts' | 'web_speech' | 'none'
+  tts_voice: string; // 'ja-JP-NanamiNeural' | ...
   tts_enabled?: boolean; // true = synthesize audio, false = text-only lightweight mode
-  tts_engine?: "voicevox" | "web_speech" | "none"; // speech engine type
+  tts_engine?: "edge_tts" | "web_speech" | "none"; // speech engine type
   vad_sensitivity: VADSensitivity;
   auto_end_of_speech?: boolean; // true = auto VAD detect, false = manual push-to-talk
 }

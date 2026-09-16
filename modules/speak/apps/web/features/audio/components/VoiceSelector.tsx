@@ -25,7 +25,7 @@ interface VoiceSelectorProps {
 export function VoiceSelector({
   selectedVoiceId,
   defaultVoiceId,
-  selectedProvider = "voicevox",
+  selectedProvider = "edge_tts",
   sampleText,
   speed = 1.0,
   pitch = 0.0,
@@ -135,7 +135,7 @@ export function VoiceSelector({
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Tìm theo tên (Zundamon, Metan, Tsumugi...), phong cách hoặc từ khóa..."
+            placeholder="Tìm theo tên (Nanami, Keita, Alpha, Kumo...), phong cách hoặc từ khóa..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-8 py-2 bg-background border border-border rounded-xl text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"

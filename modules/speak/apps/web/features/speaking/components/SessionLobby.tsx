@@ -29,10 +29,15 @@ import { cn } from "@/lib/utils";
 import { aiApi } from "@/services/ai-api";
 import { providersApi } from "@/services/providers-api";
 import { audioApi } from "@/features/audio/services/audio-api";
+import {
+  claimSpeechOutput,
+  releaseSpeechOutput,
+  type SpeechOutputOwner,
+} from "@/features/audio/services/speech-playback-coordinator";
 import { STTModelInfo, VoiceProfile } from "@/types/audio";
 import { ModelMetadata, ProviderDetail } from "@/types/provider";
 import {
-  VOICEVOX_FALLBACK_CATALOG,
+  EDGE_TTS_VOICES_CATALOG,
   getVoiceCharacterMeta,
 } from "@/features/audio/services/voice-meta";
 import {
@@ -43,6 +48,7 @@ import {
 import {
   getSavedLobbyPreferences,
   saveLobbyPreferences,
+  syncLobbyPreferencesFromAudioSettings,
 } from "../services/lobby-preferences";
 import { soundFX } from "@/lib/sound-fx";
 
@@ -54,8 +60,8 @@ interface SessionLobbyProps {
   onClose: () => void;
 }
 
-type LobbyTab = "mode_ai" | "stt_mic" | "voicevox";
-type TTSEngineMode = "voicevox" | "web_speech" | "none";
+type LobbyTab = "mode_ai" | "stt_mic" | "tts";
+type TTSEngineMode = "edge_tts" | "web_speech" | "none";
 
 export function SessionLobby({
   persona,
@@ -81,14 +87,17 @@ export function SessionLobby({
   const [sttModel, setSttModel] = useState(initialPrefs.stt_model);
   const [sttModelsList, setSttModelsList] = useState<STTModelInfo[]>([]);
 
-  // TTS & VOICEVOX States
+  // TTS & Voice States (legacy "kokoro" prefs fall back to edge_tts)
   const [ttsEnabled, setTtsEnabled] = useState(initialPrefs.tts_enabled);
-  const [ttsEngine, setTtsEngine] = useState<TTSEngineMode>(initialPrefs.tts_engine);
-  const [voicevoxOnline, setVoicevoxOnline] = useState<boolean | null>(null);
-  const [ttsVoice, setTtsVoice] = useState(initialPrefs.tts_voice);
-  const [voicesList, setVoicesList] = useState<VoiceProfile[]>(VOICEVOX_FALLBACK_CATALOG);
+  const [ttsEngine, setTtsEngine] = useState<TTSEngineMode>(
+    initialPrefs.tts_engine === "web_speech" || initialPrefs.tts_engine === "none"
+      ? initialPrefs.tts_engine
+      : "edge_tts"
+  );
+  const [ttsVoice, setTtsVoice] = useState(initialPrefs.tts_voice || "ja-JP-NanamiNeural");
+  const [voicesList, setVoicesList] = useState<VoiceProfile[]>(EDGE_TTS_VOICES_CATALOG);
   const [voiceSearch, setVoiceSearch] = useState("");
-  const [voiceFilter, setVoiceFilter] = useState<"all" | "female" | "male" | "anime" | "calm">("all");
+  const [voiceFilter, setVoiceFilter] = useState<"all" | "female" | "male" | "calm" | "energetic">("all");
   const [previewingVoiceId, setPreviewingVoiceId] = useState<string | null>(null);
 
   // VAD & End of Speech States
@@ -132,12 +141,26 @@ export function SessionLobby({
     setTtsEngine(newEngine);
     const enabled = newEngine !== "none";
     setTtsEnabled(enabled);
-    saveLobbyPreferences({ tts_engine: newEngine, tts_enabled: enabled });
+
+    let nextVoice = ttsVoice;
+    if (newEngine === "edge_tts") {
+      const isEdgeVoice = EDGE_TTS_VOICES_CATALOG.some((v) => (v.voice_id || v.id) === ttsVoice);
+      if (!isEdgeVoice) {
+        nextVoice = EDGE_TTS_VOICES_CATALOG[0].id;
+        setTtsVoice(nextVoice);
+      }
+      setVoicesList(EDGE_TTS_VOICES_CATALOG);
+      audioApi.getVoices("edge_tts").then((res) => {
+        if (res && res.length > 0) setVoicesList(res);
+      }).catch(() => {});
+    }
+
+    saveLobbyPreferences({ tts_engine: newEngine, tts_enabled: enabled, tts_voice: nextVoice });
   };
 
   const handleTtsEnabledToggle = (enabled: boolean) => {
     setTtsEnabled(enabled);
-    const engine: TTSEngineMode = enabled ? (ttsEngine === "none" ? "voicevox" : ttsEngine) : "none";
+    const engine: TTSEngineMode = enabled ? (ttsEngine === "none" ? "edge_tts" : ttsEngine) : "none";
     setTtsEngine(engine);
     saveLobbyPreferences({ tts_enabled: enabled, tts_engine: engine });
   };
@@ -163,33 +186,25 @@ export function SessionLobby({
 
     async function loadLobbyConfigs() {
       try {
+        const currentEngine = "edge_tts";
         const [
           userSettings,
           audioSettings,
           providersData,
           sttData,
           voicesData,
-          healthData,
         ] = await Promise.all([
           settingsApi.getSettings().catch(() => null),
           audioApi.getSettings().catch(() => null),
           providersApi.listProviders().catch(() => []),
           audioApi.listSTTModels().catch(() => []),
-          audioApi.getVoices("voicevox").catch(() => []),
-          audioApi.getProvidersHealth().catch(() => []),
+          audioApi.getVoices(currentEngine).catch(() => []),
         ]);
 
         if (!isMounted) return;
 
         if (providersData && providersData.length > 0) {
           setProviders(providersData);
-        }
-
-        if (healthData && healthData.length > 0) {
-          const vv = healthData.find((h) => h.provider_id === "voicevox");
-          if (vv) {
-            setVoicevoxOnline(vv.is_available);
-          }
         }
 
         if (sttData && sttData.length > 0) {
@@ -203,15 +218,11 @@ export function SessionLobby({
           }
         }
 
-        // Merge API voices with full catalog so no voices are missing
-        if (voicesData && voicesData.length > 6) {
+        const fallbackCatalog = EDGE_TTS_VOICES_CATALOG;
+        if (voicesData && voicesData.length > 0) {
           setVoicesList(voicesData);
-        } else if (voicesData && voicesData.length > 0) {
-          const ids = new Set(voicesData.map((v) => v.voice_id || v.id));
-          const rest = VOICEVOX_FALLBACK_CATALOG.filter((v) => !ids.has(v.voice_id || v.id));
-          setVoicesList([...voicesData, ...rest]);
         } else {
-          setVoicesList(VOICEVOX_FALLBACK_CATALOG);
+          setVoicesList(fallbackCatalog);
         }
 
         // Apply Defaults from Global Settings
@@ -229,10 +240,16 @@ export function SessionLobby({
           if (gm) setAiModel(gm);
         }
 
-        if (audioSettings && initialPrefs.tts_voice === "1") {
-          if (audioSettings.default_voice_profile_id) {
-            setTtsVoice(audioSettings.default_voice_profile_id);
+        if (audioSettings) {
+          const defaultProvider = audioSettings.default_tts_provider;
+          const defaultVoice = audioSettings.default_voice_profile_id;
+          if (defaultProvider && (defaultProvider === "edge_tts" || defaultProvider === "web_speech")) {
+            setTtsEngine(defaultProvider as any);
           }
+          if (defaultVoice) {
+            setTtsVoice(defaultVoice);
+          }
+          syncLobbyPreferencesFromAudioSettings(audioSettings);
         }
       } catch (err) {
         console.warn("[SessionLobby] Failed to preload settings:", err);
@@ -253,9 +270,22 @@ export function SessionLobby({
     };
     window.addEventListener("speaking_ai_routing_changed", handleGlobalAIRoutingChanged);
 
+    const handleTtsSettingsChanged = (e: any) => {
+      if (e.detail) {
+        if (e.detail.tts_engine) {
+          setTtsEngine(e.detail.tts_engine);
+        }
+        if (e.detail.tts_voice) {
+          setTtsVoice(e.detail.tts_voice);
+        }
+      }
+    };
+    window.addEventListener("speaking_lobby_prefs_changed", handleTtsSettingsChanged);
+
     return () => {
       isMounted = false;
       window.removeEventListener("speaking_ai_routing_changed", handleGlobalAIRoutingChanged);
+      window.removeEventListener("speaking_lobby_prefs_changed", handleTtsSettingsChanged);
       stopTestRecording();
       stopWebSpeech();
       if (testAudioElementRef.current) {
@@ -318,17 +348,34 @@ export function SessionLobby({
     setPreviewingVoiceId(voiceId);
     try {
       const sample = "こんにちは！一緒に日本語で楽しく話しましょう。";
-      const res = await audioApi.previewVoice(sample, voiceId, "voicevox");
+      const provider = "edge_tts";
+      const res = await audioApi.previewVoice(sample, voiceId, provider);
       if (res.audio_base64) {
         const audio = new Audio(`data:audio/wav;base64,${res.audio_base64}`);
-        audio.onended = () => setPreviewingVoiceId(null);
-        audio.onerror = () => setPreviewingVoiceId(null);
+        // Single-flight: cut any other speech before playing this preview.
+        const owner: SpeechOutputOwner = {
+          stop: () => {
+            try {
+              audio.pause();
+            } catch {}
+            setPreviewingVoiceId(null);
+          },
+        };
+        claimSpeechOutput(owner);
+        audio.onended = () => {
+          releaseSpeechOutput(owner);
+          setPreviewingVoiceId(null);
+        };
+        audio.onerror = () => {
+          releaseSpeechOutput(owner);
+          setPreviewingVoiceId(null);
+        };
         await audio.play();
       } else {
         setPreviewingVoiceId(null);
       }
     } catch (e: any) {
-      console.warn("VOICEVOX preview offline/failed:", e);
+      console.warn("TTS preview failed:", e);
       setPreviewingVoiceId(null);
     }
   };
@@ -414,8 +461,23 @@ export function SessionLobby({
     const audio = new Audio(testAudioUrl);
     testAudioElementRef.current = audio;
     setIsPlayingTestAudio(true);
-    audio.onended = () => setIsPlayingTestAudio(false);
-    audio.onerror = () => setIsPlayingTestAudio(false);
+    const owner: SpeechOutputOwner = {
+      stop: () => {
+        try {
+          audio.pause();
+        } catch {}
+        setIsPlayingTestAudio(false);
+      },
+    };
+    claimSpeechOutput(owner);
+    audio.onended = () => {
+      releaseSpeechOutput(owner);
+      setIsPlayingTestAudio(false);
+    };
+    audio.onerror = () => {
+      releaseSpeechOutput(owner);
+      setIsPlayingTestAudio(false);
+    };
     audio.play();
   };
 
@@ -425,7 +487,7 @@ export function SessionLobby({
       ? "none"
       : ttsEngine === "web_speech"
       ? "web_speech"
-      : "voicevox";
+      : "edge_tts";
 
     // 1. Persist full configuration in localStorage for instant recall next time
     saveLobbyPreferences({
@@ -468,7 +530,7 @@ export function SessionLobby({
     const meta = getVoiceCharacterMeta(v);
     if (voiceFilter === "female" && meta.gender !== "female") return false;
     if (voiceFilter === "male" && meta.gender !== "male") return false;
-    if (voiceFilter === "anime" && meta.gender !== "mascot" && meta.vibe !== "energetic" && meta.vibe !== "cute") return false;
+    if (voiceFilter === "energetic" && meta.vibe !== "energetic" && meta.vibe !== "cute" && meta.vibe !== "cool") return false;
     if (voiceFilter === "calm" && meta.vibe !== "calm" && meta.vibe !== "gentle" && meta.vibe !== "deep") return false;
 
     if (!voiceSearch.trim()) return true;
@@ -587,11 +649,15 @@ export function SessionLobby({
                   ? "Tắt âm thanh"
                   : ttsEngine === "web_speech"
                   ? "WebSpeech Trình Duyệt"
-                  : selectedVoiceObj?.name || "VOICEVOX"}
+                  : selectedVoiceObj?.name || "Edge-TTS"}
               </span>
             </div>
             <div className="text-[10px] text-muted-foreground truncate">
-              {!ttsEnabled || ttsEngine === "none" ? "Chỉ hiển thị phụ đề văn bản" : "Giọng phát âm chuẩn Tokyo"}
+              {!ttsEnabled || ttsEngine === "none"
+                ? "Chỉ hiển thị phụ đề văn bản"
+                : ttsEngine === "edge_tts"
+                ? "Azure Neural Tokyo tự nhiên chuẩn mực"
+                : "Giọng phát âm tích hợp trình duyệt"}
             </div>
           </div>
         </div>
@@ -667,14 +733,14 @@ export function SessionLobby({
 
               <button
                 type="button"
-                onClick={() => setActiveTab("voicevox")}
+                onClick={() => setActiveTab("tts")}
                 className={cn(
                   "flex-1 min-w-[120px] px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1",
-                  activeTab === "voicevox" ? "bg-card text-foreground shadow-2xs border border-border" : "text-muted-foreground hover:text-foreground"
+                  activeTab === "tts" ? "bg-card text-foreground shadow-2xs border border-border" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <Headphones className="h-3.5 w-3.5 text-indigo-500" />
-                <span>Danh Sách Giọng</span>
+                <span>Giọng Đọc AI (TTS)</span>
               </button>
             </div>
 
@@ -986,15 +1052,15 @@ export function SessionLobby({
         </div>
       )}
 
-      {/* Tab 3: Speech Synthesis & VOICEVOX ON/OFF Controls */}
-      {activeTab === "voicevox" && (
+      {/* Tab 3: Speech Synthesis & TTS Engine Controls */}
+      {activeTab === "tts" && (
         <div className="space-y-3.5 animate-in fade-in duration-150">
           {/* Master Voice Playback Mode Picker */}
           <div className="p-3 rounded-2xl bg-card border border-border space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Volume2 className="h-4 w-4 text-primary" />
-                <span className="text-xs font-bold text-foreground">Chế độ phát giọng nói AI</span>
+                <span className="text-xs font-bold text-foreground">Chế độ phát giọng nói AI (TTS)</span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -1012,29 +1078,27 @@ export function SessionLobby({
 
             {/* 3 Mode Radio Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-              {/* Option 1: VOICEVOX */}
+              {/* Option 1: Edge-TTS */}
               <button
                 type="button"
-                onClick={() => handleTtsEngineChange("voicevox")}
+                onClick={() => handleTtsEngineChange("edge_tts")}
                 className={`p-2.5 rounded-xl border text-left transition-all ${
-                  ttsEnabled && ttsEngine === "voicevox"
+                  ttsEnabled && ttsEngine === "edge_tts"
                     ? "bg-primary/10 border-primary ring-1 ring-primary/30"
                     : "bg-background/80 border-border text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
-                    <Headphones className="h-3.5 w-3.5 text-indigo-400" />
-                    <span>VOICEVOX</span>
+                    <Headphones className="h-3.5 w-3.5 text-pink-500" />
+                    <span>Edge-TTS</span>
                   </div>
-                  {voicevoxOnline === true ? (
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" title="Engine Online" />
-                  ) : (
-                    <span className="h-2 w-2 rounded-full bg-slate-500" title="Engine Offline / App chưa mở" />
-                  )}
+                  <Badge variant="jlpt" size="sm" className="text-[9px] py-0 px-1 h-3.5 bg-pink-500/20 text-pink-400">
+                    Khuyên dùng
+                  </Badge>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">
-                  46+ giọng Anime lồng tiếng (cần chạy VOICEVOX app).
+                  Azure Neural SOTA, giọng Tokyo tự nhiên mượt mà.
                 </p>
               </button>
 
@@ -1051,7 +1115,7 @@ export function SessionLobby({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
                     <Globe className="h-3.5 w-3.5 text-sky-400" />
-                    <span>Trình duyệt (Web)</span>
+                    <span>Trình duyệt</span>
                   </div>
                   <Badge variant="fuji" size="sm" className="text-[9px] py-0 px-1 h-3.5 bg-sky-500/20 text-sky-300">
                     0MB RAM
@@ -1075,7 +1139,7 @@ export function SessionLobby({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 font-bold text-xs text-foreground">
                     <VolumeX className="h-3.5 w-3.5 text-amber-400" />
-                    <span>Tắt tiếng (Chỉ chữ)</span>
+                    <span>Tắt tiếng</span>
                   </div>
                   <Zap className="h-3 w-3 text-amber-400" />
                 </div>
@@ -1094,7 +1158,7 @@ export function SessionLobby({
                 <span>Chế độ Tiết kiệm RAM / Tối ưu phần cứng đang BẬT</span>
               </div>
               <p className="text-[11px] leading-relaxed text-amber-600/90 dark:text-amber-400/90">
-                Bạn vẫn luyện nói qua Micro với mô hình Faster-Whisper. AI sẽ phản hồi ngay lập tức dưới dạng văn bản mà không gọi VOICEVOX, giúp máy tính hoạt động cực kỳ nhẹ và mát.
+                Bạn vẫn luyện nói qua Micro với mô hình Faster-Whisper. AI sẽ phản hồi ngay lập tức dưới dạng văn bản mà không tạo giọng nói, giúp máy tính hoạt động cực kỳ nhẹ và mát.
               </p>
             </div>
           )}
@@ -1118,31 +1182,13 @@ export function SessionLobby({
                 </Button>
               </div>
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Tự động sử dụng giọng đọc tiếng Nhật tích hợp sẵn của Windows / Trình duyệt (Microsoft Haruka / Ayumi / Ichiro). Không yêu cầu cài đặt hay mở thêm bất kỳ phần mềm nào.
+                Tự động sử dụng giọng đọc tiếng Nhật tích hợp sẵn của Windows / Trình duyệt (Microsoft Haruka / Ayumi / Ichiro). Không yêu cầu kết nối ngoài hay cài đặt thêm.
               </p>
             </div>
           )}
 
-          {ttsEnabled && ttsEngine === "voicevox" && (
+          {ttsEnabled && ttsEngine === "edge_tts" && (
             <div className="space-y-3">
-              {/* Engine Status Notice if Offline */}
-              {voicevoxOnline === false && (
-                <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs text-muted-foreground flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
-                    <span>App VOICEVOX chưa mở trên máy (Port 50021).</span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleTtsEngineChange("web_speech")}
-                    className="text-[11px] h-7 px-2 border-sky-500/30 text-sky-400"
-                  >
-                    Dùng Web Speech thay thế
-                  </Button>
-                </div>
-              )}
-
               {/* Search & Filter Bar */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -1150,7 +1196,7 @@ export function SessionLobby({
                     <Search className="h-3.5 w-3.5 absolute left-2.5 top-2.5 text-muted-foreground" />
                     <input
                       type="text"
-                      placeholder="Tìm nhân vật / phong cách (VD: Zundamon, Metan, Tsundere, Normal...)"
+                       placeholder="Tìm nhân vật / phong cách (VD: Nanami, Keita...)"
                       value={voiceSearch}
                       onChange={(e) => setVoiceSearch(e.target.value)}
                       className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-background border border-border text-foreground text-xs focus:outline-none focus:border-primary"
@@ -1178,8 +1224,8 @@ export function SessionLobby({
                     { id: "all", label: "Tất cả", count: voicesList.length },
                     { id: "female", label: "👩 Nữ", count: voicesList.filter((v) => getVoiceCharacterMeta(v).gender === "female").length },
                     { id: "male", label: "👨 Nam", count: voicesList.filter((v) => getVoiceCharacterMeta(v).gender === "male").length },
-                    { id: "anime", label: "✨ Anime / Nhí nhảnh" },
                     { id: "calm", label: "🍵 Điềm tĩnh" },
+                    { id: "energetic", label: "⚡ Năng động" },
                   ].map((f) => (
                     <button
                       key={f.id}

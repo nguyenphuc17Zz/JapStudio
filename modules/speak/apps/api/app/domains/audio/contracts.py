@@ -94,8 +94,8 @@ class VoiceProfileDTO(BaseModel):
 
 class TTSRequest(BaseModel):
     text: str
-    provider: str = "voicevox"
-    voice_id: str = "1"
+    provider: str = "edge_tts"
+    voice_id: str = "ja-JP-NanamiNeural"
     language: str = "ja"
     speed: float = 1.0
     pitch: float = 0.0
