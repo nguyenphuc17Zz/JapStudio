@@ -63,6 +63,7 @@ export interface GenerateOpts {
   timerMs?: number;
   difficulty?: string;
   force_ai?: boolean;
+  recent_prompts?: string[];
 }
 
 export const SUB_MODE_META: Record<string, { timerMs: number; label: string; ja: string }> = {
@@ -89,6 +90,11 @@ export async function generateExercise(opts: GenerateOpts): Promise<InterpretExe
   if (opts.timerMs !== undefined) params.set("timer_limit_ms", String(opts.timerMs));
   if (opts.difficulty) params.set("difficulty", opts.difficulty);
   if (opts.force_ai) params.set("force_ai", "true");
+  if (opts.recent_prompts && opts.recent_prompts.length > 0) {
+    opts.recent_prompts.forEach((p) => {
+      if (p?.trim()) params.append("recent_prompts", p.trim());
+    });
+  }
   params.set("nonce", `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
   const data = (await apiClient.post(`/interpret/exercises/generate?${params.toString()}`)) as any;
   const ic = data.extra_metadata?.interpret_config || {};

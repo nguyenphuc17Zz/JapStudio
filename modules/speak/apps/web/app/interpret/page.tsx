@@ -280,8 +280,6 @@ export default function InterpretPage() {
     );
   }
 
-  const subJa = ex?.subMode === "interpret_word" ? "単語" : ex?.subMode === "interpret_situation" ? "通訳" : "文";
-
   return (
     <div className="w-full max-w-[1760px] mx-auto h-full flex flex-col justify-between px-2 sm:px-4 py-2 gap-2 overflow-hidden select-none animate-in fade-in duration-200">
       <CombatCapsuleHUD
@@ -300,10 +298,6 @@ export default function InterpretPage() {
         setMicGain={(g) => session.setMicGain(g)}
         autoNext={autoNext}
         setAutoNext={setAutoNext}
-        filterTrigger={{
-          label: `${ex?.topic || topic || "Trộn chủ đề"} · ${scaffold === "none" ? "Blind" : "có gợi ý"}`,
-          onClick: () => setShowCheatsheet(true),
-        }}
         provenanceBadge={
           session.exercise ? (
             <ExerciseSourceBadge
@@ -371,9 +365,6 @@ export default function InterpretPage() {
               <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Đề tiếng Việt {ex?.blind ? "· Blind 自力" : ""} · {subJa}
-                    </p>
                     <ExerciseSourceBadge source={ex?.generationSource} isFallback={ex?.isFallback} />
                   </div>
                   <button onClick={() => session.readPromptVi()} className="flex items-center gap-1 text-xs text-primary hover:underline" title={`Đọc đề (${formatKeyDisplay(keybindings.interpretListenPrompt)})`}>

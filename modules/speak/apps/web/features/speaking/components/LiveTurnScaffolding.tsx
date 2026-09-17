@@ -15,67 +15,6 @@ interface LiveTurnScaffoldingProps {
   disabled?: boolean;
 }
 
-/** Client-side fallback scaffolding when backend scaffold is missing */
-function buildClientFallback(text: string): ScaffoldingHint {
-  const t = text.toLowerCase();
-
-  if (/注文|メニュー|お飲み物|お食事|いかが|召し上がり/.test(t)) {
-    return {
-      suggestions: [
-        { intent: "positive", ja: "おすすめのメニューを教えていただけますか？", vi: "Bạn có thể gợi ý món nổi bật được không?" },
-        { intent: "concern",  ja: "もう少し見てから注文してもいいですか？",   vi: "Tôi xem thêm một chút rồi gọi món được không?" },
-        { intent: "question", ja: "こちらで一番人気のお料理は何ですか？",      vi: "Món được yêu thích nhất ở đây là gì ạ?" },
-      ],
-      key_vocab: [
-        { ja: "おすすめ",  reading: "おすすめ",    vi: "gợi ý / món đề xuất" },
-        { ja: "注文",      reading: "ちゅうもん",  vi: "gọi món / đặt hàng" },
-        { ja: "人気",      reading: "にんき",      vi: "được yêu thích" },
-      ],
-    };
-  }
-  if (/仕事|会議|資料|プレゼン|上司|部下|打ち合わせ|進捗|報告|締め切り/.test(t)) {
-    return {
-      suggestions: [
-        { intent: "positive", ja: "はい、予定通り順調に進めております。",         vi: "Vâng, tôi đang tiến hành thuận lợi đúng kế hoạch ạ." },
-        { intent: "concern",  ja: "実は1点だけ確認したい課題がございまして…",     vi: "Thực ra có một vấn đề tôi xin xác nhận lại..." },
-        { intent: "question", ja: "資料についてご意見をいただけますでしょうか？",  vi: "Xin anh/chị có thể cho ý kiến về tài liệu này không?" },
-      ],
-      key_vocab: [
-        { ja: "順調",  reading: "じゅんちょう",  vi: "thuận lợi / suôn sẻ" },
-        { ja: "進捗",  reading: "しんちょく",    vi: "tiến độ công việc" },
-        { ja: "確認",  reading: "かくにん",      vi: "xác nhận" },
-      ],
-    };
-  }
-  if (/休み|週末|旅行|趣味|どこ|天気|好き|どう|楽し/.test(t)) {
-    return {
-      suggestions: [
-        { intent: "positive", ja: "とても楽しかったです！のんびり過ごしました。",   vi: "Rất vui ạ! Tôi đã thư giãn thoải mái." },
-        { intent: "concern",  ja: "特に予定はなくて、家でゆっくりしていました。",   vi: "Tôi không có kế hoạch gì đặc biệt, chỉ ở nhà thôi." },
-        { intent: "question", ja: "〇〇さんは週末どう過ごされましたか？",           vi: "Còn bạn thì cuối tuần đã làm gì?" },
-      ],
-      key_vocab: [
-        { ja: "のんびり",  reading: "のんびり",    vi: "thong thả / thư giãn" },
-        { ja: "過ごす",    reading: "すごす",      vi: "trải qua (thời gian)" },
-        { ja: "週末",      reading: "しゅうまつ",  vi: "cuối tuần" },
-      ],
-    };
-  }
-  // Generic fallback
-  return {
-    suggestions: [
-      { intent: "positive", ja: "そうですね、私もそう思います！",              vi: "Đúng vậy nhỉ, tôi cũng nghĩ như thế!" },
-      { intent: "concern",  ja: "なるほど、少し意外ですね。",                  vi: "Ra là vậy, có chút bất ngờ nhỉ." },
-      { intent: "question", ja: "それについてもう少し詳しく教えていただけますか？", vi: "Bạn có thể kể thêm chi tiết về điều đó không?" },
-    ],
-    key_vocab: [
-      { ja: "詳しく",  reading: "くわしく",  vi: "chi tiết / rõ ràng" },
-      { ja: "意外",    reading: "いがい",    vi: "bất ngờ / ngoài dự kiến" },
-      { ja: "共感",    reading: "きょうかん", vi: "đồng cảm / thấu hiểu" },
-    ],
-  };
-}
-
 export function LiveTurnScaffolding({
   scaffolding,
   lastAiText,
@@ -86,16 +25,13 @@ export function LiveTurnScaffolding({
   const [playingItem, setPlayingItem] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
 
-  // Use backend scaffolding if present, otherwise build from AI text client-side
+  // Only display scaffolding when provided by backend AI (no hardcoded junk)
   const effectiveScaffolding: ScaffoldingHint | null = useMemo(() => {
     if (scaffolding && (scaffolding.suggestions?.length || scaffolding.key_vocab?.length)) {
       return scaffolding;
     }
-    if (lastAiText && lastAiText.trim().length > 0) {
-      return buildClientFallback(lastAiText);
-    }
     return null;
-  }, [scaffolding, lastAiText]);
+  }, [scaffolding]);
 
   if (!effectiveScaffolding) return null;
 

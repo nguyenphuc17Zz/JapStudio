@@ -180,9 +180,9 @@ TASK_FEATURE_MAP: dict[AITask, str] = {
     # 10. VI-JA Interpretation (Mode 9)
     AITask.INTERPRET_GENERATION: "interpret",
     AITask.INTERPRET_EVALUATION: "interpret",
-    # 11. Survival Speaking & Recovery (Mode 6 / Survival Gym)
-    AITask.SURVIVAL_GENERATION: "survival",
-    AITask.SURVIVAL_EVALUATION: "survival",
+    # 11. Dynamic AI Interview Coach (Mode: Interview Arena)
+    AITask.INTERVIEW_COACH_QUESTION: "interview",
+    AITask.INTERVIEW_COACH_EVALUATION: "interview",
 }
 
 

@@ -4,6 +4,7 @@ from app.api.v1.ai import router as ai_router
 from app.api.v1.aizuchi import router as aizuchi_router
 from app.api.v1.builder import router as builder_router
 from app.api.v1.interpret import router as interpret_router
+from app.api.v1.interview import router as interview_router
 from app.api.v1.analysis import router as analysis_router
 from app.api.v1.analytics import router as analytics_router
 from app.api.v1.audio import router as audio_router
@@ -16,13 +17,11 @@ from app.api.v1.monologue import router as monologue_router
 from app.api.v1.personas import router as personas_router
 from app.api.v1.pronunciation import router as pronunciation_router
 from app.api.v1.providers import router as providers_router
-from app.api.v1.ramp import router as ramp_router
 from app.api.v1.reflex import router as reflex_router
 from app.api.v1.settings import router as settings_router
 from app.api.v1.shadowing import router as shadowing_router
 from app.api.v1.situations import router as situations_router
 from app.api.v1.speech import router as speech_router
-from app.api.v1.survival import router as survival_router
 from app.api.v1.system import router as system_router
 from app.api.v1.vocabulary import router as vocabulary_router
 
@@ -43,13 +42,12 @@ api_v1_router.include_router(reflex_router)
 api_v1_router.include_router(aizuchi_router)
 api_v1_router.include_router(builder_router)
 api_v1_router.include_router(interpret_router)
+api_v1_router.include_router(interview_router)
 api_v1_router.include_router(keigo_router)
 api_v1_router.include_router(monologue_router)
 api_v1_router.include_router(situations_router)
 api_v1_router.include_router(pronunciation_router)
 api_v1_router.include_router(shadowing_router)
 api_v1_router.include_router(analytics_router)
-api_v1_router.include_router(ramp_router)
-api_v1_router.include_router(survival_router)
 api_v1_router.include_router(vocabulary_router)
 api_v1_router.include_router(system_router)

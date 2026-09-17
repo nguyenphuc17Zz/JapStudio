@@ -3,8 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import {
-  Sparkles,
-  ShieldAlert,
   Zap,
   Ear,
   Blocks,
@@ -12,6 +10,7 @@ import {
   Crown,
   Compass,
   Mic,
+  Briefcase,
   ArrowRight,
   Layers,
 } from "lucide-react";
@@ -33,29 +32,18 @@ interface StudioMode {
 
 const STUDIO_MODES: StudioMode[] = [
   {
-    id: "ramp",
-    title: "Nấc Thang Nói",
-    jaTitle: "段階練習",
-    kanji: "段階",
-    tag: "11 Cấp Độ",
-    desc: "Phát ngôn từ từ đơn → cụm câu → 60 giây độc lập theo giáo án khoa học.",
-    icon: <Sparkles className="h-5 w-5 text-teal-600 dark:text-teal-400" />,
-    url: "/ramp",
-    badgeStyle: "border-teal-500/30 text-teal-700 dark:text-teal-300 bg-teal-500/10",
-    accentBorder: "group-hover:border-teal-500/40",
+    id: "interview",
+    title: "Phỏng Vấn AI",
+    jaTitle: "面接道場",
+    kanji: "面接",
+    tag: "Coach PREP",
+    desc: "Luyện phỏng vấn động doanh nghiệp Nhật: nói tới đâu sửa tới đó, chuẩn hóa PREP & Keigo.",
+    icon: <Briefcase className="h-5 w-5 text-indigo-500" />,
+    url: "/interview",
+    badgeStyle: "border-indigo-500/30 text-indigo-700 dark:text-indigo-300 bg-indigo-500/10",
+    accentBorder: "group-hover:border-indigo-500/40",
   },
-  {
-    id: "survival",
-    title: "Phục Hồi Nói",
-    jaTitle: "サバイバル",
-    kanji: "救助",
-    tag: "Cứu Cánh SOS",
-    desc: "Kỹ năng thoát hiểm khi gãy mạch hội thoại, câu giờ tự nhiên & giải thích Taboo.",
-    icon: <ShieldAlert className="h-5 w-5 text-rose-500" />,
-    url: "/survival",
-    badgeStyle: "border-rose-500/30 text-rose-700 dark:text-rose-300 bg-rose-500/10",
-    accentBorder: "group-hover:border-rose-500/40",
-  },
+
   {
     id: "reflex",
     title: "Phản Xạ 3 Giây",
@@ -157,7 +145,7 @@ export function StudioModesHub() {
           </h2>
         </div>
 
-        <span className="text-xs text-muted-foreground font-medium">9 chuyên đề phản xạ</span>
+        <span className="text-xs text-muted-foreground font-medium">8 chuyên đề phản xạ</span>
       </div>
 
       {/* Spacious 3-Column Grid — Kyoto Clean Glass */}

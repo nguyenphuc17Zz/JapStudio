@@ -21,6 +21,7 @@ import {
   Ear,
   Blocks,
   Languages,
+  Briefcase,
   Sparkles,
   Settings,
 } from "lucide-react";
@@ -28,6 +29,7 @@ import {
 const MOBILE_NAV = [
   { href: "/dashboard", label: "Trang chủ", ja: "ホーム", icon: LayoutDashboard },
   { href: "/speaking", label: "Luyện nói", ja: "会話", icon: Mic },
+  { href: "/interview", label: "Phỏng vấn AI", ja: "面接", icon: Briefcase },
   { href: "/reflex", label: "Phản xạ", ja: "瞬発", icon: Zap },
   { href: "/aizuchi", label: "Phản hồi", ja: "相づち", icon: Ear },
   { href: "/builder", label: "Xây câu", ja: "文立て", icon: Blocks },
@@ -84,6 +86,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
   const items = [
     { label: "Trang chủ", href: "/dashboard", desc: "Tổng quan & nhiệm vụ hôm nay" },
     { label: "Luyện nói", href: "/speaking", desc: "Phòng hội thoại với AI" },
+    { label: "Phỏng vấn AI", href: "/interview", desc: "面接道場 — Luyện phỏng vấn doanh nghiệp Nhật & PREP" },
     { label: "Phản xạ", href: "/reflex", desc: "瞬発力スピーキング — Speed Reflex 4 kiểu" },
     { label: "Phản hồi", href: "/aizuchi", desc: "相づち道場 — Backchannel & chen ngang như bản xứ" },
     { label: "Xây câu", href: "/builder", desc: "文立てビルダー — Nối từ thành câu dài N1" },
@@ -224,6 +227,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             pathname?.startsWith("/aizuchi") ||
             pathname?.startsWith("/builder") ||
             pathname?.startsWith("/interpret") ||
+            pathname?.startsWith("/interview") ||
             pathname?.startsWith("/keigo") ||
             pathname?.startsWith("/situations");
 
@@ -241,7 +245,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     ? "max-w-[1920px] w-full p-2 sm:p-3 md:p-4 pb-6 space-y-3"
                     : isCombatArena
                     ? "max-w-[1760px] w-full h-full px-2 sm:px-4 py-1 flex flex-col min-h-0"
-                    : pathname?.startsWith("/speaking") || pathname?.startsWith("/ramp")
+                    : pathname?.startsWith("/speaking")
                     ? "max-w-[1600px] w-full p-2 sm:p-3 md:p-4 pb-6 space-y-3"
                     : "max-w-[1280px] p-3 sm:p-4 md:p-6 pb-8 space-y-4"
                 )}

@@ -236,8 +236,14 @@ class ConversationContextBuilder:
             if content:
                 messages.append(AIMessage(role=role, content=content))
 
-        # 4. Add current user utterance
-        messages.append(AIMessage(role=AIMessageRole.USER, content=current_user_text.strip()))
+        # 4. Add current user utterance with turn directive
+        turn_prompt = (
+            f"{current_user_text.strip()}\n\n"
+            f"[SYSTEM DIRECTIVE FOR THIS TURN: Reply in character (1-3 sentences). "
+            f"Immediately after your response, append ---SCAFFOLD--- with valid JSON containing suggestions (positive, concern, question) "
+            f"and key_vocab (3 words) tailored to your response question.]"
+        )
+        messages.append(AIMessage(role=AIMessageRole.USER, content=turn_prompt))
 
         # 5. Build AIRequest
         return AIRequest(
@@ -246,7 +252,7 @@ class ConversationContextBuilder:
             provider=session.provider_preference,
             model=session.model_preference,
             temperature=0.7,
-            max_output_tokens=250,  # Spoken brevity constraint
+            max_output_tokens=1500,  # Room for thinking tokens + spoken text + scaffolding JSON
             system_instruction=system_prompt,
             user_id=user_id,
         )

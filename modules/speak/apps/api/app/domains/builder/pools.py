@@ -120,6 +120,9 @@ ASSEMBLE_SEEDS: list[dict[str, Any]] = [
     {"keywords": ["知る", "店", "安い", "美味しい"], "starter": "知ってる…", "focus_skill": "contraction", "relation": "casual_friend",
      "situation_vi": "Giới thiệu quán quen rẻ mà ngon", "connectors": ["てる", "てる", "じゃん"],
      "canonical": "私の知ってる店は、安くてめっちゃ美味しいじゃん！", "canonical_vi": "Cái quán mà mình biết vừa rẻ lại vừa ngon tuyệt cú mèo luôn á!"},
+    {"keywords": ["約束", "守る", "信頼", "失う"], "starter": "約束を…", "focus_skill": "nominalization", "relation": "casual_friend",
+     "situation_vi": "Khuyên bạn nếu không giữ lời hứa sẽ đánh mất niềm tin", "connectors": ["ないと", "わけ", "から"],
+     "canonical": "約束を守らないと、友達の信頼を失うことになるよ。", "canonical_vi": "Nếu không giữ lời hứa thì bạn sẽ đánh mất niềm tin của bạn bè đấy."},
 ]
 
 EXPAND_SEEDS: list[dict[str, Any]] = [

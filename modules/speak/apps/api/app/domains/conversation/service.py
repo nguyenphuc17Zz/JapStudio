@@ -109,8 +109,9 @@ class ConversationService:
         self.session.add(conv_session)
         await self.session.flush()
 
-        # 1. Generate Persona Opening Greeting Turn
+        # 1. Generate Persona Opening Greeting Turn & Scaffolding
         opening_text = None
+        opening_scaffolding = None
         try:
             opening_prompt = (
                 f"You are roleplaying as {persona.name} (Role: {persona.role}). "
@@ -118,17 +119,28 @@ class ConversationService:
                 f"Speaking style: {persona.speaking_style}. "
                 f"Difficulty level: {persona.difficulty}. "
                 f"System Prompt: {persona.system_prompt or ''}\n\n"
-                f"The learner is entering the speaking room to have a conversation with you. "
-                f"Say a natural, friendly, welcoming opening greeting in Japanese (1-2 sentences) "
-                f"that fits your role and initiates the conversation (e.g. asking how they are doing or inviting them to chat). "
-                f"IMPORTANT: Output ONLY the Japanese spoken sentence. Do not include romaji, translation, greetings to AI, or explanation."
+                f"The learner is entering the speaking room to have a conversation with you.\n"
+                f"1. Say a natural, friendly, welcoming opening greeting in Japanese (1-2 sentences) "
+                f"that fits your role and initiates the conversation (e.g. asking how they are doing or inviting them to chat).\n"
+                f"2. At the very end of your response, ALWAYS append a scaffolding block strictly using this exact format to help the learner answer your opening greeting:\n"
+                f"---SCAFFOLD---\n"
+                f"{{\n"
+                f'  "suggestions": [\n'
+                f'    {{"intent": "positive", "ja": "...", "vi": "..."}},\n'
+                f'    {{"intent": "concern", "ja": "...", "vi": "..."}},\n'
+                f'    {{"intent": "question", "ja": "...", "vi": "..."}}\n'
+                f"  ],\n"
+                f'  "key_vocab": [\n'
+                f'    {{"ja": "...", "reading": "...", "vi": "..."}}\n'
+                f"  ]\n"
+                f"}}"
             )
             ai_req = AIRequest(
                 task=AITask.CONVERSATION,
                 messages=[AIMessage(role=AIMessageRole.USER, content=opening_prompt)],
                 system_instruction=persona.system_prompt or "You are a Japanese conversation partner.",
                 temperature=0.7,
-                max_output_tokens=100,
+                max_output_tokens=1500,
                 provider=conv_session.provider_preference,
                 model=conv_session.model_preference,
             )
@@ -138,7 +150,24 @@ class ConversationService:
                 user_id=resolved_user_id,
             )
             if ai_res and ai_res.text:
-                cleaned = ai_res.text.strip().replace('"', '').replace('「', '').replace('」', '')
+                raw_text = ai_res.text.strip()
+                if "---SCAFFOLD---" in raw_text:
+                    parts = raw_text.split("---SCAFFOLD---", 1)
+                    raw_greeting = parts[0].strip()
+                    scaffold_str = parts[1].strip()
+                    try:
+                        import json as _json
+                        if scaffold_str.startswith("```"):
+                            scaffold_str = scaffold_str.strip("`").strip()
+                            if scaffold_str.startswith("json"):
+                                scaffold_str = scaffold_str[4:].strip()
+                        opening_scaffolding = _json.loads(scaffold_str)
+                    except Exception as parse_err:
+                        logger.warning(f"[Conversation] Failed to parse opening scaffolding JSON: {parse_err}")
+                else:
+                    raw_greeting = raw_text
+
+                cleaned = raw_greeting.replace('"', '').replace('「', '').replace('」', '').strip()
                 if cleaned:
                     opening_text = cleaned
         except Exception as e:
@@ -159,6 +188,10 @@ class ConversationService:
             else:
                 opening_text = f"こんにちは！{persona.name}です。一緒に楽しく日本語で話しましょう！"
 
+        # Fallback scaffolding if AI did not return scaffolding
+        if not opening_scaffolding or not opening_scaffolding.get("suggestions"):
+            opening_scaffolding = self._generate_fallback_scaffolding(opening_text, persona=persona)
+
         # 2. Create and commit Turn 1 (Assistant Opening)
         opening_turn = ConversationTurn(
             session_id=conv_session.id,
@@ -169,6 +202,7 @@ class ConversationService:
             ai_model=conv_session.model_preference or "gemini-1.5-flash",
             tts_provider=conv_session.tts_provider_preference,
             tts_voice=conv_session.tts_voice_preference,
+            metrics={"scaffolding": opening_scaffolding} if opening_scaffolding else {},
             started_at=datetime.now(timezone.utc),
             ended_at=datetime.now(timezone.utc),
             created_at=datetime.now(timezone.utc),

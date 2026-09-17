@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import random
+import uuid
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +19,38 @@ from app.domains.ai.contracts import AIMessage, AIMessageRole, AIRequest, AITask
 from app.domains.ai.router import AIRouter
 from app.domains.builder.exercise_factory import BuilderExerciseFactory
 from app.domains.reflex.cache_service import ExerciseCacheService
+
+# 30+ đa dạng bối cảnh đời sống & công sở thực tế tại Nhật Bản để tránh cạn ý tưởng
+BUILDER_SCENARIO_SEEDS = [
+    # Ẩm thực & Quán xá
+    ("Quán nhậu Izakaya", "gọi thêm đồ uống hoặc món nhắm, rủ bạn bè cụng ly, thanh toán tiền"),
+    ("Quán mì Ramen", "chọn độ cứng của sợi mì, xin thêm nước dùng, hỏi về topping"),
+    ("Tiệm Cafe / Trà bánh", "gọi món mang đi, hỏi mật khẩu wifi, tìm chỗ ngồi gần ổ cắm"),
+    ("Nhà hàng Yakiniku / Lẩu", "đặt bàn trước cuối tuần, hỏi về set ăn buffet nướng, gọi món tráng miệng"),
+    ("Cửa hàng tiện lợi Konbini", "nhờ hâm nóng cơm hộp, mua vé xem hòa nhạc tại máy, hỏi đồ ăn nóng ở quầy"),
+    # Công sở & Công việc
+    ("Báo cáo tiến độ", "báo cáo việc hoàn thành tài liệu, thông báo sự cố phát sinh, xin ý kiến sếp"),
+    ("Xin nghỉ & Đi muộn", "gửi tin nhắn xin nghỉ phép vì bị cảm, báo tàu điện trễ giờ 15 phút, nhờ đồng nghiệp bàn giao ca"),
+    ("Họp dự án & Thảo luận", "đề xuất ý tưởng mới, xin phát biểu ý kiến ngắn, đề nghị gửi lại biên bản cuộc họp"),
+    ("Hẹn gặp đối tác", "chào hỏi đối tác lần đầu, xác nhận thời gian địa điểm buổi hẹn, gửi lời cảm ơn sau cuộc gặp"),
+    ("Làm thêm giờ & Bàn giao", "thảo luận chia việc tăng ca, nhờ đồng nghiệp kiểm tra giúp email trước khi gửi khách"),
+    # Giao thông & Di chuyển
+    ("Ga tàu điện & Shinkansen", "hỏi cách chuyển tuyến đi sân bay, mua vé khứ hồi, hỏi về tàu chuyến cuối"),
+    ("Khách sạn & Ryokan", "làm thủ tục nhận phòng sớm, gửi hành lý tại quầy lễ tân, hỏi về giờ tắm onsen"),
+    ("Hỏi đường phố xá", "hỏi đường ra lối thoát hiểm ga Shinjuku, tìm cây ATM gần nhất, hỏi đường đến bảo tàng"),
+    ("Sân bay & Check-in", "hỏi cân nặng hành lý ký gửi, kiểm tra cửa khởi hành chuyến bay nội địa"),
+    # Đời sống & Tiện ích thường ngày
+    ("Mua sắm siêu thị", "hỏi khu vực bán gia vị giảm giá, tìm loại túi rác đúng quy định của quận"),
+    ("Thuê nhà & Chuyển trọ", "hỏi về tiền đầu vào và phí quản lý nhà, nhờ kiểm tra máy điều hòa bị hỏng"),
+    ("Phòng gym & Thể thao", "hỏi gói tập theo tháng, đăng ký lớp yoga, hỏi cách sử dụng máy chạy bộ"),
+    ("Bưu điện & Chuyển phát", "gửi bưu phẩm về nước, hẹn lại giờ nhận kiện hàng chuyển phát"),
+    ("Bệnh viện & Hiệu thuốc", "mô tả triệu chứng đau đầu sổ mũi, hỏi liều uống thuốc sau bữa ăn"),
+    ("Thời tiết & Mùa màng", "bàn về đợt hoa anh đào nở sớm, than phiền về cái nóng mùa hè oi bức, dặn nhau mang ô che mưa"),
+    ("Thú cưng & Động vật", "kể về chú mèo mới nhận nuôi, dắt chó đi dạo công viên cuối tuần"),
+    ("Sở thích cuối tuần", "rủ bạn đi hát karaoke, mua đồ công nghệ ở Akihabara, tự nấu lẩu tại nhà"),
+    ("Sự cố bất ngờ", "bỏ quên ví trên tàu và liên hệ phòng đồ thất lạc, làm mất chìa khóa phòng"),
+    ("Giao tiếp hàng xóm", "chào hỏi cư dân cùng tòa nhà, nhắc nhở phân loại rác đúng ngày"),
+]
 
 
 class AIBuilderGenerator:
@@ -36,10 +70,19 @@ class AIBuilderGenerator:
         difficulty: str = "normal",
         user_id: str | None = None,
         force_ai: bool = False,
+        recent_prompts: list[str] | None = None,
     ) -> dict[str, Any]:
         """Generates 100% fresh AI exercise and saves to SQLite pool. Raises explicit error on failure."""
         try:
-            data = await self._ai_generate(sub_mode, focus_skill, relation, difficulty, user_id, force_ai=force_ai)
+            data = await self._ai_generate(
+                sub_mode=sub_mode,
+                focus_skill=focus_skill,
+                relation=relation,
+                difficulty=difficulty,
+                user_id=user_id,
+                force_ai=force_ai,
+                recent_prompts=recent_prompts,
+            )
             if data:
                 data.setdefault("scaffold", scaffold)
                 data.setdefault("blind", scaffold == "none")
@@ -82,9 +125,13 @@ class AIBuilderGenerator:
         difficulty: str,
         user_id: str | None,
         force_ai: bool = False,
+        recent_prompts: list[str] | None = None,
     ) -> dict[str, Any] | None:
         register = "タメ口 casual (thân mật với bạn bè/đồng nghiệp thân)" if relation != "business_polite" else "丁寧語・敬語 business (lịch sự trang trọng)"
         skill = focus_skill or "te_chain"
+        
+        # Bốc ngẫu nhiên 1 ngữ cảnh thực tế từ kho chủ đề
+        topic_name, topic_desc = random.choice(BUILDER_SCENARIO_SEEDS)
         
         sys_inst = (
             "You are an expert Japanese speaking coach creating practical, conversational sentence-builder drills for learners (JLPT N4-N2 levels).\n"
@@ -104,9 +151,6 @@ class AIBuilderGenerator:
   "suggested_vocabulary": [
     {"term": "từ tiếng Nhật", "reading": "cách đọc hiragana", "meaning_vi": "nghĩa tiếng Việt"}
   ],
-  "connectors": [
-    {"term": "liên từ tiếng Nhật", "meaning_vi": "nghĩa tiếng Việt", "kind": "connector|ending|nominalizer"}
-  ],
   "hints": [
     {"tier": 1, "title": "Gợi ý tư duy ngữ pháp", "content": "Hướng dẫn ngắn gọn cách dùng cấu trúc..."},
     {"tier": 2, "title": "Gợi ý từ nối / mở đầu", "content": "Các từ nối nên dùng trong câu này..."},
@@ -116,11 +160,23 @@ class AIBuilderGenerator:
   "focus_skill": "te_chain|relative_clause|conditional|nominalization|contraction"
 }"""
 
-        nonce_str = f" Nonce: {asyncio.get_event_loop().time()}." if force_ai else ""
+        nonce_key = str(uuid.uuid4())[:8]
+        anti_repeat_clause = ""
+        if recent_prompts and len(recent_prompts) > 0:
+            cleaned_recent = [p for p in recent_prompts if p and len(p) > 2][-5:]
+            if cleaned_recent:
+                anti_repeat_clause = (
+                    f"\n[CHỐNG TRÙNG LẶP] Người học vừa luyện các câu sau:\n"
+                    + "\n".join(f"- {p}" for p in cleaned_recent)
+                    + "\nTUYỆT ĐỐI KHÔNG sinh câu hoặc tình huống có nội dung/từ khóa tương tự các câu trên!\n"
+                )
+
         user_content = (
             f"Mode: {sub_mode}. Register: {register}. Difficulty: {difficulty}. Focus Skill: {skill}.\n"
-            f"Generate 1 high-quality conversational sentence-building exercise.\n"
-            f"Return JSON strictly following this schema:\n{fmt}{nonce_str}"
+            f"Bối cảnh tình huống thực tế: {topic_name} ({topic_desc}). [Nonce: {nonce_key}]\n"
+            f"{anti_repeat_clause}"
+            f"Generate 1 high-quality, creative, conversational sentence-building exercise for this specific scenario.\n"
+            f"Return JSON strictly following this schema:\n{fmt}"
         )
 
         req = AIRequest(
@@ -128,9 +184,10 @@ class AIBuilderGenerator:
             system_instruction=sys_inst,
             messages=[AIMessage(role=AIMessageRole.SYSTEM, content=sys_inst), AIMessage(role=AIMessageRole.USER, content=user_content)],
             response_format=ResponseFormat(type=ResponseFormatType.JSON_OBJECT),
-            temperature=0.85 if force_ai else 0.7,
-            max_output_tokens=900,
+            temperature=0.92,
+            max_output_tokens=700,
             user_id=user_id,
+            metadata={"idempotency_key": str(uuid.uuid4())},
         )
         resp = await self.ai_router.generate(task=AITask.BUILDER_GENERATION, request=req, user_id=user_id)
         txt = (resp.text or "").strip()
@@ -161,19 +218,8 @@ class AIBuilderGenerator:
                         "meaning_vi": str(v.get("meaning_vi", "")),
                     })
 
-        # Extract connectors
-        raw_connectors = parsed.get("connectors") or []
-        connector_items = []
-        if isinstance(raw_connectors, list):
-            for c in raw_connectors:
-                if isinstance(c, dict) and "term" in c:
-                    connector_items.append({
-                        "term": str(c.get("term", "")),
-                        "meaning_vi": str(c.get("meaning_vi", "")),
-                        "kind": str(c.get("kind", "connector")),
-                    })
-                elif isinstance(c, str):
-                    connector_items.append({"term": c, "meaning_vi": "", "kind": "connector"})
+        # Connectors omitted to save tokens & screen real estate
+        connector_items: list[dict[str, str]] = []
 
         # Extract hints
         raw_hints = parsed.get("hints") or []
@@ -190,7 +236,7 @@ class AIBuilderGenerator:
             # Fallback 4-tier hints if AI didn't provide
             hints = [
                 {"tier": 1, "title": "Hướng tư duy ngữ pháp", "content": f"Trọng tâm: {res_skill}. Hãy chia đúng thể để kết nối các vế."},
-                {"tier": 2, "title": "Gợi ý từ nối", "content": ", ".join([c.get("term", "") for c in connector_items]) or "て, から, ので"},
+                {"tier": 2, "title": "Gợi ý từ nối", "content": f"Chú ý chia đúng thể động từ / trợ từ phù hợp cho {res_skill}."},
                 {"tier": 3, "title": "Khung sườn cấu trúc", "content": template or f"{keywords[0] if keywords else ''}…"},
                 {"tier": 4, "title": "Câu mẫu hoàn chỉnh", "content": canonical},
             ]

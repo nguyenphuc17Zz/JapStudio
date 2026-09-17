@@ -59,16 +59,9 @@ class AITask(str, Enum):
     VOCABULARY_LOOKUP = "vocabulary_lookup"
     PLAYGROUND = "playground"
     GENERAL = "general"
-    # Mode 6 — Speaking Ramp
-    RAMP_TOPIC_GENERATION = "ramp_topic_generation"
-    RAMP_PROMPT_GENERATION = "ramp_prompt_generation"
-    RAMP_FOLLOWUP_GENERATION = "ramp_followup_generation"
-    RAMP_HINT_GENERATION = "ramp_hint_generation"
-    RAMP_SEMANTIC_EVALUATION = "ramp_semantic_evaluation"
-    RAMP_FEEDBACK = "ramp_feedback"
-    # Survival Speaking & Recovery (Mode 6 / Survival Gym)
-    SURVIVAL_GENERATION = "survival_generation"
-    SURVIVAL_EVALUATION = "survival_evaluation"
+    # Dynamic AI Interview Coach (Mode: Interview Arena)
+    INTERVIEW_COACH_QUESTION = "interview_coach_question"
+    INTERVIEW_COACH_EVALUATION = "interview_coach_evaluation"
 
 
 class AIMessageRole(str, Enum):

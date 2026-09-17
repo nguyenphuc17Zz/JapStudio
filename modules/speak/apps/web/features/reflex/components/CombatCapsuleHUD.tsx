@@ -150,11 +150,11 @@ export function CombatCapsuleHUD({
               soundFX.playFurin();
               filterTrigger.onClick();
             }}
-            className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted/60 hover:bg-muted border border-border/70 text-muted-foreground hover:text-foreground text-[11px] font-medium transition-all cursor-pointer truncate max-w-[130px]"
-            title="Bấm để đổi nhanh chủ đề"
+            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary text-[11px] font-bold transition-all cursor-pointer truncate max-w-[160px] sm:max-w-[220px] shadow-2xs hover:shadow-xs"
+            title="Bấm để đổi chế độ hoặc chủ đề"
           >
             <span className="truncate">{filterTrigger.label}</span>
-            <ChevronDown className="h-2.5 w-2.5 opacity-60 shrink-0" />
+            <ChevronDown className="h-3 w-3 opacity-70 shrink-0" />
           </button>
         )}
       </div>

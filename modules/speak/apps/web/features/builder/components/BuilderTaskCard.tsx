@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Target,
@@ -20,7 +19,7 @@ import { ExerciseSourceBadge } from "@/components/ui/exercise-source-badge";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import type { BuilderExercise, BuilderControlLevel } from "../services/builder-api";
+import type { BuilderExercise } from "../services/builder-api";
 
 interface BuilderTaskCardProps {
   exercise: BuilderExercise | null;
@@ -75,32 +74,6 @@ export function BuilderTaskCard({
 
   if (!exercise) return null;
 
-  const getLevelBadge = (level: BuilderControlLevel) => {
-    switch (level) {
-      case "controlled":
-        return {
-          label: "Khung mẫu (Controlled)",
-          color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
-        };
-      case "semi_controlled":
-        return {
-          label: "Từ khóa (Semi-Controlled)",
-          color: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30",
-        };
-      case "free":
-        return {
-          label: "Tự do (Free)",
-          color: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/30",
-        };
-      default:
-        return {
-          label: "Lắp ghép",
-          color: "bg-primary/10 text-primary border-primary/30",
-        };
-    }
-  };
-
-  const levelInfo = getLevelBadge(exercise.controlLevel);
   const promptText = exercise.promptVi || exercise.situationVi || exercise.instructions || "Hãy xây một câu nói hoàn chỉnh";
 
   // Filter or build suggested vocabulary items
@@ -117,43 +90,11 @@ export function BuilderTaskCard({
           <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
             1. Đề Bài & Tình Huống
           </span>
-          <Badge variant="outline" className={cn("text-[10px] font-mono px-1.5 py-0 border", levelInfo.color)}>
-            {levelInfo.label}
-          </Badge>
           <ExerciseSourceBadge source={exercise.generationSource} isFallback={exercise.isFallback} />
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {onRegenerateWithAI && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onRegenerateWithAI}
-              disabled={isRegeneratingAI || isGeneratingNext}
-              className="h-6 px-1.5 text-[10px] gap-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 rounded-lg cursor-pointer"
-              title="Yêu cầu AI đổi tình huống mới (Alt+R)"
-            >
-              <Sparkles className={cn("size-2.5 text-emerald-500", isRegeneratingAI && "animate-spin")} />
-              <span className="hidden sm:inline">{isRegeneratingAI ? "Đang tạo..." : "Đổi câu AI"}</span>
-            </Button>
-          )}
-
-          {onNextTask && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onNextTask}
-              disabled={isGeneratingNext}
-              className="h-6 px-2 rounded-lg text-[10px] font-bold text-primary border-primary/30 hover:bg-primary/10 gap-1 shrink-0 cursor-pointer shadow-2xs"
-              title="Đổi bài tiếp theo (Phím R)"
-            >
-              <span>Tiếp theo</span>
-              <ArrowRight className="size-2.5" />
-            </Button>
-          )}
-
-          <span className="text-[10px] font-mono text-muted-foreground ml-1">
+          <span className="text-[10px] font-mono font-bold text-muted-foreground px-2 py-0.5 rounded-full bg-muted/60 border border-border/60">
             #{currentTaskIndex + 1}
           </span>
         </div>

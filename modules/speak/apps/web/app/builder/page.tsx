@@ -1,41 +1,24 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Mic,
-  Clock,
-  Play,
-  CheckCircle2,
-  RotateCcw,
-  ArrowRight,
-  Volume2,
-  Activity,
-  Zap,
-  Lightbulb,
-  Sparkles,
-  RefreshCw,
-} from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { usePersistedState } from "@/hooks/use-persisted-state";
 import { useBuilderSession } from "@/features/builder/hooks/useBuilderSession";
-import { ReflexTimer as BuilderTimerBar } from "@/features/reflex/components/ReflexTimer";
 import { CombatCapsuleHUD } from "@/features/reflex/components/CombatCapsuleHUD";
-import { StudioSpeakingController } from "@/features/reflex/components/StudioSpeakingController";
-import { BuilderResultCard } from "@/features/builder/components/BuilderArena";
-import { BuilderSummary } from "@/features/builder/components/BuilderArena";
+import { BuilderSummary } from "@/features/builder/components/BuilderSummary";
 import { BuilderTaskCard } from "@/features/builder/components/BuilderTaskCard";
-import { BuilderInteractiveBoard } from "@/features/builder/components/BuilderInteractiveBoard";
-import { BuilderLobby } from "@/features/builder/components/BuilderLobby";
+import { BuilderContextCard } from "@/features/builder/components/BuilderContextCard";
+import { BuilderSpeakingController } from "@/features/builder/components/BuilderSpeakingController";
+import { BuilderFeedbackCard } from "@/features/builder/components/BuilderFeedbackCard";
 import { BuilderCheatsheetModal } from "@/features/builder/components/BuilderCheatsheetModal";
+import { BuilderConfigModal } from "@/features/builder/components/BuilderConfigModal";
 import { GlobalKeybindingsModal } from "@/components/layout/global-keybindings-modal";
 import { useSystemKeybindings, formatKeyDisplay } from "@/hooks/use-system-keybindings";
 import { speakJapaneseText, stopWebSpeech } from "@/features/speaking/services/web-speech";
-import { UniversalFurigana } from "@/components/japanese/UniversalFurigana";
 import { soundFX } from "@/lib/sound-fx";
 import { cn } from "@/lib/utils";
 import { ZenLoadingState } from "@/components/ui/zen-loading-state";
-import { ZenUnifiedInputBar } from "@/components/ui/zen-unified-input-bar";
 import { ExerciseSourceBadge } from "@/components/ui/exercise-source-badge";
 import { toast } from "@/lib/toast";
 import type { BuilderRelation, BuilderScaffold, BuilderSkill, BuilderSubMode } from "@/features/builder/services/builder-api";
@@ -45,6 +28,14 @@ const SUB_MODE_LABEL: Record<string, { label: string; ja: string }> = {
   sentence_assemble: { label: "Nối từ", ja: "文立て" },
   sentence_expand: { label: "Mở rộng", ja: "文拡大" },
   sentence_repair: { label: "Sửa câu", ja: "文修理" },
+};
+
+const SKILL_LABEL: Record<string, { label: string; ja: string }> = {
+  te_chain: { label: "Nối て-chain", ja: "て形" },
+  relative_clause: { label: "Mệnh đề quan hệ", ja: "修飾節" },
+  conditional: { label: "Điều kiện たら・ば", ja: "条件" },
+  nominalization: { label: "Danh từ hóa", ja: "名詞化" },
+  contraction: { label: "Nói tắt bản xứ", ja: "縮約" },
 };
 
 export default function BuilderPage() {
@@ -65,6 +56,7 @@ export default function BuilderPage() {
   const [transcriptInput, setTranscriptInput] = useState("");
   const [showSummary, setShowSummary] = useState(false);
   const [showCheatsheet, setShowCheatsheet] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [sessionRemainingSec, setSessionRemainingSec] = useState(duration * 60);
   const [sessionElapsedSec, setSessionElapsedSec] = useState(0);
@@ -93,13 +85,7 @@ export default function BuilderPage() {
     }
   }, [phase, showSummary, session]);
 
-  const handleInsertText = useCallback((text: string) => {
-    setTranscriptInput((prev) => {
-      const trimmed = prev.trim();
-      if (!trimmed) return text;
-      return `${trimmed} ${text}`;
-    });
-  }, []);
+
 
   useEffect(() => {
     if (phase === "idle") {
@@ -122,6 +108,24 @@ export default function BuilderPage() {
       }
     }
   }, [ex]);
+
+  const handleApplyConfig = useCallback(
+    async (newConfig: {
+      subMode: BuilderSubMode;
+      focusSkill: BuilderSkill;
+      relation: BuilderRelation;
+      scaffold: BuilderScaffold;
+    }) => {
+      setSubMode(newConfig.subMode);
+      setFocusSkill(newConfig.focusSkill);
+      setRelation(newConfig.relation);
+      setScaffold(newConfig.scaffold);
+      toast.success("Đang áp dụng cấu hình và sinh bài mới...");
+      await session.regenerateWithAI(newConfig);
+      setTranscriptInput("");
+    },
+    [setSubMode, setFocusSkill, setRelation, setScaffold, session]
+  );
 
   const finishSession = useCallback(() => {
     try {
@@ -186,19 +190,6 @@ export default function BuilderPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ex]);
 
-  const handleDirectSubmit = useCallback(
-    async (allowEmpty = false) => {
-      const text = transcriptInput.trim() || session.assembledText.trim() || session.liveTranscript.trim();
-      if (!text && !allowEmpty) return;
-      setTranscriptInput("");
-      session.setAssembledText("");
-      soundFX.playTaiko();
-      await session.submitManual(text);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [transcriptInput, session.assembledText, session.liveTranscript]
-  );
-
   const lastResultId = session.result ? session.result.exerciseId : null;
   useEffect(() => {
     if (lastResultId) soundFX.playFurin();
@@ -240,11 +231,8 @@ export default function BuilderPage() {
           e.preventDefault();
           session.startAnsweringNow();
         } else if (isAnswering) {
-          const text = transcriptInput.trim() || session.assembledText.trim() || session.liveTranscript.trim();
-          if (text) {
-            e.preventDefault();
-            void handleDirectSubmit(true);
-          }
+          e.preventDefault();
+          void session.confirmSubmit();
         } else if (isResult) {
           e.preventDefault();
           session.startNext();
@@ -266,19 +254,23 @@ export default function BuilderPage() {
         void session.regenerateWithAI();
         setTranscriptInput("");
         session.setAssembledText("");
+      } else if (e.key.toLowerCase() === "m" && !e.ctrlKey && !e.metaKey && !e.altKey && !isEvaluating) {
+        e.preventDefault();
+        soundFX.playFurin();
+        setShowConfigModal((v) => !v);
       } else if (e.key === "Escape") {
-        if (showCheatsheet) setShowCheatsheet(false);
+        if (showConfigModal) setShowConfigModal(false);
+        else if (showCheatsheet) setShowCheatsheet(false);
         else if (showHelp) setShowHelp(false);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, isReady, isAnswering, isResult, isPrompt, transcriptInput, session.assembledText, session.hintTier, showCheatsheet, showHelp]);
+  }, [phase, isReady, isAnswering, isResult, isPrompt, transcriptInput, session.assembledText, session.hintTier, showCheatsheet, showHelp, showConfigModal]);
 
-  const furiganaMode =
-    subtitleMode === "hidden" ? "hidden" : subtitleMode === "japanese" ? "kanji" : "kanji_reading";
   const modeInfo = SUB_MODE_LABEL[ex?.subMode || subMode] || SUB_MODE_LABEL.mixed;
+  const currentSkillInfo = SKILL_LABEL[ex?.focusSkill || focusSkill] || SKILL_LABEL.te_chain;
 
   if (!inSession && (phase as string) !== "summary" && !showSummary) {
     return (
@@ -292,8 +284,6 @@ export default function BuilderPage() {
       </div>
     );
   }
-
-  const isAssemble = (ex?.subMode || "") === "sentence_assemble";
 
   return (
     <div className="w-full max-w-[1760px] mx-auto h-full flex flex-col justify-between px-2 sm:px-4 py-2 gap-2 overflow-hidden select-none animate-in fade-in duration-200">
@@ -314,8 +304,8 @@ export default function BuilderPage() {
         autoNext={autoNext}
         setAutoNext={setAutoNext}
         filterTrigger={{
-          label: `${focusSkill} · ${scaffold === "none" ? "Blind" : scaffold}`,
-          onClick: () => setShowCheatsheet(true),
+          label: `${modeInfo.label} · ${currentSkillInfo.ja}`,
+          onClick: () => setShowConfigModal(true),
         }}
         provenanceBadge={
           session.exercise ? (
@@ -383,15 +373,10 @@ export default function BuilderPage() {
               <BuilderTaskCard
                 exercise={session.exercise}
                 currentTaskIndex={session.stats.total}
-                onNextTask={() => session.startNext()}
-                isGeneratingNext={session.isRegeneratingAI || isEvaluating}
-                onRegenerateWithAI={async () => {
-                  soundFX.playTaiko();
-                  await session.regenerateWithAI();
-                  setTranscriptInput("");
-                }}
-                isRegeneratingAI={session.isRegeneratingAI}
                 onPlayPrompt={playPromptAudio}
+                onNextTask={() => session.startNext()}
+                onRegenerateWithAI={session.regenerateWithAI}
+                isRegeneratingAI={session.isRegeneratingAI}
                 onInsertVocab={(term) => {
                   session.setAssembledText((prev) => {
                     const next = prev ? `${prev}${term}` : term;
@@ -402,89 +387,63 @@ export default function BuilderPage() {
               />
             </div>
 
-            {/* COL 2 (5 cols): Interactive Sentence Builder Board & Progressive Hints */}
+            {/* COL 2 (5 cols): Context Card & 4-Tier Progressive Hints */}
             <div className="lg:col-span-5 h-full min-h-0 overflow-hidden flex flex-col">
-              <BuilderInteractiveBoard
+              <BuilderContextCard
                 exercise={session.exercise}
-                assembledText={session.assembledText || transcriptInput}
-                onAssembledTextChange={(text) => {
-                  session.setAssembledText(text);
-                  setTranscriptInput(text);
-                }}
-                hintTier={session.hintTier}
+                currentHintTier={session.hintTier}
                 onSelectHintTier={(tier) => session.setHintTier(tier)}
               />
             </div>
 
-            {/* COL 3 (3 cols): Studio Speaking Controller OR Result Card */}
+            {/* COL 3 (3 cols): Speaking Controller OR Multi-Dimensional Feedback */}
             <div className="lg:col-span-3 h-full min-h-0 overflow-hidden flex flex-col">
               {phase === "result" && session.result ? (
-                <BuilderResultCard
+                <BuilderFeedbackCard
                   result={session.result}
-                  exercise={session.exercise as any}
-                  isPending={false}
-                  liveTranscript={session.liveTranscript}
-                  onNext={() => session.startNext()}
-                  autoNext={autoNext}
-                  onCancelAutoNext={session.cancelAutoNext}
                   onRetry={() => session.retry()}
+                  onContinue={() => session.startNext()}
                 />
               ) : (
-                <StudioSpeakingController
-                  phase={
+                <BuilderSpeakingController
+                  status={
                     isEvaluating
-                      ? "evaluating"
+                      ? "processing"
                       : isAnswering
                       ? "recording"
                       : isPrompt
-                      ? "prompt_playing"
+                      ? "prompt"
                       : isReady
                       ? "ready"
                       : "idle"
                   }
+                  isListening={isAnswering}
                   liveTranscript={session.liveTranscript}
+                  volumeLevel={session.volumeLevel}
+                  isEvaluating={isEvaluating}
+                  pendingText={session.pendingSpokenText || transcriptInput || session.assembledText}
                   onStartRecord={() => {
                     if (isReady) session.startAnsweringNow();
                     else if (isPrompt) session.rushToAnswer();
-                    else session.startAnsweringNow();
+                    else session.beginAnswering();
                   }}
                   onStopRecord={() => {
-                    const text = transcriptInput.trim() || session.assembledText.trim() || session.liveTranscript.trim();
-                    if (text) {
-                      void handleDirectSubmit(true);
-                    }
+                    session.stopAnswering();
                   }}
-                  onSubmit={(text) => {
-                    if (text) setTranscriptInput(text);
-                    void handleDirectSubmit(true);
+                  onConfirmSubmit={() => {
+                    void session.confirmSubmit();
                   }}
-                  onRetry={() => {
-                    try { stopWebSpeech(); } catch {}
-                    session.retry();
+                  onReRecord={() => {
+                    session.reRecord();
                   }}
-                  onNext={() => {
-                    try { stopWebSpeech(); } catch {}
-                    session.startNext();
-                  }}
-                  onSkip={() => {
-                    try { stopWebSpeech(); } catch {}
-                    session.skip();
-                  }}
-                  onResetTranscript={() => {
+                  onResetLiveTranscript={() => {
+                    session.clearPending();
                     setTranscriptInput("");
                     session.setAssembledText("");
                   }}
-                  isWhisperMode={session.isWhisperMode}
-                  onToggleWhisperMode={() => session.toggleWhisperMode?.()}
-                  volumeLevel={session.volumeLevel}
-                  textInput={transcriptInput || session.assembledText}
-                  onTextInputChange={(val) => {
-                    setTranscriptInput(val);
-                    session.setAssembledText(val);
+                  onSubmitTextFallback={(text) => {
+                    void session.confirmSubmit(text);
                   }}
-                  placeholder="Nói hoặc gõ câu tiếng Nhật..."
-                  promptSpeakerLabel={modeInfo.label}
-                  onPlayPrompt={playPromptAudio}
                 />
               )}
             </div>
@@ -502,12 +461,23 @@ export default function BuilderPage() {
           <span className="hidden lg:inline whitespace-nowrap shrink-0"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">Alt+R</kbd> ✨ Đổi bài AI</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <span className="whitespace-nowrap cursor-pointer hover:text-foreground" onClick={() => setShowConfigModal(true)}><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">M</kbd> Chế độ</span>
           <span className="whitespace-nowrap"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">C</kbd> Cẩm nang</span>
           <span className="whitespace-nowrap"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">?</kbd> Phím tắt</span>
           <span className="whitespace-nowrap"><kbd className="px-1 py-0.5 rounded bg-muted/60 border font-mono font-bold">Esc</kbd> Thoát</span>
         </div>
       </div>
 
+      <BuilderConfigModal
+        isOpen={showConfigModal}
+        onClose={() => setShowConfigModal(false)}
+        currentSubMode={subMode}
+        currentFocusSkill={focusSkill}
+        currentRelation={relation}
+        currentScaffold={scaffold}
+        onApply={handleApplyConfig}
+        isLoading={session.isRegeneratingAI}
+      />
       <BuilderCheatsheetModal isOpen={showCheatsheet} onClose={() => setShowCheatsheet(false)} />
       <GlobalKeybindingsModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </div>

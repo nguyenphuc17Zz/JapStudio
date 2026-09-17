@@ -29,7 +29,7 @@ export function TopNav({
 
   return (
     <>
-      <header className="h-[56px] border-b border-border/60 bg-card/75 backdrop-blur-xl px-4 md:px-6 flex items-center justify-between shrink-0 gap-3 relative z-30 shadow-xs">
+      <header className="h-[56px] border-b border-border/60 bg-card/75 backdrop-blur-xl px-4 md:px-6 flex items-center justify-between shrink-0 gap-3 relative z-40 shadow-xs">
         {/* Left — date + ModeSwitcher */}
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
           <span className="hidden sm:inline-flex items-center text-sm">

@@ -17,7 +17,6 @@ import {
   Blocks,
   Languages,
   Settings,
-  Activity,
 } from "lucide-react";
 import {
   SystemKeybindings,
@@ -43,7 +42,6 @@ function getCategoryFromPath(pathname: string | null): KeybindingCategory {
   if (pathname.startsWith("/interpret")) return "interpret";
   if (pathname.startsWith("/keigo")) return "keigo";
   if (pathname.startsWith("/situations")) return "situations";
-  if (pathname.startsWith("/ramp")) return "ramp";
   if (pathname.startsWith("/speaking")) return "speaking";
   if (pathname.startsWith("/shadowing")) return "shadowing";
   return "system";
@@ -56,7 +54,6 @@ const MODAL_TABS: { id: KeybindingCategory; label: string; icon: React.Component
   { id: "interpret", label: "Việt-Nhật", icon: Languages },
   { id: "keigo", label: "Kính Ngữ", icon: Crown },
   { id: "situations", label: "Tình Huống", icon: Compass },
-  { id: "ramp", label: "Phục Hồi", icon: Activity },
   { id: "speaking", label: "Hội Thoại", icon: MessageSquare },
   { id: "shadowing", label: "Shadowing", icon: Tv },
   { id: "system", label: "Hệ Thống", icon: Settings },

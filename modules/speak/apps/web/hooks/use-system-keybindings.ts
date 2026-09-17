@@ -9,7 +9,6 @@ export type KeybindingCategory =
   | "aizuchi"
   | "builder"
   | "interpret"
-  | "ramp"
   | "speaking"
   | "shadowing"
   | "system";
@@ -67,13 +66,6 @@ export interface SystemKeybindings {
   reflexPauseOrResume: string;
   reflexStartVoice: string;
   reflexToggleInputMode: string;
-
-  // 7. Speaking Ramp / Rehab (/ramp)
-  rampStartOrSubmit: string;
-  rampRetry: string;
-  rampNext: string;
-  rampHint: string;
-  rampCheatsheet: string;
 
   // 8. Aizuchi Dojo (/aizuchi)
   aizuchiSubmitOrNext: string;
@@ -188,13 +180,6 @@ export const DEFAULT_KEYBINDINGS: SystemKeybindings = {
   reflexStartVoice: "space",
   reflexToggleInputMode: "t",
 
-  // Speaking Ramp / Rehab
-  rampStartOrSubmit: "space",
-  rampRetry: "r",
-  rampNext: "n",
-  rampHint: "h",
-  rampCheatsheet: "c",
-
   // Aizuchi Dojo
   aizuchiSubmitOrNext: "enter",
   aizuchiListenPrompt: "l",
@@ -305,13 +290,6 @@ export const ACTION_CATEGORIES: Record<keyof SystemKeybindings, KeybindingCatego
   reflexPauseOrResume: "reflex",
   reflexStartVoice: "reflex",
   reflexToggleInputMode: "reflex",
-
-  // Speaking Ramp / Rehab
-  rampStartOrSubmit: "ramp",
-  rampRetry: "ramp",
-  rampNext: "ramp",
-  rampHint: "ramp",
-  rampCheatsheet: "ramp",
 
   // Aizuchi Dojo
   aizuchiSubmitOrNext: "aizuchi",

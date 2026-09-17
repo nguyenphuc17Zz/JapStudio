@@ -68,6 +68,13 @@ export interface ClauseSpan {
   ok: boolean;
 }
 
+export interface BuilderEvaluatedError {
+  type?: string;
+  userText: string;
+  correction: string;
+  explanation: string;
+}
+
 export interface BuilderResult {
   exerciseId: string;
   success: boolean;
@@ -86,6 +93,13 @@ export interface BuilderResult {
   subMode: string;
   canonical?: string;
   canonicalVi?: string;
+  meaningScore: number;
+  grammarScore: number;
+  naturalnessScore: number;
+  betterVersion?: string;
+  betterVersionVi?: string;
+  errors?: BuilderEvaluatedError[];
+  praisePoints?: string[];
 }
 
 export interface GenerateOpts {
@@ -96,6 +110,7 @@ export interface GenerateOpts {
   timerMs?: number;
   difficulty?: string;
   force_ai?: boolean;
+  recent_prompts?: string[];
 }
 
 export const BUILDER_SKILLS: Array<{ id: BuilderSkill; ja: string; label: string; desc: string }> = [
@@ -131,6 +146,11 @@ export async function generateExercise(opts: GenerateOpts): Promise<BuilderExerc
   if (opts.timerMs !== undefined) params.set("timer_limit_ms", String(opts.timerMs));
   if (opts.difficulty) params.set("difficulty", opts.difficulty);
   if (opts.force_ai) params.set("force_ai", "true");
+  if (opts.recent_prompts && opts.recent_prompts.length > 0) {
+    opts.recent_prompts.forEach((p) => {
+      if (p?.trim()) params.append("recent_prompts", p.trim());
+    });
+  }
   params.set("nonce", `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`);
   const data = (await apiClient.post(`/builder/exercises/generate?${params.toString()}`)) as any;
   const bc = data.extra_metadata?.builder_config || {};

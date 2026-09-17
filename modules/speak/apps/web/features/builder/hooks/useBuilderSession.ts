@@ -61,6 +61,7 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
   const [isRegeneratingAI, setIsRegeneratingAI] = useState(false);
   const [assembledText, setAssembledText] = useState("");
   const [hintTier, setHintTier] = useState<1 | 2 | 3 | 4>(1);
+  const [pendingSpokenText, setPendingSpokenText] = useState<string | null>(null);
 
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
@@ -72,6 +73,7 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
   const latestTranscriptRef = useRef("");
   const submittedRef = useRef(false);
   const autoNextTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const recentPromptsRef = useRef<string[]>([]);
   const optsRef = useRef(opts);
   optsRef.current = opts;
 
@@ -84,6 +86,7 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
   micRef.current = mic;
 
   const submitAnswerRef = useRef<(transcript: string, o?: { timedOut?: boolean }) => Promise<void>>(async () => {});
+  const stopAnsweringRef = useRef<() => void>(() => {});
 
   const speechPreview = useSpeechPreview({
     language: "ja-JP",
@@ -104,7 +107,7 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
       if (phaseRef.current === "answering") {
         const captured = latestTranscriptRef.current || speechPreviewRef.current.interimTranscript.trim();
         if (captured && !submittedRef.current) {
-          await submitAnswerRef.current(captured);
+          stopAnsweringRef.current();
         }
       }
     },
@@ -134,6 +137,7 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
     if (!ex) return;
     submittedRef.current = false;
     latestTranscriptRef.current = "";
+    setPendingSpokenText(null);
     speechPreviewRef.current.clearPreview();
     promptAtRef.current = performance.now();
     setPhase("answering");
@@ -146,6 +150,21 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
     void speechPreviewRef.current.startPreview();
     void micRef.current.startRecording();
   }, []);
+
+  const stopAnswering = useCallback(() => {
+    if (phaseRef.current !== "answering") return;
+    const captured = latestTranscriptRef.current || speechPreviewRef.current.interimTranscript.trim();
+    timerRef.current.stop();
+    micRef.current.releaseMicrophone();
+    speechPreviewRef.current.stopPreview();
+    if (captured) {
+      setPendingSpokenText(captured);
+      setPhase("ready");
+    } else {
+      setPhase("ready");
+    }
+  }, []);
+  stopAnsweringRef.current = stopAnswering;
 
   const onPromptFinished = useCallback(() => {
     if (phaseRef.current !== "prompt" && phaseRef.current !== "loading") return;
@@ -233,6 +252,18 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
         subMode: ex.subMode,
         canonical: data.metrics?.canonical || ex.canonical || "",
         canonicalVi: data.metrics?.canonical_vi || ex.canonicalVi || "",
+        meaningScore: Number(data.metrics?.meaning_score ?? assessment.meaning_score ?? assessment.coverage?.score ?? 70),
+        grammarScore: Number(data.metrics?.grammar_score ?? assessment.grammar_score ?? assessment.connection?.score ?? 70),
+        naturalnessScore: Number(data.metrics?.naturalness_score ?? assessment.naturalness_score ?? assessment.naturalness?.score ?? 70),
+        betterVersion: data.metrics?.better_version || assessment.better_version || ex.canonical || "",
+        betterVersionVi: data.metrics?.better_version_vi || assessment.better_version_vi || ex.canonicalVi || "",
+        errors: (data.metrics?.errors || assessment.errors || []).map((e: any) => ({
+          type: e.type || "naturalness",
+          userText: e.userText || e.user_text || "",
+          correction: e.correction || "",
+          explanation: e.explanation || "",
+        })),
+        praisePoints: data.metrics?.praise_points || assessment.praise_points || [],
       };
       setResult(res);
       setResults((prev) => [...prev, res]);
@@ -254,6 +285,26 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
   }, []);
   submitAnswerRef.current = submitAnswer;
 
+  const confirmSubmit = useCallback(async (manualText?: string) => {
+    const text = manualText || pendingSpokenText || latestTranscriptRef.current || assembledText;
+    if (!text.trim()) return;
+    setPendingSpokenText(null);
+    await submitAnswer(text.trim());
+  }, [pendingSpokenText, assembledText, submitAnswer]);
+
+  const reRecord = useCallback(() => {
+    setPendingSpokenText(null);
+    latestTranscriptRef.current = "";
+    speechPreviewRef.current.clearPreview();
+    beginAnswering();
+  }, [beginAnswering]);
+
+  const clearPending = useCallback(() => {
+    setPendingSpokenText(null);
+    latestTranscriptRef.current = "";
+    speechPreviewRef.current.clearPreview();
+  }, []);
+
   const nextExercise = useCallback(() => {
     if (autoNextTimerRef.current) {
       clearTimeout(autoNextTimerRef.current);
@@ -263,6 +314,7 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
       stopWebSpeech();
     } catch {}
     setResult(null);
+    setPendingSpokenText(null);
     setAssembledText("");
     setHintTier(1);
     void fetchExercise();
@@ -278,7 +330,12 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
         focusSkill: optsRef.current.focusSkill,
         relation: optsRef.current.relation,
         scaffold: optsRef.current.scaffold,
+        recent_prompts: recentPromptsRef.current.slice(-5),
       });
+      const promptText = ex.promptVi || ex.situationVi || ex.sourceSentence || ex.scenario;
+      if (promptText) {
+        recentPromptsRef.current = [...recentPromptsRef.current.slice(-9), promptText];
+      }
       setExercise(ex);
       setTimeout(() => playPrompt(), 300);
     } catch (e: any) {
@@ -296,6 +353,7 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
     try {
       stopWebSpeech();
     } catch {}
+    recentPromptsRef.current = [];
     setResult(null);
     setResults([]);
     setStats({ total: 0, success: 0 });
@@ -306,7 +364,7 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
     void fetchExercise();
   }, [fetchExercise]);
 
-  const regenerateWithAI = useCallback(async () => {
+  const regenerateWithAI = useCallback(async (overrides?: Partial<UseBuilderSessionOptions>) => {
     if (isRegeneratingAI) return;
     setIsRegeneratingAI(true);
     if (autoNextTimerRef.current) {
@@ -321,13 +379,19 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
     speechPreviewRef.current.stopPreview();
     setResult(null);
     try {
+      const currentOpts = { ...optsRef.current, ...overrides };
       const ex = await builderApi.generateExercise({
-        subMode: optsRef.current.subMode,
-        focusSkill: optsRef.current.focusSkill,
-        relation: optsRef.current.relation,
-        scaffold: optsRef.current.scaffold,
+        subMode: currentOpts.subMode,
+        focusSkill: currentOpts.focusSkill,
+        relation: currentOpts.relation,
+        scaffold: currentOpts.scaffold,
         force_ai: true,
+        recent_prompts: recentPromptsRef.current.slice(-5),
       });
+      const promptText = ex.promptVi || ex.situationVi || ex.sourceSentence || ex.scenario;
+      if (promptText) {
+        recentPromptsRef.current = [...recentPromptsRef.current.slice(-9), promptText];
+      }
       setExercise(ex);
       toast.success("✨ Đã sinh bài tập Xây câu mới từ AI!");
       setTimeout(() => playPrompt(), 300);
@@ -415,6 +479,7 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
     timerRef.current.stop();
     setIsPaused(false);
     setResult(null);
+    setPendingSpokenText(null);
     setAssembledText("");
     setTimeout(() => playPrompt(), 350);
   }, [cancelAutoNext, playPrompt]);
@@ -445,6 +510,13 @@ export function useBuilderSession(opts: UseBuilderSessionOptions) {
     setAssembledText,
     hintTier,
     setHintTier,
+    pendingSpokenText,
+    setPendingSpokenText,
+    beginAnswering,
+    stopAnswering,
+    confirmSubmit,
+    reRecord,
+    clearPending,
     timer: { remainingMs: timer.remainingMs, totalMs: timer.totalMs, ratio: timer.ratio },
     combatTimer: { remainingMs: timer.remainingMs, totalLimitMs: timer.totalMs, progress: timer.ratio, state: timer.ratio > 0.5 ? "normal" as const : timer.ratio > 0.25 ? "warning" as const : "critical" as const, isActive: phase === "answering" },
     liveTranscript: speechPreview.interimTranscript,

@@ -55,13 +55,15 @@ async def generate_interpret_exercise_get(
     difficulty: str | None = Query(default=None),
     learning_item_key: str | None = Query(default=None),
     force_ai: bool = Query(default=False, description="Bypass cache and force AI generation"),
+    recent_prompts: list[str] = Query(default=[]),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     return await generate_interpret_exercise(
         sub_mode=sub_mode, relation=relation, scaffold=scaffold, topic=topic,
         timer_limit_ms=timer_limit_ms, difficulty=difficulty,
-        learning_item_key=learning_item_key, force_ai=force_ai, user_id=user_id, db=db,
+        learning_item_key=learning_item_key, force_ai=force_ai, recent_prompts=recent_prompts,
+        user_id=user_id, db=db,
     )
 
 
@@ -75,6 +77,7 @@ async def generate_interpret_exercise(
     difficulty: str | None = Query(default=None),
     learning_item_key: str | None = Query(default=None),
     force_ai: bool = Query(default=False, description="Bypass cache and force AI generation"),
+    recent_prompts: list[str] = Query(default=[]),
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
@@ -96,7 +99,7 @@ async def generate_interpret_exercise(
     data = await ai_gen.generate_dynamic_exercise(
         sub_mode=sub_mode, relation=relation, scaffold=scaffold,
         timer_limit_ms=timer_limit_ms, difficulty=eff_diff, topic=topic, user_id=user_id,
-        force_ai=force_ai,
+        force_ai=force_ai, recent_prompts=recent_prompts,
     )
 
     item_key = learning_item_key

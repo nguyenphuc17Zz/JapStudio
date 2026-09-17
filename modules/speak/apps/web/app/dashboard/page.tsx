@@ -6,7 +6,7 @@ import { StudioModesHub } from "@/components/dashboard/StudioModesHub";
 import { RecentSessions } from "@/components/dashboard/recent-sessions";
 import { OnboardingModal } from "@/features/onboarding";
 import { Button } from "@/components/ui/button";
-import { Zap, Play } from "lucide-react";
+import { Zap, Briefcase } from "lucide-react";
 import { soundFX } from "@/lib/sound-fx";
 
 export default function DashboardPage() {
@@ -45,13 +45,13 @@ export default function DashboardPage() {
             </Button>
           </Link>
 
-          <Link href="/ramp" onClick={() => soundFX.playKatana()}>
+          <Link href="/interview" onClick={() => soundFX.playKatana()}>
             <Button
               size="sm"
               className="gap-1.5 font-bold text-xs h-8 rounded-xl bg-gradient-to-r from-blue-600 via-primary to-indigo-600 text-white shadow-xs cursor-pointer px-3"
             >
-              <Play className="h-3 w-3 fill-current" />
-              <span>Nấc thang nói</span>
+              <Briefcase className="h-3.5 w-3.5" />
+              <span>Phỏng vấn AI</span>
             </Button>
           </Link>
         </div>

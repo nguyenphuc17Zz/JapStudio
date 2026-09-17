@@ -7,14 +7,9 @@ import {
   BookOpen,
   PlusCircle,
   Lightbulb,
-  Layers,
-  ArrowRight,
   Zap,
   Briefcase,
   Users,
-  AlertTriangle,
-  Compass,
-  Check,
   Info,
 } from "lucide-react";
 import { UniversalFurigana } from "@/components/japanese/UniversalFurigana";
@@ -33,7 +28,7 @@ export interface InterpretCoachPanelProps {
   className?: string;
 }
 
-type TabKey = "all" | "vocab" | "blueprint" | "model";
+type TabKey = "all" | "vocab" | "model";
 
 export function InterpretCoachPanel({
   exercise,
@@ -49,26 +44,9 @@ export function InterpretCoachPanel({
   const relation: InterpretRelation = exercise.relation || "casual_friend";
   const isBusiness = relation === "business_polite";
   const isWord = subMode === "interpret_word";
-  const isSituation = subMode === "interpret_situation";
 
   const keywords = exercise.expectedJaKeywords || [];
   const referenceJa = exercise.referenceJa || "";
-  const promptVi = exercise.promptVi || "";
-
-  // Quick Starters based on relationship and context
-  const quickStarters: Array<{ ja: string; vi: string }> = isBusiness
-    ? [
-        { ja: "恐れ入りますが、", vi: "Xin thứ lỗi làm phiền nhưng..." },
-        { ja: "実は、", vi: "Thực ra là..." },
-        { ja: "〜の件についてですが、", vi: "Về vấn đề... thì..." },
-        { ja: "承知いたしました。", vi: "Tôi đã hiểu/tiếp nhận rồi ạ." },
-      ]
-    : [
-        { ja: "あのさ、", vi: "Này cậu ơi..." },
-        { ja: "実はね、", vi: "Thực ra là thế này nè..." },
-        { ja: "そういえば、", vi: "Nhân tiện thì..." },
-        { ja: "やっぱり、", vi: "Quả nhiên là..." },
-      ];
 
   const handlePlay = (text: string) => {
     stopWebSpeech();
@@ -158,39 +136,36 @@ export function InterpretCoachPanel({
             Từ vựng then chốt ({keywords.length})
           </button>
         )}
-        <button
-          type="button"
-          onClick={() => setActiveTab("blueprint")}
-          className={cn(
-            "px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all shrink-0 flex items-center gap-1",
-            activeTab === "blueprint"
-              ? "bg-indigo-600 text-white shadow-2xs"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-          )}
-        >
-          <Layers className="h-3 w-3" />
-          Khung dịch & Mở đầu
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("model")}
-          className={cn(
-            "px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all shrink-0 flex items-center gap-1",
-            activeTab === "model"
-              ? "bg-amber-500 text-white shadow-2xs"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-          )}
-        >
-          <Lightbulb className="h-3 w-3" />
-          Bản dịch mẫu & Bẫy dịch
-        </button>
+        {referenceJa && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("model")}
+            className={cn(
+              "px-2.5 py-1 rounded-lg font-bold text-[11px] transition-all shrink-0 flex items-center gap-1",
+              activeTab === "model"
+                ? "bg-amber-500 text-white shadow-2xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+            )}
+          >
+            <Lightbulb className="h-3 w-3" />
+            Bản dịch mẫu
+          </button>
+        )}
       </div>
 
-      {/* ── 3. Main Scrollable Body ── */}
+      {/* ── 3. Main Scrollable Body (Only Dynamic Content from AI) ── */}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-3 sm:p-4 space-y-3.5">
-        {/* ═══════════════════════════════════════════════════════════ */}
-        {/* TỪ VỰNG THEN CHỐT TIẾNG NHẬT (KEY JAPANESE VOCABULARY)       */}
-        {/* ═══════════════════════════════════════════════════════════ */}
+        {/* Ngữ cảnh tình huống nếu có */}
+        {exercise.situationVi && (
+          <div className="p-2.5 rounded-xl bg-muted/40 border border-border/70 text-xs space-y-0.5">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Bối cảnh tình huống:
+            </span>
+            <p className="text-foreground text-xs leading-relaxed">{exercise.situationVi}</p>
+          </div>
+        )}
+
+        {/* Từ vựng then chốt tiếng Nhật (chỉ hiện khi AI có cung cấp) */}
         {(activeTab === "all" || activeTab === "vocab") && keywords.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -239,73 +214,7 @@ export function InterpretCoachPanel({
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════ */}
-        {/* KHUNG CHUYỂN DỊCH SOV & SẮC THÁI QUAN HỆ (BLUEPRINT)        */}
-        {/* ═══════════════════════════════════════════════════════════ */}
-        {(activeTab === "all" || activeTab === "blueprint") && (
-          <div className="p-3.5 rounded-2xl bg-indigo-500/8 border border-indigo-500/25 space-y-2.5 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-indigo-800 dark:text-indigo-200 flex items-center gap-1.5">
-                <Compass className="h-3.5 w-3.5 text-indigo-500" />
-                Chiến Lược Dịch: 「{isBusiness ? "Trang Trọng / Công Sở" : "Thân Mật / Bạn Bè"}」
-              </span>
-              <Badge variant="outline" size="sm" className="text-[10px] border-indigo-500/30 text-indigo-700 dark:text-indigo-300">
-                {isBusiness ? "Keigo / Teineigo" : "Tameguchi"}
-              </Badge>
-            </div>
-
-            {/* Quy tắc vàng */}
-            <div className="p-2.5 rounded-xl bg-card border border-border/80 text-xs font-bold font-jp text-foreground space-y-1">
-              <div>💡 <strong>Trật tự câu:</strong> {isBusiness ? "Ẩn chủ ngữ Tôi → Tân ngữ/Bổ ngữ → Động từ khiêm nhường/tôn kính kết câu." : "Ẩn chủ ngữ Tôi → Bổ ngữ ngắn gọn → Động từ thể thông thường + よ/ね."}</div>
-            </div>
-
-            <p className="text-[11px] text-muted-foreground leading-snug">
-              {isBusiness
-                ? "📌 Tránh dùng 「私」「あなた」. Luôn hạ mình khi nói về việc của bản thân (いたす/まいる) và nâng đối phương khi nói về hành động của sếp/khách hàng."
-                : "📌 Trong giao tiếp với bạn bè, tuyệt đối tránh dùng です/ます kẻo tạo khoảng cách xa lạ. Kết câu bằng thể từ điển, thể て hoặc trợ từ cảm thán."}
-            </p>
-
-            {/* Cụm mở đầu phản xạ nhanh (Quick Jump Starters) */}
-            <div className="space-y-1.5 pt-1 border-t border-indigo-500/15">
-              <span className="text-[10px] font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider block">
-                Cụm câu đệm bật phản xạ nhanh:
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {quickStarters.map((qs, idx) => (
-                  <div
-                    key={idx}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-card border border-border hover:border-primary/50 text-xs font-bold font-jp text-foreground shadow-2xs group transition-all"
-                  >
-                    <span>{qs.ja}</span>
-                    <span className="text-[9px] font-normal text-muted-foreground font-sans">
-                      ({qs.vi})
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handlePlay(qs.ja)}
-                      className="p-0.5 text-muted-foreground hover:text-primary transition-colors ml-0.5"
-                      title="Nghe phát âm"
-                    >
-                      <Volume2 className="h-3 w-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleInsert(qs.ja)}
-                      className="p-0.5 text-primary hover:text-primary/80 transition-colors"
-                      title="Chèn cụm mở đầu này"
-                    >
-                      <PlusCircle className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ═══════════════════════════════════════════════════════════ */}
-        {/* BẢN DỊCH MẪU CHUẨN TOKYO (REFERENCE MODEL TRANSLATION)      */}
-        {/* ═══════════════════════════════════════════════════════════ */}
+        {/* Bản dịch mẫu chuẩn Tokyo (chỉ hiện khi AI cung cấp) */}
         {(activeTab === "all" || activeTab === "model") && referenceJa && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -354,32 +263,10 @@ export function InterpretCoachPanel({
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════════════════════ */}
-        {/* CẨM NANG BẪY DỊCH VIETGLISH (PITFALL RADAR)                 */}
-        {/* ═══════════════════════════════════════════════════════════ */}
-        {(activeTab === "all" || activeTab === "model") && (
-          <div className="p-3 rounded-2xl bg-rose-500/8 border border-rose-500/25 space-y-2 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black text-rose-800 dark:text-rose-200 flex items-center gap-1.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-rose-500" />
-                Cẩm Nang Tránh Bẫy Dịch Vietglish:
-              </span>
-              <Badge variant="outline" size="sm" className="text-[10px] border-rose-500/30 text-rose-700 dark:text-rose-300">
-                Lưu ý quan trọng
-              </Badge>
-            </div>
-
-            <div className="space-y-1.5 text-[11px] text-muted-foreground leading-snug">
-              <div className="p-2 rounded-xl bg-card border border-border/80 text-foreground">
-                ❌ <strong>Không nói 「私は...」 mở đầu:</strong> Người Việt hay có thói quen dịch chữ "Tôi", trong khi người Nhật ngầm hiểu chủ ngữ này qua thể của động từ.
-              </div>
-              <div className="p-2 rounded-xl bg-card border border-border/80 text-foreground">
-                ❌ <strong>Đừng dịch từng chữ "rồi / mà / thì":</strong> Đừng cố tìm từ tương đương cho các từ đệm tiếng Việt, hãy dùng trợ từ liên kết hoặc thể quá khứ `〜た`.
-              </div>
-              <div className="p-2 rounded-xl bg-card border border-border/80 text-foreground">
-                ❌ <strong>Trật tự câu SVO kiểu Việt:</strong> Tiếng Nhật luôn đưa vị ngữ (động từ/tính từ) ra vị trí cuối cùng của câu.
-              </div>
-            </div>
+        {/* Trạng thái trống nếu không có từ vựng hay bản dịch mẫu (chế độ Blind) */}
+        {keywords.length === 0 && !referenceJa && (
+          <div className="p-6 text-center text-xs text-muted-foreground italic rounded-2xl border border-dashed border-border/80">
+            Chế độ tự lực (Blind) — Sensei AI sẽ hiển thị bản dịch mẫu và đánh giá đầy đủ sau khi bạn nộp bài nói.
           </div>
         )}
       </div>

@@ -77,6 +77,41 @@ class BuilderEvaluator:
                 except Exception as e:
                     logger.warning(f"[BuilderEvaluator] AI fallback failed: {e}")
 
+        canonical = str(cfg.get("canonical") or (exercise.acceptable_variants[0] if getattr(exercise, "acceptable_variants", None) else "")).strip()
+        canonical_vi = str(cfg.get("canonical_vi") or "").strip()
+
+        # Build actionable errors
+        errors: list[dict[str, Any]] = []
+        if missing:
+            for m in missing[:2]:
+                errors.append({
+                    "type": "omission",
+                    "userText": "(chưa có)",
+                    "correction": m,
+                    "explanation": f"Chưa lồng ghép từ khóa '{m}' vào câu.",
+                })
+        if "私は" in raw:
+            errors.append({
+                "type": "naturalness",
+                "userText": "私は",
+                "correction": "(lược bỏ 私は)",
+                "explanation": "Văn nói tiếng Nhật tự nhiên thường lược bỏ chủ ngữ 'Tôi' khi bối cảnh đã rõ ràng.",
+            })
+        if eff_relation == "casual_friend" and any(m in raw for m in ["です", "ます"]) and not any(m in raw for m in ["じゃん", "てる", "ちゃう", "よ", "ね"]):
+            errors.append({
+                "type": "naturalness",
+                "userText": "です/ます",
+                "correction": "Thể thân mật (タメ口 / 〜てる / 〜じゃん)",
+                "explanation": "Khi nói chuyện với bạn bè, nên dùng thể ngắn và nói tắt để tự nhiên hơn.",
+            })
+        elif eff_relation == "business_polite" and any(m in raw for m in ["じゃん", "だよ", "ちゃう", "てる"]):
+            errors.append({
+                "type": "naturalness",
+                "userText": "nói tắt / thân mật",
+                "correction": "Thể lịch sự (です/ます / ております)",
+                "explanation": "Trong giao tiếp công sở, cần giữ thể lịch sự hoặc kính ngữ nhất quán.",
+            })
+
         assessment = BuilderScoringPolicy.build(
             exercise_type if exercise_type in ("sentence_assemble", "sentence_expand", "sentence_repair") else "sentence_assemble",
             transcript=raw,
@@ -90,11 +125,26 @@ class BuilderEvaluator:
             timed_out=eff_timed_out,
             independence_level=independence,
             blind=eff_blind,
+            better_version=canonical,
+            better_version_vi=canonical_vi,
+            errors=errors,
         )
 
         score = assessment.overall.score
         success = bool(raw) and not eff_timed_out and score >= 55.0
         is_perfect = success and assessment.coverage.score >= 80 and assessment.connection.score >= 80 and independence == "independent"
+
+        praise_points: list[str] = []
+        if success:
+            if assessment.coverage.score >= 80:
+                praise_points.append("Sử dụng đầy đủ và chính xác các từ khóa then chốt.")
+            if assessment.connection.score >= 80:
+                praise_points.append("Nối các vế câu rất mượt mà, đúng trọng tâm ngữ pháp.")
+            if assessment.naturalness.score >= 80:
+                praise_points.append("Ngữ điệu và văn phong bản xứ rất tự nhiên.")
+            if not praise_points:
+                praise_points.append("Phản xạ câu hoàn chỉnh, ý tứ rõ ràng.")
+        assessment.praise_points = praise_points
 
         if eff_timed_out or not raw:
             feedback = "Hết giờ mà chưa xây xong câu. Hãy thử scaffold có starter, hoặc rút keywords xuống 3 từ."
@@ -117,6 +167,13 @@ class BuilderEvaluator:
             "keywords_missing": missing,
             "clauses": [c.to_dict() for c in assessment.clauses],
             "is_perfect": is_perfect,
+            "better_version": canonical,
+            "better_version_vi": canonical_vi,
+            "meaning_score": round(assessment.coverage.score, 1),
+            "grammar_score": round(assessment.connection.score, 1),
+            "naturalness_score": round(assessment.naturalness.score, 1),
+            "errors": errors,
+            "praise_points": praise_points,
         }
 
     def _skill_hint(self, skill: str | None) -> str:

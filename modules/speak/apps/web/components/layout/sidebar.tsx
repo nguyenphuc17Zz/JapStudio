@@ -8,16 +8,15 @@ import {
   Mic,
   Tv,
   Settings,
-  Sparkles,
   Zap,
   Crown,
   Compass,
   Ear,
   Blocks,
   Languages,
+  Briefcase,
   PanelLeftClose,
   PanelLeftOpen,
-  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,8 +30,7 @@ interface NavItem {
 const MAIN_ITEMS: NavItem[] = [
   { label: "Trang chủ", jaLabel: "ホーム", href: "/dashboard", icon: LayoutDashboard },
   { label: "Luyện nói", jaLabel: "会話", href: "/speaking", icon: Mic },
-  { label: "Phục hồi nói", jaLabel: "サバイバル", href: "/survival", icon: ShieldAlert },
-  { label: "Nấc thang nói", jaLabel: "段階", href: "/ramp", icon: Sparkles },
+  { label: "Phỏng vấn AI", jaLabel: "面接", href: "/interview", icon: Briefcase },
   { label: "Phản xạ", jaLabel: "瞬発", href: "/reflex", icon: Zap },
   { label: "Phản hồi", jaLabel: "相づち", href: "/aizuchi", icon: Ear },
   { label: "Xây câu", jaLabel: "文立て", href: "/builder", icon: Blocks },

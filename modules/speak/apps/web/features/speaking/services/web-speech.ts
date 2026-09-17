@@ -235,9 +235,32 @@ export function extractJapaneseSpokenText(text: string): string {
     clean = separatorMatch[1];
   }
 
+  // 5. Replace fill-in-the-blank placeholders with a natural Japanese pause (comma '、')
+  // Enclosed blanks like [___], (____), 【____】, （____）
+  clean = clean.replace(/[\[(（【]\s*[_＿\.\s]+\s*[\])）】]/g, "、");
+  // Repeated underscores (ASCII and full-width, e.g. ____, ______)
+  clean = clean.replace(/[_＿]{2,}/g, "、");
+  // Repeated dots / ellipses used as fill-in-the-blank placeholders
+  clean = clean.replace(/(?:……|\.{3,}|…{2,})/g, "、");
+  // Leading tildes (e.g. 〜をお願いします -> お願いします)
+  clean = clean.replace(/^[\s〜~]+/g, "");
+  // Isolated tilde placeholders
+  clean = clean.replace(/(?:^|\s+)[〜~]+(?:\s+|$)/g, " ");
+
+  // 6. Clean up comma formatting and pauses
+  // Collapse multiple commas and spaces
+  clean = clean.replace(/[、,]\s*[、,]+/g, "、");
+  // Remove comma immediately following sentence-ending punctuation (e.g. 。、 -> 。)
+  clean = clean.replace(/([。！？])\s*[、,]+/g, "$1");
+  // Remove comma immediately preceding sentence-ending punctuation (e.g. 、。 -> 。)
+  clean = clean.replace(/[、,]+\s*([。！？])/g, "$1");
+  // Remove leading/trailing commas and whitespace
+  clean = clean.replace(/^[\s、,]+/g, "");
+  clean = clean.replace(/[\s、,]+$/g, "");
+
   clean = clean.trim();
 
-  // 5. Safety check: must have at least one Japanese character (Kanji / Hiragana / Katakana)
+  // 7. Safety check: must have at least one Japanese character (Kanji / Hiragana / Katakana)
   const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(clean);
   if (!hasJapanese) {
     return "";

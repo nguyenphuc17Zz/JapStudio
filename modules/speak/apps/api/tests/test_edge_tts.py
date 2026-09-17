@@ -112,3 +112,54 @@ async def test_edge_tts_mocked_synthesis():
         assert output.voice == "ja-JP-NanamiNeural"
         assert output.format == "mp3"
         assert len(output.audio_bytes) > 0
+
+
+def test_clean_text_for_tts():
+    from app.domains.speech.adapters.edge_tts_adapter import clean_text_for_tts
+
+    # 1. Underscores replaced with natural pause
+    assert clean_text_for_tts("昨日、友達と見た映画がすごく______てさ！") == "昨日、友達と見た映画がすごく、てさ！"
+    assert clean_text_for_tts("冷たいご飯を______するための物です。") == "冷たいご飯を、するための物です。"
+
+    # 2. Bracketed blanks
+    assert clean_text_for_tts("ここに[______]を入れてください") == "ここに、を入れてください"
+    assert clean_text_for_tts("（____）に入る言葉") == "に入る言葉"
+
+    # 3. Leading tildes
+    assert clean_text_for_tts("〜をお願いします") == "をお願いします"
+
+    # 4. Punctuation deduplication and boundaries
+    assert clean_text_for_tts("あ、すみません。______をお願いします。") == "あ、すみません。をお願いします。"
+    assert clean_text_for_tts("駅前に開店した______、すごい行列が______よ。") == "駅前に開店した、すごい行列が、よ。"
+
+    # 5. Empty or blanks only
+    assert clean_text_for_tts("______") == ""
+    assert clean_text_for_tts("") == ""
+
+
+@pytest.mark.asyncio
+async def test_edge_tts_synthesize_sanitizes_underscores():
+    from app.domains.speech.adapters.edge_tts_adapter import EdgeTTSAdapter
+
+    adapter = EdgeTTSAdapter()
+    fake_mp3_data = b"ID3\x03\x00\x00\x00\x00\x00#TSSE\x00\x00\x00"
+
+    with patch("edge_tts.Communicate") as mock_comm_cls:
+        mock_instance = AsyncMock()
+        mock_comm_cls.return_value = mock_instance
+
+        async def fake_stream():
+            yield {"type": "audio", "data": fake_mp3_data}
+
+        mock_instance.stream = fake_stream
+
+        # Synthesize with underscores in prompt sentence
+        await adapter.synthesize(text="昨日、友達と見た映画がすごく______てさ！")
+
+        # Verify edge_tts.Communicate received clean text WITHOUT any underscores
+        mock_comm_cls.assert_called_once()
+        called_text = mock_comm_cls.call_args.kwargs.get("text") or mock_comm_cls.call_args.args[0]
+        assert "______" not in called_text
+        assert "_" not in called_text
+        assert called_text == "昨日、友達と見た映画がすごく、てさ！"
+

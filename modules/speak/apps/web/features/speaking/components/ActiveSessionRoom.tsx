@@ -36,13 +36,11 @@ import {
   Zap,
   CheckCircle2,
   AlertCircle,
-  LifeBuoy,
   X,
 } from "lucide-react";
 import { analysisApi } from "../services/analysis-api";
 import { useSystemKeybindings } from "@/hooks/use-system-keybindings";
 import { ZenUnifiedInputBar } from "@/components/ui/zen-unified-input-bar";
-import { EmergencySOSModal } from "@/features/survival/components/EmergencySOSModal";
 import { cn } from "@/lib/utils";
 
 interface ActiveSessionRoomProps {
@@ -111,7 +109,6 @@ export function ActiveSessionRoom({
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [selectedCorrection, setSelectedCorrection] =
     useState<CorrectionItem | null>(null);
-  const [isSosOpen, setIsSosOpen] = useState(false);
 
   const statusInfo = getStatusColor(state);
 
@@ -455,18 +452,7 @@ export function ActiveSessionRoom({
               </div>
             )}
 
-            {/* SOS Emergency Button */}
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsSosOpen(true)}
-                className="px-3 py-1.5 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                title="Cứu cánh khẩn cấp khi bị bí từ"
-              >
-                <LifeBuoy className="h-3.5 w-3.5" />
-                <span>🆘 Cấp Cứu Bí Từ (SOS)</span>
-              </button>
-            </div>
+
 
             {/* Interactive Speaking Controller */}
             <div className="w-full space-y-2">
@@ -796,13 +782,7 @@ export function ActiveSessionRoom({
         onPlayCorrection={onReplayVoice}
       />
 
-      {/* Emergency SOS Modal */}
-      <EmergencySOSModal
-        isOpen={isSosOpen}
-        onClose={() => setIsSosOpen(false)}
-        lastAiMessage={[...turns].reverse().find((t) => t.speaker === "assistant")?.transcript || ""}
-        onSelectPhrase={(phrase) => onSendTextTurn(phrase)}
-      />
+
     </div>
   );
 }

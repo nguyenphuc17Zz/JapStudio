@@ -571,48 +571,6 @@ export const ALL_ACTION_DEFINITIONS: ActionDefinition[] = [
     icon: <Edit3 className="h-4 w-4 text-purple-500" />,
   },
 
-  // 5. Speaking Ramp / Rehab (/ramp)
-  {
-    key: "rampStartOrSubmit",
-    label: "Bắt Đầu Nói / Nộp Bài Phục Hồi",
-    category: "ramp",
-    categoryLabel: "Phục Hồi Nói",
-    description: "Kích hoạt microphone hoặc nộp bài tập phục hồi phản xạ",
-    icon: <Mic className="h-4 w-4 text-emerald-500" />,
-  },
-  {
-    key: "rampRetry",
-    label: "Thử Lại Câu Hiện Tại (Retry)",
-    category: "ramp",
-    categoryLabel: "Phục Hồi Nói",
-    description: "Luyện lại ngay câu phục hồi hiện tại",
-    icon: <RotateCcw className="h-4 w-4 text-amber-500" />,
-  },
-  {
-    key: "rampNext",
-    label: "Chuyển Sang Câu Kế Tiếp (Next)",
-    category: "ramp",
-    categoryLabel: "Phục Hồi Nói",
-    description: "Chuyển sang bài tập phục hồi tiếp theo",
-    icon: <ArrowRight className="h-4 w-4 text-sky-500" />,
-  },
-  {
-    key: "rampHint",
-    label: "Mở Gợi Ý Từ Khóa & Mẫu Câu (Hint)",
-    category: "ramp",
-    categoryLabel: "Phục Hồi Nói",
-    description: "Mở gợi ý từ vựng cứu nguy và mẫu câu trợ lực",
-    icon: <Sparkles className="h-4 w-4 text-amber-500" />,
-  },
-  {
-    key: "rampCheatsheet",
-    label: "Mở Sổ Tay Phục Hồi Khớp Lời (Cheatsheet)",
-    category: "ramp",
-    categoryLabel: "Phục Hồi Nói",
-    description: "Tra cứu bí kíp phục hồi phản xạ và mẫu câu rèn luyện nhanh",
-    icon: <BookOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />,
-  },
-
   // 6. Speaking / Conversation (/speaking)
   {
     key: "speakingMic",
@@ -899,7 +857,6 @@ export function KeybindingsSettingsSection() {
               { id: "keigo", label: "Kính ngữ (Keigo)" },
               { id: "pitch", label: "Cao độ (Pitch)" },
               { id: "situations", label: "Tình huống (Situations)" },
-              { id: "ramp", label: "Phục hồi nói (Ramp)" },
               { id: "speaking", label: "Hội thoại AI" },
               { id: "shadowing", label: "Shadowing" },
               { id: "system", label: "Hệ thống" },

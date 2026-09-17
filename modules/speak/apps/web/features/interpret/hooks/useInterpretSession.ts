@@ -60,6 +60,7 @@ export function useInterpretSession(opts: UseInterpretSessionOptions) {
   const latestTranscriptRef = useRef("");
   const submittedRef = useRef(false);
   const autoNextTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const recentPromptsRef = useRef<string[]>([]);
   const optsRef = useRef(opts);
   optsRef.current = opts;
 
@@ -271,7 +272,12 @@ export function useInterpretSession(opts: UseInterpretSessionOptions) {
         relation: optsRef.current.relation,
         scaffold: optsRef.current.scaffold,
         topic: optsRef.current.topic,
+        recent_prompts: recentPromptsRef.current.slice(-5),
       });
+      const promptText = ex.promptVi || ex.situationVi || ex.scenario;
+      if (promptText) {
+        recentPromptsRef.current = [...recentPromptsRef.current.slice(-9), promptText];
+      }
       setExercise(ex);
       setTimeout(() => showPrompt(), 300);
     } catch (e: any) {
@@ -289,6 +295,7 @@ export function useInterpretSession(opts: UseInterpretSessionOptions) {
     try {
       stopWebSpeech();
     } catch {}
+    recentPromptsRef.current = [];
     setResult(null);
     setResults([]);
     setStats({ total: 0, success: 0 });
@@ -408,7 +415,12 @@ export function useInterpretSession(opts: UseInterpretSessionOptions) {
           scaffold: optsRef.current.scaffold,
           topic: overrideTopic ?? optsRef.current.topic,
           force_ai: true,
+          recent_prompts: recentPromptsRef.current.slice(-5),
         });
+        const promptText = ex.promptVi || ex.situationVi || ex.scenario;
+        if (promptText) {
+          recentPromptsRef.current = [...recentPromptsRef.current.slice(-9), promptText];
+        }
         setExercise(ex);
         toast.success("✨ Đã tạo bài tập mới từ AI theo chuyên đề!");
         setTimeout(() => showPrompt(), 300);

@@ -25,7 +25,7 @@ export function ModeSwitcher() {
   }, [isOpen]);
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative z-50" ref={containerRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/15 border border-primary/25 text-primary text-xs font-semibold transition-all shadow-xs"

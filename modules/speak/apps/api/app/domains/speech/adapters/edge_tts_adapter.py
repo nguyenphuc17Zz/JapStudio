@@ -1,4 +1,5 @@
 import asyncio
+import re
 import time
 from typing import Any
 
@@ -10,6 +11,48 @@ from app.domains.speech.contracts import (
     TTSVoice,
 )
 from app.domains.speech.errors import TTSProviderError
+
+
+def clean_text_for_tts(text: str) -> str:
+    """
+    Sanitize input text for TTS synthesis:
+    - Replaces fill-in-the-blank placeholders (e.g. '____', '______', '[___]') with natural Japanese pauses ('、 ')
+    - Removes isolated / leading tildes ('〜')
+    - Collapses repeated punctuation and commas
+    - Never passes raw underscores to TTS (which would speak 'andābā')
+    """
+    if not text:
+        return ""
+
+    # 1. Enclosed blanks like [___], (____), 【____】, （____）
+    clean = re.sub(r"[\[(（【]\s*[_＿\.\s]+\s*[\])）】]", "、", text)
+
+    # 2. Repeated underscores (ASCII and full-width, e.g. ____, ______)
+    clean = re.sub(r"[_＿]{2,}", "、", clean)
+
+    # 3. Repeated dots / ellipses used as fill-in-the-blank placeholders
+    clean = re.sub(r"(?:……|\.{3,}|…{2,})", "、", clean)
+
+    # 4. Leading tilde prefix (e.g. 〜をお願いします -> お願いします)
+    clean = re.sub(r"^[\s〜~]+", "", clean)
+
+    # 5. Isolated tildes
+    clean = re.sub(r"(?:^|\s+)[〜~]+(?:\s+|$)", " ", clean)
+
+    # 6. Collapse multiple commas and spaces
+    clean = re.sub(r"[、,]\s*[、,]+", "、", clean)
+
+    # 7. Remove comma immediately following sentence-ending punctuation (e.g. 。、 -> 。)
+    clean = re.sub(r"([。！？])\s*[、,]+", r"\1", clean)
+
+    # 8. Remove comma immediately preceding sentence-ending punctuation (e.g. 、。 -> 。)
+    clean = re.sub(r"[、,]+\s*([。！？])", r"\1", clean)
+
+    # 9. Strip leading and trailing punctuation / whitespace
+    clean = re.sub(r"^[\s、,]+", "", clean)
+    clean = re.sub(r"[\s、,]+$", "", clean)
+
+    return clean.strip()
 
 
 class EdgeTTSAdapter(TTSProvider):
@@ -207,7 +250,8 @@ class EdgeTTSAdapter(TTSProvider):
         """
         Synthesize Japanese speech text to MP3 audio using Edge-TTS.
         """
-        if not text or not text.strip():
+        cleaned_text = clean_text_for_tts(text)
+        if not cleaned_text:
             return TTSAudioOutput(
                 audio_bytes=b"",
                 format="mp3",
@@ -237,7 +281,7 @@ class EdgeTTSAdapter(TTSProvider):
             import edge_tts
 
             communicate = edge_tts.Communicate(
-                text=text.strip(),
+                text=cleaned_text,
                 voice=voice_id,
                 rate=rate_str,
                 pitch=pitch_str,

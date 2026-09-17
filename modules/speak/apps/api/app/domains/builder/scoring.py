@@ -48,6 +48,10 @@ class BuilderAssessment:
     reaction_latency_ms: float | None = None
     keywords_used: list[str] = field(default_factory=list)
     clauses: list[ClauseSpan] = field(default_factory=list)
+    better_version: str = ""
+    better_version_vi: str = ""
+    errors: list[dict[str, Any]] = field(default_factory=list)
+    praise_points: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         def dim(d: DimensionScore) -> dict:
@@ -62,6 +66,15 @@ class BuilderAssessment:
             "reaction_latency_ms": self.reaction_latency_ms,
             "keywords_used": self.keywords_used,
             "clauses": [c.to_dict() for c in self.clauses],
+            "better_version": self.better_version,
+            "better_version_vi": self.better_version_vi,
+            "errors": self.errors,
+            "praise_points": self.praise_points,
+            "meaning_score": round(self.coverage.score, 1),
+            "grammar_score": round(self.connection.score, 1),
+            "naturalness_score": round(self.naturalness.score, 1),
+            "fluency_score": round(self.fluency.score, 1),
+            "overall_score": round(self.overall.score, 1),
         }
 
 
@@ -71,7 +84,7 @@ WEIGHTS: dict[str, dict[str, float]] = {
     BuilderSubMode.REPAIR.value: {"coverage": 0.25, "connection": 0.25, "naturalness": 0.40, "fluency": 0.10},
 }
 
-_CONNECTOR_RE = re.compile(r"(ちゃって|っちゃって|まして|まして|くて|いて|んで|てる|ちゃう|じゃう|はず|わけ|ため|のです|んです|なら|たら|れば|ても|でも|ので|のに|ながら|たり|し、|し |て|で|と|ば|し|の|こと)")
+_CONNECTOR_RE = re.compile(r"(ちゃって|っちゃって|まして|なくて|なくては|なければ|なきゃ|くて|いて|んで|ている|ていた|てる|てた|ちゃう|ちゃった|じゃう|じゃった|てしまう|てしまった|はず|わけ|ため|のです|んです|なら|たら|れば|ても|でも|ので|のに|ながら|たり|し、|し |て|で|と|ば|し|の|こと)")
 _RELATIVE_RE = re.compile(r"(た|だ|る|う|く|き|ない|てる|ている|てた|られる|れる)(本|映画|店|人|話|こと|もの|やつ|服|料理|場所|理由|写真|手紙|部屋)")
 
 
@@ -222,6 +235,10 @@ class BuilderScoringPolicy:
         timed_out: bool = False,
         independence_level: str = "independent",
         blind: bool = False,
+        better_version: str = "",
+        better_version_vi: str = "",
+        errors: list[dict[str, Any]] | None = None,
+        praise_points: list[str] | None = None,
     ) -> BuilderAssessment:
         used, missing = coverage_of(transcript, keywords or [])
         coverage = _coverage_score(sub_mode, used, missing, transcript)
@@ -251,4 +268,8 @@ class BuilderScoringPolicy:
             reaction_latency_ms=reaction_latency_ms,
             keywords_used=used,
             clauses=clauses,
+            better_version=better_version,
+            better_version_vi=better_version_vi,
+            errors=errors or [],
+            praise_points=praise_points or [],
         )

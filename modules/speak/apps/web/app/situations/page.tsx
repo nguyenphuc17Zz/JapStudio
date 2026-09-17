@@ -318,7 +318,7 @@ export default function SituationsPage() {
   }
 
   return (
-    <div className="w-full max-w-[1760px] mx-auto h-[calc(100vh-3.5rem)] flex flex-col justify-between px-2 sm:px-4 py-2 gap-2 overflow-hidden select-none animate-in fade-in duration-200">
+    <div className="w-full max-w-[1760px] mx-auto h-full flex flex-col justify-between px-2 sm:px-4 py-2 gap-2 overflow-hidden select-none animate-in fade-in duration-200">
       {/* Top Combat Capsule HUD */}
       <CombatCapsuleHUD
         questionNumber={session.results.length + 1}
@@ -330,10 +330,6 @@ export default function SituationsPage() {
         sessionElapsedSec={elapsedSec}
         subtitleMode={subtitleMode}
         setSubtitleMode={setSubtitleMode}
-        filterTrigger={{
-          label: "Sổ tay bối cảnh",
-          onClick: () => setIsCheatsheetOpen(true),
-        }}
         provenanceBadge={
           session.exercise ? (
             <ExerciseSourceBadge
